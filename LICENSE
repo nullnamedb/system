@@ -1,21 +1,57 @@
-MIT License
-
+Advanced MIT License (MIT+)
 Copyright (c) 2026 nullnamedb
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+copies of the Software, subject to the following conditions:
 
+1. Copyright and Permission Notice
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
+2. Patent Grant
+Each contributor grants you a non-exclusive, worldwide, royalty-free patent
+license under the contributor's essential patent claims in the Software to
+make, use, sell, offer for sale, import, and otherwise run, modify, and
+propagate the Software. If you institute patent litigation against any entity
+(including a cross-claim or counterclaim) alleging that the Software alone or
+combined with other software constitutes direct or contributory patent
+infringement, then the license granted to you under this Agreement for that
+Software shall terminate as of the date such litigation is filed.
+
+3. Contributor Terms
+Any contribution intentionally submitted for inclusion in the Software by you
+to the licensor shall be licensed under this Agreement without any additional
+terms or conditions. You represent that you are lawfully entitled to grant the
+above license.
+
+4. Trademark Restriction
+This license does not grant permission to use the trade names, trademarks,
+service marks, or product names of the licensor, except as required for
+reasonable and customary use in describing the origin of the Software.
+
+5. No AI/ML Training Without Separate License
+The rights granted herein explicitly exclude the right to train any machine
+learning, artificial intelligence, or large language model using the Software
+or outputs derived from the Software, unless a separate commercial license is
+obtained from the copyright holder. For inquiries: [contact email].
+
+6. Ethical Use Restriction
+Permission is granted solely for uses that do not violate internationally
+recognized human rights laws. Use of the Software is prohibited for:
+- Mass surveillance systems operated by states without independent judicial oversight
+- Autonomous weapons systems designed to kill without direct human control
+- Systems intended to restrict lawful dissent, expression, or association
+
+7. No Warranty
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+8. Limitation of Liability
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE.
