@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NullName DB - Settings</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/ui/base.css">
+    <style>
+        /* Settings Page Specific Styles */
+        .settings-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .settings-header {
+            margin-bottom: 2rem;
+        }
+
+        .settings-header h1 {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .settings-header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .settings-section {
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-lg);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-header i {
+            font-size: 1.25rem;
+            color: var(--accent-primary);
+            width: 1.75rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.1rem;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .section-header .section-desc {
+            margin-left: auto;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .section-content {
+            padding: 1.5rem;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-secondary);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-info {
+            flex: 1;
+        }
+
+        .setting-label {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .setting-label i {
+            color: var(--accent-primary);
+            font-size: 0.9rem;
+            width: 1.25rem;
+        }
+
+        .setting-description {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .setting-value {
+            min-width: 200px;
+            text-align: right;
+        }
+
+        select, input[type="text"], input[type="password"], input[type="number"], input[type="email"] {
+            background: var(--bg-input);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            padding: 0.5rem 0.75rem;
+            color: var(--text-primary);
+            width: 100%;
+            max-width: 250px;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .btn-save {
+            background: var(--accent-primary);
+            border: none;
+            color: var(--bg-primary);
+            padding: 0.5rem 1.25rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-save:hover {
+            background: var(--accent-secondary);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: transparent;
+            border: 1px solid var(--accent-error);
+            color: var(--accent-error);
+        }
+
+        .btn-danger:hover {
+            background: var(--accent-error);
+            color: white;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--text-muted);
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--accent-primary);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .danger-zone {
+            border: 1px solid var(--accent-error);
+            background: rgba(255, 0, 127, 0.05);
+        }
+
+        .danger-zone .section-header {
+            border-bottom-color: var(--accent-error);
+        }
+
+        .danger-zone .section-header i {
+            color: var(--accent-error);
+        }
+
+        .api-key-display {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: 0.75rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            word-break: break-all;
+            margin-top: 0.5rem;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--accent-primary);
+            cursor: pointer;
+            margin-left: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .settings-container {
+                padding: 1rem;
+            }
+            
+            .setting-item {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .setting-value {
+                text-align: left;
+                width: 100%;
+            }
+            
+            select, input {
+                max-width: 100%;
+            }
+            
+            .section-header {
+                flex-wrap: wrap;
+            }
+            
+            .section-header .section-desc {
+                margin-left: 2.5rem;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-container">
+        <div class="settings-header">
+            <h1><i class="fa fa-cog"></i> Settings</h1>
+            <p>Manage your account preferences and system configuration</p>
+        </div>
+
+        <!-- Profile Settings -->
+        <div class="settings-section">
+            <div class="section-header">
+                <i class="fa fa-user-circle"></i>
+                <h2>Profile Settings</h2>
+                <span class="section-desc">Manage your personal information</span>
+            </div>
+            <div class="section-content">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-user"></i>
+                            Username
+                        </div>
+                        <div class="setting-description">Your unique identifier</div>
+                    </div>
+                    <div class="setting-value">
+                        <span id="displayUsername" style="font-family: monospace;">-</span>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-tag"></i>
+                            Role
+                        </div>
+                        <div class="setting-description">Your access level</div>
+                    </div>
+                    <div class="setting-value">
+                        <span id="displayRole" class="role-badge">-</span>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-envelope"></i>
+                            Email Address
+                        </div>
+                        <div class="setting-description">Used for notifications and password recovery</div>
+                    </div>
+                    <div class="setting-value">
+                        <input type="email" id="profileEmail" placeholder="your@email.com">
+                        <button id="saveEmailBtn" class="btn-save" style="margin-top: 0.5rem;">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Settings -->
+        <div class="settings-section">
+            <div class="section-header">
+                <i class="fa fa-lock"></i>
+                <h2>Security</h2>
+                <span class="section-desc">Manage your password and security options</span>
+            </div>
+            <div class="section-content">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-key"></i>
+                            Change Password
+                        </div>
+                        <div class="setting-description">Update your account password</div>
+                    </div>
+                    <div class="setting-value">
+                        <button id="changePasswordBtn" class="btn-save">Change Password</button>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-clock-o"></i>
+                            Session Timeout
+                        </div>
+                        <div class="setting-description">Auto logout after inactivity (minutes)</div>
+                    </div>
+                    <div class="setting-value">
+                        <input type="number" id="sessionTimeout" min="5" max="1440" value="60">
+                        <button id="saveSessionBtn" class="btn-save" style="margin-top: 0.5rem;">Save</button>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-exchange"></i>
+                            Active Sessions
+                        </div>
+                        <div class="setting-description">View and manage your active sessions</div>
+                    </div>
+                    <div class="setting-value">
+                        <button id="viewSessionsBtn" class="btn-save">View Sessions</button>
+                        <button id="terminateAllSessionsBtn" class="btn-save btn-danger" style="margin-left: 0.5rem;">Terminate All</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Keys -->
+        <div class="settings-section">
+            <div class="section-header">
+                <i class="fa fa-key"></i>
+                <h2>API Keys</h2>
+                <span class="section-desc">Manage API access tokens</span>
+            </div>
+            <div class="section-content">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-plus-circle"></i>
+                            Generate New API Key
+                        </div>
+                        <div class="setting-description">Create a new API key for programmatic access</div>
+                    </div>
+                    <div class="setting-value">
+                        <button id="generateApiKeyBtn" class="btn-save">Generate</button>
+                    </div>
+                </div>
+                <div id="apiKeysList" style="margin-top: 1rem;">
+                    <!-- API keys will be listed here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Interface Settings -->
+        <div class="settings-section">
+            <div class="section-header">
+                <i class="fa fa-desktop"></i>
+                <h2>Interface</h2>
+                <span class="section-desc">Customize your experience</span>
+            </div>
+            <div class="section-content">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-moon-o"></i>
+                            Theme
+                        </div>
+                        <div class="setting-description">Choose between dark and light theme</div>
+                    </div>
+                    <div class="setting-value">
+                        <select id="themeSelect">
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-code"></i>
+                            Default Query Format
+                        </div>
+                        <div class="setting-description">Default response format for queries</div>
+                    </div>
+                    <div class="setting-value">
+                        <select id="defaultFormatSelect">
+                            <option value="json">JSON</option>
+                            <option value="text">Plain Text</option>
+                            <option value="table">Table</option>
+                            <option value="csv">CSV</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-history"></i>
+                            Query History Limit
+                        </div>
+                        <div class="setting-description">Maximum number of queries to remember</div>
+                    </div>
+                    <div class="setting-value">
+                        <input type="number" id="historyLimit" min="10" max="500" value="100">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Settings (Admin Only) -->
+        <div id="adminSettings" class="settings-section" style="display: none;">
+            <div class="section-header">
+                <i class="fa fa-server"></i>
+                <h2>System Settings</h2>
+                <span class="section-desc">Admin only - System configuration</span>
+            </div>
+            <div class="section-content">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-database"></i>
+                            Database Path
+                        </div>
+                        <div class="setting-description">Location where data is stored</div>
+                    </div>
+                    <div class="setting-value">
+                        <span id="dbPath" style="font-family: monospace;">-</span>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-hdd-o"></i>
+                            Storage Usage
+                        </div>
+                        <div class="setting-description">Current database size</div>
+                    </div>
+                    <div class="setting-value">
+                        <span id="storageUsage">-</span>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-refresh"></i>
+                            Auto Backup
+                        </div>
+                        <div class="setting-description">Automatically backup database</div>
+                    </div>
+                    <div class="setting-value">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoBackupToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-trash-o"></i>
+                            Cleanup Old Data
+                        </div>
+                        <div class="setting-description">Remove temporary files and old logs</div>
+                    </div>
+                    <div class="setting-value">
+                        <button id="cleanupBtn" class="btn-save">Run Cleanup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="settings-section danger-zone">
+            <div class="section-header">
+                <i class="fa fa-exclamation-triangle"></i>
+                <h2>Danger Zone</h2>
+                <span class="section-desc">Irreversible actions</span>
+            </div>
+            <div class="section-content">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-database"></i>
+                            Clear All Data
+                        </div>
+                        <div class="setting-description">Permanently delete all databases and files</div>
+                    </div>
+                    <div class="setting-value">
+                        <button id="clearAllDataBtn" class="btn-save btn-danger">Clear All Data</button>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-refresh"></i>
+                            Factory Reset
+                        </div>
+                        <div class="setting-description">Reset everything to initial state</div>
+                    </div>
+                    <div class="setting-value">
+                        <button id="factoryResetBtn" class="btn-save btn-danger">Factory Reset</button>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-label">
+                            <i class="fa fa-user-times"></i>
+                            Delete Account
+                        </div>
+                        <div class="setting-description">Permanently delete your account and all associated data</div>
+                    </div>
+                    <div class="setting-value">
+                        <button id="deleteAccountBtn" class="btn-save btn-danger">Delete Account</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save All Changes -->
+        <div style="text-align: right; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-primary);">
+            <button id="saveAllBtn" class="btn-save" style="padding: 0.75rem 2rem;">
+                <i class="fa fa-save"></i> Save All Changes
+            </button>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="passwordModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Change Password</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Current Password</label>
+                    <input type="password" id="currentPassword" placeholder="Enter current password">
+                </div>
+                <div class="input-group">
+                    <label>New Password</label>
+                    <input type="password" id="newPassword" placeholder="Enter new password (min 4 characters)">
+                </div>
+                <div class="input-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="confirmNewPassword" placeholder="Confirm new password">
+                </div>
+                <div id="passwordError" class="error-message" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="changePasswordConfirmBtn" class="btn-save">Change Password</button>
+                <button id="passwordModalCancel" class="btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sessionsModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Active Sessions</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="sessionsList"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="sessionsModalClose" class="btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="apiKeyModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>New API Key</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Save this key now. It will not be shown again.</p>
+                <div class="api-key-display" id="newApiKey"></div>
+                <button id="copyApiKeyBtn" class="btn-save" style="margin-top: 0.5rem;">Copy to Clipboard</button>
+            </div>
+            <div class="modal-footer">
+                <button id="apiKeyModalClose" class="btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal-content {
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-lg);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: auto;
+        }
+        .modal-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            margin: 0;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+        .modal-body {
+            padding: 1.5rem;
+        }
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-primary);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 0.85rem;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 0.5rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+        }
+        .error-message {
+            color: var(--accent-error);
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+        .role-badge {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            padding: 0.2rem 0.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .api-key-item {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .session-item {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+
+    <script src="/ui/session.js"></script>
+    <script>
+        // ============================================
+        // DOM Elements
+        // ============================================
+        const displayUsername = document.getElementById('displayUsername');
+        const displayRole = document.getElementById('displayRole');
+        const profileEmail = document.getElementById('profileEmail');
+        const saveEmailBtn = document.getElementById('saveEmailBtn');
+        const changePasswordBtn = document.getElementById('changePasswordBtn');
+        const sessionTimeout = document.getElementById('sessionTimeout');
+        const saveSessionBtn = document.getElementById('saveSessionBtn');
+        const viewSessionsBtn = document.getElementById('viewSessionsBtn');
+        const terminateAllSessionsBtn = document.getElementById('terminateAllSessionsBtn');
+        const generateApiKeyBtn = document.getElementById('generateApiKeyBtn');
+        const apiKeysList = document.getElementById('apiKeysList');
+        const themeSelect = document.getElementById('themeSelect');
+        const defaultFormatSelect = document.getElementById('defaultFormatSelect');
+        const historyLimit = document.getElementById('historyLimit');
+        const autoBackupToggle = document.getElementById('autoBackupToggle');
+        const cleanupBtn = document.getElementById('cleanupBtn');
+        const clearAllDataBtn = document.getElementById('clearAllDataBtn');
+        const factoryResetBtn = document.getElementById('factoryResetBtn');
+        const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+        const saveAllBtn = document.getElementById('saveAllBtn');
+        const adminSettings = document.getElementById('adminSettings');
+        const dbPath = document.getElementById('dbPath');
+        const storageUsage = document.getElementById('storageUsage');
+
+        // Modal elements
+        const passwordModal = document.getElementById('passwordModal');
+        const sessionsModal = document.getElementById('sessionsModal');
+        const apiKeyModal = document.getElementById('apiKeyModal');
+
+        // ============================================
+        // Helper Functions
+        // ============================================
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `<div class="notification-content">${message}</div>`;
+            notification.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: var(--bg-panel);
+                backdrop-filter: blur(20px);
+                border: 1px solid var(--border-primary);
+                border-radius: var(--radius-md);
+                padding: 0.75rem 1.25rem;
+                color: ${type === 'error' ? 'var(--accent-error)' : type === 'success' ? 'var(--accent-secondary)' : 'var(--text-primary)'};
+                z-index: 3000;
+                animation: slideIn 0.3s ease;
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        async function apiRequest(endpoint, options = {}) {
+            const session = localStorage.getItem('nullname_session');
+            const response = await fetch(endpoint, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Session': session,
+                    ...options.headers
+                }
+            });
+            return response.json();
+        }
+
+        // ============================================
+        // Load User Data
+        // ============================================
+        async function loadUserData() {
+            try {
+                const userStr = localStorage.getItem('nullname_user');
+                if (userStr) {
+                    const user = JSON.parse(userStr);
+                    displayUsername.textContent = user.username || '-';
+                    displayRole.textContent = user.role || 'user';
+                    
+                    if (user.role === 'admin' || user.role === 'root') {
+                        adminSettings.style.display = 'block';
+                    }
+                }
+                
+                // Load profile
+                const profile = await apiRequest('/q?q=get.user.profile');
+                if (profile.email) {
+                    profileEmail.value = profile.email;
+                }
+                
+                // Load system stats
+                const stats = await apiRequest('/q?q=stats');
+                if (stats.storage) {
+                    storageUsage.textContent = stats.storage.totalSizeMB || '0 MB';
+                }
+                if (stats.databasePath) {
+                    dbPath.textContent = stats.databasePath;
+                }
+                
+                // Load settings from localStorage
+                const savedTheme = localStorage.getItem('nullname_theme') || 'dark';
+                themeSelect.value = savedTheme;
+                
+                const savedFormat = localStorage.getItem('nullname_format') || 'json';
+                defaultFormatSelect.value = savedFormat;
+                
+                const savedHistoryLimit = localStorage.getItem('nullname_history_limit') || 100;
+                historyLimit.value = savedHistoryLimit;
+                
+                const savedSessionTimeout = localStorage.getItem('nullname_session_timeout') || 60;
+                sessionTimeout.value = savedSessionTimeout;
+                
+                // Load API keys
+                await loadApiKeys();
+                
+            } catch (error) {
+                console.error('Failed to load user data:', error);
+            }
+        }
+
+        async function loadApiKeys() {
+            try {
+                const data = await apiRequest('/q?q=token.list');
+                if (data.tokens && apiKeysList) {
+                    apiKeysList.innerHTML = '<h4 style="margin-bottom: 0.5rem; font-size: 0.85rem;">Your API Keys</h4>';
+                    data.tokens.forEach(token => {
+                        const div = document.createElement('div');
+                        div.className = 'api-key-item';
+                        div.innerHTML = `
+                            <span style="font-family: monospace; font-size: 0.8rem;">${token.name || token.id}</span>
+                            <button class="revoke-key-btn" data-id="${token.id}" style="background: none; border: none; color: var(--accent-error); cursor: pointer;">
+                                <i class="fa fa-trash"></i> Revoke
+                            </button>
+                        `;
+                        apiKeysList.appendChild(div);
+                    });
+                    
+                    document.querySelectorAll('.revoke-key-btn').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            const id = btn.dataset.id;
+                            if (confirm('Revoke this API key?')) {
+                                await apiRequest(`/q?q=token.revoke.${id}`);
+                                showNotification('API key revoked', 'success');
+                                loadApiKeys();
+                            }
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load API keys:', error);
+            }
+        }
+
+        // ============================================
+        // Event Handlers
+        // ============================================
+        
+        // Change Password
+        changePasswordBtn.addEventListener('click', () => {
+            passwordModal.style.display = 'flex';
+        });
+        
+        document.getElementById('changePasswordConfirmBtn')?.addEventListener('click', async () => {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmNewPassword').value;
+            const passwordError = document.getElementById('passwordError');
+            
+            if (!currentPassword || !newPassword) {
+                passwordError.textContent = 'Please fill all fields';
+                passwordError.style.display = 'block';
+                return;
+            }
+            
+            if (newPassword.length < 4) {
+                passwordError.textContent = 'New password must be at least 4 characters';
+                passwordError.style.display = 'block';
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                passwordError.textContent = 'Passwords do not match';
+                passwordError.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const result = await apiRequest(`/q?q=user.changepass.${encodeURIComponent(currentPassword)}.${encodeURIComponent(newPassword)}`);
+                if (result.success) {
+                    showNotification('Password changed successfully', 'success');
+                    passwordModal.style.display = 'none';
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmNewPassword').value = '';
+                    passwordError.style.display = 'none';
+                } else {
+                    passwordError.textContent = result.error || 'Failed to change password';
+                    passwordError.style.display = 'block';
+                }
+            } catch (error) {
+                passwordError.textContent = 'Network error';
+                passwordError.style.display = 'block';
+            }
+        });
+        
+        // Generate API Key
+        generateApiKeyBtn.addEventListener('click', async () => {
+            const result = await apiRequest('/q?q=token.create');
+            if (result.token) {
+                document.getElementById('newApiKey').textContent = result.token;
+                apiKeyModal.style.display = 'flex';
+                loadApiKeys();
+            } else {
+                showNotification(result.error || 'Failed to generate API key', 'error');
+            }
+        });
+        
+        document.getElementById('copyApiKeyBtn')?.addEventListener('click', () => {
+            const apiKey = document.getElementById('newApiKey').textContent;
+            navigator.clipboard.writeText(apiKey);
+            showNotification('Copied to clipboard', 'success');
+        });
+        
+        // View Sessions
+        viewSessionsBtn.addEventListener('click', async () => {
+            const sessions = await apiRequest('/q?q=session.list');
+            const sessionsList = document.getElementById('sessionsList');
+            if (sessionsList) {
+                sessionsList.innerHTML = '';
+                if (sessions.sessions && sessions.sessions.length > 0) {
+                    sessions.sessions.forEach(s => {
+                        const div = document.createElement('div');
+                        div.className = 'session-item';
+                        div.innerHTML = `
+                            <div><strong>ID:</strong> ${s.id}</div>
+                            <div><strong>Created:</strong> ${new Date(s.created).toLocaleString()}</div>
+                            <div><strong>Last Active:</strong> ${new Date(s.lastActive).toLocaleString()}</div>
+                            <div><strong>IP:</strong> ${s.ip || 'unknown'}</div>
+                        `;
+                        sessionsList.appendChild(div);
+                    });
+                } else {
+                    sessionsList.innerHTML = '<p>No active sessions</p>';
+                }
+            }
+            sessionsModal.style.display = 'flex';
+        });
+        
+        // Save Email
+        saveEmailBtn.addEventListener('click', async () => {
+            const email = profileEmail.value;
+            const result = await apiRequest(`/q?q=user.update.email.${encodeURIComponent(email)}`);
+            if (result.success) {
+                showNotification('Email updated', 'success');
+            } else {
+                showNotification(result.error || 'Failed to update email', 'error');
+            }
+        });
+        
+        // Save All Settings
+        saveAllBtn.addEventListener('click', () => {
+            localStorage.setItem('nullname_theme', themeSelect.value);
+            localStorage.setItem('nullname_format', defaultFormatSelect.value);
+            localStorage.setItem('nullname_history_limit', historyLimit.value);
+            localStorage.setItem('nullname_session_timeout', sessionTimeout.value);
+            
+            // Apply theme
+            if (themeSelect.value === 'light') {
+                document.body.classList.add('light-theme');
+            } else {
+                document.body.classList.remove('light-theme');
+            }
+            
+            showNotification('Settings saved', 'success');
+        });
+        
+        // Cleanup
+        cleanupBtn.addEventListener('click', async () => {
+            if (confirm('Clean up temporary files and old logs?')) {
+                const result = await apiRequest('/q?q=admin.cleanup', { method: 'POST' });
+                showNotification(`Cleaned ${result.deleted || 0} files`, 'success');
+            }
+        });
+        
+        // Danger Zone Actions
+        clearAllDataBtn.addEventListener('click', async () => {
+            if (confirm('⚠️ WARNING: This will delete ALL data. Type "DELETE" to confirm:')) {
+                const confirmText = prompt('Type "DELETE" to confirm:');
+                if (confirmText === 'DELETE') {
+                    const result = await apiRequest('/q?q=admin.clear.all', { method: 'POST' });
+                    showNotification('All data cleared', 'success');
+                    setTimeout(() => window.location.reload(), 2000);
+                }
+            }
+        });
+        
+        factoryResetBtn.addEventListener('click', async () => {
+            if (confirm('⚠️ FACTORY RESET: This will reset everything. Type "RESET" to confirm:')) {
+                const confirmText = prompt('Type "RESET" to confirm:');
+                if (confirmText === 'RESET') {
+                    const result = await apiRequest('/q?q=admin.factory.reset', { method: 'POST' });
+                    showNotification('Factory reset completed', 'success');
+                    setTimeout(() => window.location.href = '/login', 2000);
+                }
+            }
+        });
+        
+        deleteAccountBtn.addEventListener('click', async () => {
+            if (confirm('⚠️ Delete your account? This cannot be undone. Type "DELETE" to confirm:')) {
+                const confirmText = prompt('Type "DELETE" to confirm:');
+                if (confirmText === 'DELETE') {
+                    const result = await apiRequest('/q?q=user.delete', { method: 'POST' });
+                    showNotification('Account deleted', 'success');
+                    localStorage.clear();
+                    setTimeout(() => window.location.href = '/login', 2000);
+                }
+            }
+        });
+        
+        // Modal Close Handlers
+        document.querySelectorAll('.modal-close, #passwordModalCancel, #sessionsModalClose, #apiKeyModalClose').forEach(btn => {
+            btn.addEventListener('click', () => {
+                passwordModal.style.display = 'none';
+                sessionsModal.style.display = 'none';
+                apiKeyModal.style.display = 'none';
+            });
+        });
+        
+        // Theme change preview
+        themeSelect.addEventListener('change', () => {
+            if (themeSelect.value === 'light') {
+                document.body.classList.add('light-theme');
+            } else {
+                document.body.classList.remove('light-theme');
+            }
+        });
+        
+        // Initialize
+        loadUserData();
+        
+        // Close modals on outside click
+        window.addEventListener('click', (e) => {
+            if (e.target === passwordModal) passwordModal.style.display = 'none';
+            if (e.target === sessionsModal) sessionsModal.style.display = 'none';
+            if (e.target === apiKeyModal) apiKeyModal.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
