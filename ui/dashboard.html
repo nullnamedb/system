@@ -7,14 +7,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="/ui/base.css">
     <style>
-        /* Dashboard Specific Styles */
         .dashboard-container {
             display: flex;
             height: 100vh;
             overflow: hidden;
         }
 
-        /* Sidebar */
         .sidebar {
             width: 280px;
             background: var(--bg-panel);
@@ -42,13 +40,6 @@
         .logo i {
             color: var(--accent-primary);
             font-size: 1.5rem;
-        }
-
-        .logo span {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
         }
 
         .sidebar-nav {
@@ -81,10 +72,6 @@
             border-left: 2px solid var(--accent-primary);
         }
 
-        .nav-item i {
-            width: 1.25rem;
-        }
-
         .sidebar-footer {
             padding: 1.5rem;
             border-top: 1px solid var(--border-primary);
@@ -111,7 +98,6 @@
             font-weight: bold;
         }
 
-        /* Main Content */
         .main-content {
             flex: 1;
             display: flex;
@@ -119,7 +105,6 @@
             overflow: hidden;
         }
 
-        /* Top Bar */
         .top-bar {
             background: var(--bg-panel);
             backdrop-filter: blur(20px);
@@ -139,12 +124,6 @@
             cursor: pointer;
         }
 
-        .top-bar-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
         .format-selector {
             background: var(--bg-input);
             border: 1px solid var(--border-primary);
@@ -154,7 +133,6 @@
             font-size: 0.85rem;
         }
 
-        /* Query Area */
         .query-area {
             padding: 1.5rem;
             border-bottom: 1px solid var(--border-primary);
@@ -165,29 +143,6 @@
             border: 1px solid var(--border-primary);
             border-radius: var(--radius-lg);
             overflow: hidden;
-        }
-
-        .query-toolbar {
-            padding: 0.5rem;
-            border-bottom: 1px solid var(--border-primary);
-            display: flex;
-            gap: 0.5rem;
-            background: var(--bg-tertiary);
-        }
-
-        .query-toolbar button {
-            background: none;
-            border: none;
-            padding: 0.25rem 0.5rem;
-            color: var(--text-muted);
-            cursor: pointer;
-            border-radius: var(--radius-sm);
-            font-size: 0.75rem;
-        }
-
-        .query-toolbar button:hover {
-            background: var(--bg-hover);
-            color: var(--accent-primary);
         }
 
         textarea.query-input {
@@ -215,7 +170,6 @@
             border-top: 1px solid var(--border-primary);
         }
 
-        /* Results Area */
         .results-area {
             flex: 1;
             display: flex;
@@ -230,16 +184,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .results-stats {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .results-actions {
-            display: flex;
-            gap: 0.5rem;
         }
 
         .results-content {
@@ -260,7 +204,6 @@
             margin: 0;
         }
 
-        /* Stats Cards */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -288,7 +231,6 @@
             margin-top: 0.25rem;
         }
 
-        /* Status Bar */
         .status-bar {
             background: var(--bg-tertiary);
             border-top: 1px solid var(--border-primary);
@@ -299,7 +241,6 @@
             color: var(--text-muted);
         }
 
-        /* Mobile Menu */
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -309,76 +250,20 @@
                 transform: translateX(-100%);
                 z-index: 1000;
             }
-
             .sidebar.open {
                 transform: translateX(0);
             }
-
             .menu-toggle {
                 display: block;
             }
-
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
-
-            .top-bar {
-                padding: 0.75rem 1rem;
-            }
-
-            .query-area {
-                padding: 1rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .top-bar-actions {
-                gap: 0.5rem;
-            }
-
-            .format-selector {
-                font-size: 0.75rem;
-                padding: 0.3rem 0.5rem;
-            }
-        }
-
-        /* Loading overlay */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            display: none;
-        }
-
-        .loading-spinner {
-            background: var(--bg-panel);
-            border-radius: var(--radius-lg);
-            padding: 2rem;
-            text-align: center;
-        }
-
-        .loading-spinner i {
-            font-size: 2rem;
-            color: var(--accent-primary);
-            animation: spin 1s linear infinite;
         }
     </style>
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
@@ -388,36 +273,22 @@
             </div>
             <nav class="sidebar-nav">
                 <div class="nav-item active" data-view="dashboard">
-                    <i class="fa fa-tachometer"></i>
-                    <span>Dashboard</span>
+                    <i class="fa fa-tachometer"></i> Dashboard
                 </div>
                 <div class="nav-item" data-view="query">
-                    <i class="fa fa-terminal"></i>
-                    <span>Query Runner</span>
-                </div>
-                <div class="nav-item" data-view="history">
-                    <i class="fa fa-history"></i>
-                    <span>History</span>
-                </div>
-                <div class="nav-item" data-view="favorites">
-                    <i class="fa fa-star"></i>
-                    <span>Favorites</span>
+                    <i class="fa fa-terminal"></i> Query Runner
                 </div>
                 <div class="nav-item" data-view="databases">
-                    <i class="fa fa-database"></i>
-                    <span>Databases</span>
+                    <i class="fa fa-database"></i> Databases
                 </div>
                 <div class="nav-item" data-view="files">
-                    <i class="fa fa-file"></i>
-                    <span>Files</span>
+                    <i class="fa fa-file"></i> Files
                 </div>
                 <div class="nav-item" data-view="backups">
-                    <i class="fa fa-archive"></i>
-                    <span>Backups</span>
+                    <i class="fa fa-archive"></i> Backups
                 </div>
                 <div class="nav-item" data-view="settings">
-                    <i class="fa fa-cog"></i>
-                    <span>Settings</span>
+                    <i class="fa fa-cog"></i> Settings
                 </div>
             </nav>
             <div class="sidebar-footer">
@@ -439,9 +310,7 @@
             </div>
         </aside>
 
-        <!-- Main Content -->
         <main class="main-content">
-            <!-- Top Bar -->
             <div class="top-bar">
                 <button class="menu-toggle" id="menuToggle">
                     <i class="fa fa-bars"></i>
@@ -459,192 +328,75 @@
                 </div>
             </div>
 
-            <!-- Dashboard View -->
             <div id="dashboardView" style="flex: 1; overflow: auto; padding: 1.5rem;">
-                <div class="stats-grid" id="statsGrid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="statDatabases">-</div>
-                        <div class="stat-label">Databases</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="statTables">-</div>
-                        <div class="stat-label">Tables</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="statRecords">-</div>
-                        <div class="stat-label">Records</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="statStorage">-</div>
-                        <div class="stat-label">Storage (MB)</div>
-                    </div>
-                </div>
-
                 <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="statQueries">-</div>
-                        <div class="stat-label">Total Queries</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="statSuccess">-</div>
-                        <div class="stat-label">Success Rate</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="statUptime">-</div>
-                        <div class="stat-label">Uptime</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="statVersion">-</div>
-                        <div class="stat-label">Version</div>
-                    </div>
+                    <div class="stat-card"><div class="stat-value" id="statDatabases">-</div><div class="stat-label">Databases</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statTables">-</div><div class="stat-label">Tables</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statRecords">-</div><div class="stat-label">Records</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statStorage">-</div><div class="stat-label">Storage (MB)</div></div>
                 </div>
-
-                <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1rem; margin-top: 1rem;">
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-value" id="statQueries">-</div><div class="stat-label">Total Queries</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statSuccess">-</div><div class="stat-label">Success Rate</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statUptime">-</div><div class="stat-label">Uptime</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statVersion">-</div><div class="stat-label">Version</div></div>
+                </div>
+                <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1rem;">
                     <h4>Quick Start</h4>
                     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
                         <button class="btn quick-query" data-query="get.">Show All Databases</button>
-                        <button class="btn quick-query" data-query="commit 'test'">Test Commit</button>
                         <button class="btn quick-query" data-query="status">System Status</button>
                         <button class="btn quick-query" data-query="help">Help</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Query View (Hidden by default) -->
             <div id="queryView" style="display: none; flex-direction: column; flex: 1; overflow: hidden;">
                 <div class="query-area">
                     <div class="query-input-container">
-                        <div class="query-toolbar">
-                            <button id="formatJsonBtn" class="format-query-btn active" data-format="json">
-                                <i class="fa fa-code"></i> JSON
-                            </button>
-                            <button id="formatTextBtn" class="format-query-btn" data-format="text">
-                                <i class="fa fa-file-text"></i> TEXT
-                            </button>
-                            <button id="formatTableBtn" class="format-query-btn" data-format="table">
-                                <i class="fa fa-table"></i> TABLE
-                            </button>
-                            <button id="formatCsvBtn" class="format-query-btn" data-format="csv">
-                                <i class="fa fa-file-excel-o"></i> CSV
-                            </button>
-                            <span style="flex:1"></span>
-                            <button id="clearQueryBtn" title="Clear">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </div>
-                        <textarea id="queryInput" class="query-input" placeholder='Enter your query here...&#10;&#10;Examples:&#10;• score=100&#10;• get.users&#10;• add.mydb.users.name.John&#10;• commit "my changes"&#10;• undo&#10;• f1'></textarea>
+                        <textarea id="queryInput" class="query-input" placeholder='Enter your query here...&#10;&#10;Examples:&#10;• get.users&#10;• add.mydb.users.name.John&#10;• commit "my changes"&#10;• undo&#10;• f1'></textarea>
                         <div class="query-actions">
-                            <button id="runQueryBtn" class="btn btn-primary">
-                                <i class="fa fa-play"></i> Run Query
-                            </button>
-                            <button id="saveFavoriteBtn" class="btn">
-                                <i class="fa fa-star"></i> Save Favorite
-                            </button>
-                            <button id="clearResultsBtn" class="btn">
-                                <i class="fa fa-eraser"></i> Clear
-                            </button>
+                            <button id="runQueryBtn" class="btn btn-primary"><i class="fa fa-play"></i> Run Query</button>
+                            <button id="clearResultsBtn" class="btn"><i class="fa fa-eraser"></i> Clear</button>
                         </div>
                     </div>
                 </div>
-
                 <div class="results-area">
                     <div class="results-header">
-                        <div class="results-stats" id="resultsStats">
-                            Ready
-                        </div>
-                        <div class="results-actions">
-                            <button id="copyResultsBtn" class="btn btn-sm" title="Copy">
-                                <i class="fa fa-copy"></i>
-                            </button>
-                            <button id="exportResultsBtn" class="btn btn-sm" title="Export">
-                                <i class="fa fa-download"></i>
-                            </button>
-                        </div>
+                        <div class="results-stats" id="resultsStats">Ready</div>
+                        <div><button id="copyResultsBtn" class="btn btn-sm"><i class="fa fa-copy"></i></button></div>
                     </div>
-                    <div class="results-content" id="resultsContent">
-                        <pre class="results-pre" id="resultsPre">Run a query to see results...</pre>
-                    </div>
+                    <div class="results-content"><pre class="results-pre" id="resultsPre">Run a query to see results...</pre></div>
                 </div>
             </div>
 
-            <!-- History View -->
-            <div id="historyView" style="display: none; flex: 1; overflow: auto; padding: 1.5rem;">
-                <h3><i class="fa fa-history"></i> Query History</h3>
-                <div id="historyList" style="margin-top: 1rem;"></div>
-            </div>
-
-            <!-- Favorites View -->
-            <div id="favoritesView" style="display: none; flex: 1; overflow: auto; padding: 1.5rem;">
-                <h3><i class="fa fa-star"></i> Saved Favorites</h3>
-                <div id="favoritesList" style="margin-top: 1rem;"></div>
-            </div>
-
-            <!-- Databases View -->
             <div id="databasesView" style="display: none; flex: 1; overflow: auto; padding: 1.5rem;">
                 <h3><i class="fa fa-database"></i> Databases</h3>
                 <div id="databasesTree" style="margin-top: 1rem;"></div>
             </div>
 
-            <!-- Files View -->
             <div id="filesView" style="display: none; flex: 1; overflow: auto; padding: 1.5rem;">
                 <h3><i class="fa fa-file"></i> Uploaded Files</h3>
                 <div id="filesList" style="margin-top: 1rem;"></div>
             </div>
 
-            <!-- Backups View -->
             <div id="backupsView" style="display: none; flex: 1; overflow: auto; padding: 1.5rem;">
                 <h3><i class="fa fa-archive"></i> Backups</h3>
-                <button id="createBackupBtn" class="btn btn-primary" style="margin: 1rem 0;">
-                    <i class="fa fa-plus"></i> Create Backup
-                </button>
-                <div id="backupsList" style="margin-top: 1rem;"></div>
+                <button id="createBackupBtn" class="btn btn-primary" style="margin: 1rem 0;"><i class="fa fa-plus"></i> Create Backup</button>
+                <div id="backupsList"></div>
             </div>
 
-            <!-- Settings View -->
             <div id="settingsView" style="display: none; flex: 1; overflow: auto; padding: 1.5rem;">
                 <h3><i class="fa fa-cog"></i> Settings</h3>
-                <div style="max-width: 600px; margin-top: 1rem;">
-                    <div class="setting-item" style="margin-bottom: 1rem;">
-                        <label>Default Query Format</label>
-                        <select id="settingsFormat">
-                            <option value="json">JSON</option>
-                            <option value="text">Plain Text</option>
-                            <option value="table">Table</option>
-                            <option value="csv">CSV</option>
-                        </select>
-                    </div>
-                    <div class="setting-item" style="margin-bottom: 1rem;">
-                        <label>Theme</label>
-                        <select id="settingsTheme">
-                            <option value="dark">Dark</option>
-                            <option value="light">Light</option>
-                        </select>
-                    </div>
-                    <div class="setting-item" style="margin-bottom: 1rem;">
-                        <label>Auto Refresh (seconds)</label>
-                        <input type="number" id="settingsAutoRefresh" min="0" max="300" value="0">
-                        <small>0 = disabled</small>
-                    </div>
+                <div style="max-width: 600px;">
+                    <div style="margin-bottom: 1rem;"><label>Default Format</label><select id="settingsFormat" class="form-control" style="width:100%;padding:0.5rem;"><option value="json">JSON</option><option value="text">Text</option><option value="table">Table</option><option value="csv">CSV</option></select></div>
+                    <div style="margin-bottom: 1rem;"><label>Theme</label><select id="settingsTheme" class="form-control" style="width:100%;padding:0.5rem;"><option value="dark">Dark</option><option value="light">Light</option></select></div>
                     <button id="saveSettingsBtn" class="btn btn-primary">Save Settings</button>
                 </div>
             </div>
 
-            <!-- Status Bar -->
-            <div class="status-bar">
-                <span id="statusMsg">
-                    <i class="fa fa-circle" style="color: var(--accent-success); font-size: 0.6rem;"></i> Connected
-                </span>
-                <span id="timeMsg"></span>
-            </div>
+            <div class="status-bar"><span id="statusMsg"><i class="fa fa-circle" style="color: var(--accent-success); font-size: 0.6rem;"></i> Connected</span><span id="timeMsg"></span></div>
         </main>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner">
-            <i class="fa fa-spinner fa-spin"></i>
-            <p>Loading...</p>
-        </div>
     </div>
 
     <script src="/ui/session.js"></script>
