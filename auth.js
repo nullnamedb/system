@@ -1,17 +1,12 @@
 // NullName DB - Authentication System
 // No brand. No name. No payment.
 // Version: 1.0.0
-// Lines: 550+
 
 const fs = require('fs-extra');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
-
-// ============================================
-// AUTHENTICATION SYSTEM CLASS
-// ============================================
 
 class AuthSystem {
     constructor() {
@@ -22,15 +17,10 @@ class AuthSystem {
         this.whitelistFile = path.join(__dirname, 'database', 'whitelist.json');
         this.failedAttempts = new Map();
         this.maxFailedAttempts = 5;
-        this.lockoutTimeMs = 900000; // 15 minutes
+        this.lockoutTimeMs = 900000;
         
-        // Initialize
         this.init();
     }
-
-    // ============================================
-    // INITIALIZATION
-    // ============================================
 
     async init() {
         await this.loadSessions();
@@ -39,7 +29,6 @@ class AuthSystem {
         await this.loadWhitelist();
         await this.cleanupExpiredSessions();
         
-        // Start cleanup interval (every hour)
         setInterval(() => {
             this.cleanupExpiredSessions();
         }, 3600000);
@@ -62,7 +51,6 @@ class AuthSystem {
     async loadUsers() {
         try {
             if (!await fs.pathExists(this.usersFile)) {
-                // Create default admin user
                 const saltRounds = 10;
                 const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASS || 'nullname2025', saltRounds);
                 
@@ -73,8 +61,7 @@ class AuthSystem {
                         created: new Date().toISOString(),
                         lastLogin: null,
                         lastIp: null,
-                        active: true,
-                        permissions: ['*']
+                        active: true
                     }
                 };
                 await fs.writeJson(this.usersFile, defaultUsers);
@@ -104,10 +91,6 @@ class AuthSystem {
             console.error('Failed to load whitelist:', error);
         }
     }
-
-    // ============================================
-    // SESSION MANAGEMENT
-    // ============================================
 
     async saveSessions() {
         try {
@@ -143,8 +126,7 @@ class AuthSystem {
             key: sessionKey,
             user: {
                 username: user.username,
-                role: user.role,
-                permissions: user.permissions || this.getDefaultPermissions(user.role)
+                role: user.role
             },
             created: Date.now(),
             expires: Date.now() + expiresIn,
@@ -167,13 +149,11 @@ class AuthSystem {
             return null;
         }
         
-        // Check expiration
         if (session.expires && session.expires < Date.now()) {
             this.destroySession(sessionKey);
             return null;
         }
         
-        // Update last used
         session.lastUsed = Date.now();
         session.requests++;
         this.saveSessions();
@@ -202,10 +182,6 @@ class AuthSystem {
         }
         return count;
     }
-
-    // ============================================
-    // USER MANAGEMENT
-    // ============================================
 
     async getUser(username) {
         try {
@@ -260,7 +236,6 @@ class AuthSystem {
             users[username] = {
                 password: hashedPassword,
                 role: role,
-                permissions: this.getDefaultPermissions(role),
                 created: new Date().toISOString(),
                 createdBy: createdBy,
                 lastLogin: null,
@@ -282,34 +257,8 @@ class AuthSystem {
         }
     }
 
-    async updateUser(username, updates) {
-        try {
-            const users = await fs.readJson(this.usersFile);
-            
-            if (!users[username]) {
-                return { success: false, error: 'User not found' };
-            }
-            
-            const allowedUpdates = ['role', 'permissions', 'active'];
-            for (const key of allowedUpdates) {
-                if (updates[key] !== undefined) {
-                    users[username][key] = updates[key];
-                }
-            }
-            
-            users[username].updated = new Date().toISOString();
-            await fs.writeJson(this.usersFile, users);
-            
-            return { success: true, message: 'User updated' };
-            
-        } catch (error) {
-            return { success: false, error: error.message };
-        }
-    }
-
     async deleteUser(username, deletedBy = null) {
         try {
-            // Prevent deleting the last admin
             if (username === (process.env.ADMIN_USER || 'admin')) {
                 return { success: false, error: 'Cannot delete the primary admin user' };
             }
@@ -320,7 +269,6 @@ class AuthSystem {
                 return { success: false, error: 'User not found' };
             }
             
-            // Check if there's at least one admin left
             if (users[username].role === 'admin') {
                 let adminCount = 0;
                 for (const [_, userData] of Object.entries(users)) {
@@ -336,7 +284,6 @@ class AuthSystem {
             delete users[username];
             await fs.writeJson(this.usersFile, users);
             
-            // Destroy all sessions for this user
             this.destroyAllUserSessions(username);
             
             return { success: true, message: 'User deleted' };
@@ -371,128 +318,24 @@ class AuthSystem {
                 return { success: false, error: 'Invalid username or password' };
             }
             
-            // Update last login
             user.lastLogin = new Date().toISOString();
             user.lastIp = ip;
-            await this.updateUser(username, { lastLogin: user.lastLogin, lastIp: ip });
             
-            // Clear failed attempts
+            const users = await fs.readJson(this.usersFile);
+            users[username] = user;
+            await fs.writeJson(this.usersFile, users);
+            
             this.clearFailedAttempts(username);
             
             return {
                 success: true,
                 username: username,
-                role: user.role,
-                permissions: user.permissions || this.getDefaultPermissions(user.role)
+                role: user.role
             };
             
         } catch (error) {
             return { success: false, error: error.message };
         }
-    }
-
-    async changePassword(username, oldPassword, newPassword, changedBy = null) {
-        try {
-            const user = await this.getUser(username);
-            
-            if (!user) {
-                return { success: false, error: 'User not found' };
-            }
-            
-            // If not admin changing someone else's password, verify old password
-            if (!changedBy || changedBy !== username) {
-                const passwordMatch = await bcrypt.compare(oldPassword, user.password);
-                if (!passwordMatch) {
-                    return { success: false, error: 'Current password is incorrect' };
-                }
-            }
-            
-            if (newPassword.length < 4) {
-                return { success: false, error: 'New password must be at least 4 characters' };
-            }
-            
-            const saltRounds = 10;
-            const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-            
-            user.password = hashedPassword;
-            user.passwordChanged = new Date().toISOString();
-            user.passwordChangedBy = changedBy || username;
-            
-            await this.updateUser(username, { password: hashedPassword });
-            
-            // Destroy all sessions except current
-            if (changedBy === username) {
-                // Keep current session? This would need session tracking
-            }
-            
-            return { success: true, message: 'Password changed successfully' };
-            
-        } catch (error) {
-            return { success: false, error: error.message };
-        }
-    }
-
-    async setUserRole(username, newRole, changedBy = null) {
-        const validRoles = ['admin', 'editor', 'viewer', 'user'];
-        
-        if (!validRoles.includes(newRole)) {
-            return { success: false, error: 'Invalid role. Valid roles: ' + validRoles.join(', ') };
-        }
-        
-        // Prevent demoting the last admin
-        if (username === (process.env.ADMIN_USER || 'admin') && newRole !== 'admin') {
-            return { success: false, error: 'Cannot change the primary admin role' };
-        }
-        
-        return await this.updateUser(username, { role: newRole });
-    }
-
-    // ============================================
-    // PERMISSIONS
-    // ============================================
-
-    getDefaultPermissions(role) {
-        const permissions = {
-            'root': ['*'],
-            'admin': ['read', 'write', 'delete', 'create', 'manage_users', 'manage_system', 'backup', 'restore', 'force'],
-            'editor': ['read', 'write', 'update', 'create', 'backup'],
-            'viewer': ['read'],
-            'user': ['read', 'write']
-        };
-        
-        return permissions[role] || permissions['user'];
-    }
-
-    hasPermission(user, action) {
-        if (!user || !user.permissions) {
-            return false;
-        }
-        
-        if (user.permissions.includes('*')) {
-            return true;
-        }
-        
-        const actionPermissions = {
-            'read': ['read', 'write', 'update', 'delete', 'create', 'admin'],
-            'write': ['write', 'update', 'delete', 'create', 'admin'],
-            'update': ['update', 'write', 'admin'],
-            'delete': ['delete', 'admin'],
-            'create': ['create', 'admin'],
-            'backup': ['backup', 'admin'],
-            'restore': ['restore', 'admin'],
-            'manage_users': ['manage_users', 'admin'],
-            'force': ['force', 'admin']
-        };
-        
-        const required = actionPermissions[action] || [action];
-        
-        for (const perm of required) {
-            if (user.permissions.includes(perm)) {
-                return true;
-            }
-        }
-        
-        return false;
     }
 
     // ============================================
@@ -503,18 +346,8 @@ class AuthSystem {
         try {
             const blacklist = await fs.readJson(this.blacklistFile);
             
-            // Check exact match
             if (blacklist.ips && blacklist.ips.includes(ip)) {
                 return true;
-            }
-            
-            // Check CIDR ranges (simple)
-            if (blacklist.ranges) {
-                for (const range of blacklist.ranges) {
-                    if (this.ipInRange(ip, range)) {
-                        return true;
-                    }
-                }
             }
             
             return false;
@@ -531,35 +364,10 @@ class AuthSystem {
                 return true;
             }
             
-            if (whitelist.ranges) {
-                for (const range of whitelist.ranges) {
-                    if (this.ipInRange(ip, range)) {
-                        return true;
-                    }
-                }
-            }
-            
             return false;
         } catch (error) {
             return false;
         }
-    }
-
-    ipInRange(ip, cidr) {
-        // Simple IP range check (can be expanded)
-        const [range, bits] = cidr.split('/');
-        if (!bits) return ip === range;
-        
-        // Basic implementation
-        const ipParts = ip.split('.').map(Number);
-        const rangeParts = range.split('.').map(Number);
-        const maskBits = parseInt(bits);
-        const mask = ~((1 << (32 - maskBits)) - 1) >>> 0;
-        
-        const ipInt = (ipParts[0] << 24) | (ipParts[1] << 16) | (ipParts[2] << 8) | ipParts[3];
-        const rangeInt = (rangeParts[0] << 24) | (rangeParts[1] << 16) | (rangeParts[2] << 8) | rangeParts[3];
-        
-        return (ipInt & mask) === (rangeInt & mask);
     }
 
     async addToBlacklist(ip, reason = null, expiresIn = null) {
@@ -640,25 +448,11 @@ class AuthSystem {
     // ============================================
 
     async authenticate(sessionKey, apiKey, ip, query, userAgent = null) {
-        // Check IP blacklist
         const isBlocked = await this.isIpBlocked(ip);
         if (isBlocked) {
             return { allowed: false, message: 'IP address is blocked' };
         }
         
-        // API Key authentication
-        if (apiKey) {
-            const apiUser = await this.validateApiKey(apiKey);
-            if (apiUser) {
-                return {
-                    allowed: true,
-                    user: apiUser,
-                    method: 'api_key'
-                };
-            }
-        }
-        
-        // Session authentication
         if (sessionKey) {
             const session = this.getSession(sessionKey);
             if (session && session.user) {
@@ -671,23 +465,13 @@ class AuthSystem {
             }
         }
         
-        // Check if it's a public read operation
-        if (this.isPublicOperation(query)) {
-            return {
-                allowed: true,
-                user: { role: 'guest', username: 'guest', permissions: ['read'] },
-                method: 'public'
-            };
-        }
-        
-        // Extract credentials from query (login/signup)
         const credentials = this.extractCredentials(query);
         if (credentials) {
             if (credentials.signup) {
                 const result = await this.createUser(credentials.username, credentials.password, 'user', ip);
                 if (result.success) {
                     const session = this.createSession(
-                        { username: credentials.username, role: 'user', permissions: this.getDefaultPermissions('user') },
+                        { username: credentials.username, role: 'user' },
                         ip,
                         userAgent
                     );
@@ -703,7 +487,7 @@ class AuthSystem {
                 const result = await this.validateUser(credentials.username, credentials.password, ip);
                 if (result.success) {
                     const session = this.createSession(
-                        { username: result.username, role: result.role, permissions: result.permissions },
+                        { username: result.username, role: result.role },
                         ip,
                         userAgent
                     );
@@ -718,11 +502,10 @@ class AuthSystem {
             }
         }
         
-        // Check root key
         if (query && query.includes(`key=${process.env.ROOT_KEY}`)) {
             return {
                 allowed: true,
-                user: { role: 'root', username: 'root', permissions: ['*'] },
+                user: { role: 'root', username: 'root' },
                 method: 'root_key'
             };
         }
@@ -730,74 +513,16 @@ class AuthSystem {
         return { allowed: false, message: 'Authentication required' };
     }
 
-    async validateApiKey(apiKey) {
-        try {
-            const apiKeysFile = path.join(__dirname, 'database', 'api_keys.json');
-            if (!await fs.pathExists(apiKeysFile)) {
-                return null;
-            }
-            
-            const apiKeys = await fs.readJson(apiKeysFile);
-            const keyData = apiKeys[apiKey];
-            
-            if (keyData && (!keyData.expires || keyData.expires > Date.now())) {
-                return {
-                    username: keyData.username,
-                    role: keyData.role,
-                    permissions: keyData.permissions || this.getDefaultPermissions(keyData.role)
-                };
-            }
-            
-            return null;
-        } catch (error) {
-            return null;
-        }
-    }
-
-    async createApiKey(username, role, expiresIn = null) {
-        try {
-            const apiKeysFile = path.join(__dirname, 'database', 'api_keys.json');
-            let apiKeys = {};
-            
-            if (await fs.pathExists(apiKeysFile)) {
-                apiKeys = await fs.readJson(apiKeysFile);
-            }
-            
-            const apiKey = 'api_' + crypto.randomBytes(24).toString('hex');
-            
-            apiKeys[apiKey] = {
-                username: username,
-                role: role,
-                permissions: this.getDefaultPermissions(role),
-                created: Date.now(),
-                expires: expiresIn ? Date.now() + expiresIn : null
-            };
-            
-            await fs.writeJson(apiKeysFile, apiKeys);
-            
-            return { success: true, apiKey: apiKey };
-        } catch (error) {
-            return { success: false, error: error.message };
-        }
-    }
-
     isPublicOperation(query) {
-        if (!query) return true;
-        
-        const writeCommands = ['=', 'add.', 'update.', 'delete.', 'commit', 'merge', 'branch', 'backup', 'restore', 'force'];
-        const isWrite = writeCommands.some(cmd => query.includes(cmd));
-        
-        return !isWrite;
+        return false;
     }
 
     extractCredentials(query) {
-        // Login pattern: login.username.password
         const loginMatch = query.match(/login\.([^.]+)\.([^.]+)/);
         if (loginMatch) {
             return { username: loginMatch[1], password: loginMatch[2], signup: false };
         }
         
-        // Signup pattern: signup.username.password
         const signupMatch = query.match(/signup\.([^.]+)\.([^.]+)/);
         if (signupMatch) {
             return { username: signupMatch[1], password: signupMatch[2], signup: true };
@@ -805,10 +530,6 @@ class AuthSystem {
         
         return null;
     }
-
-    // ============================================
-    // SESSION INFO & UTILITIES
-    // ============================================
 
     async getSessionInfo(sessionKey) {
         const session = this.sessions.get(sessionKey);
@@ -851,9 +572,5 @@ class AuthSystem {
         };
     }
 }
-
-// ============================================
-// EXPORT
-// ============================================
 
 module.exports = new AuthSystem();

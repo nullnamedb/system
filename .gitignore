@@ -1,0 +1,118 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database files
+database/
+database/*
+database/path/
+database/files/
+database/commits/
+database/branches/
+database/backups/
+database/temp/
+database/users/
+database/logs/
+database/track/
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+access.log
+error.log
+admin.json
+audit.json
+
+# Backups
+*.tar.gz
+*.zip
+backup_*
+*.bak
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+
+# Temp files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# System files
+system.lock
+system_state.json
+system_events.json
+system_metrics.json
+
+# User data
+users.json
+profiles.json
+user_activity.json
+user_settings.json
+user_tokens.json
+sessions.json
+blacklist.json
+whitelist.json
+tags.json
+
+# Tracking
+tracking.json
+analytics.json
+
+# Git state
+git_state.json
+
+# SSL certificates
+*.pem
+*.crt
+*.key
+*.cert
+
+# Production
+dist/
+build/
+coverage/
+.nyc_output/
+
+# Testing
+test/
+tests/
+*.test.js
+*.spec.js
+
+# Misc
+.DS_Store
+*.swp
+*.swo
+*~
+.env
+.env.local
+.env.production
+.env.development
+
+# Installer temp
+installment/temp/
+installment/*.tmp

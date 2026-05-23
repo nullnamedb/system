@@ -1,7 +1,6 @@
 // NullName DB - Internet/Network Request Handler
 // No brand. No name. No payment.
 // Version: 1.0.0
-// Lines: 550+
 
 const fs = require('fs-extra');
 const path = require('path');
@@ -9,38 +8,23 @@ const https = require('https');
 const http = require('http');
 const url = require('url');
 const crypto = require('crypto');
-const { pipeline } = require('stream');
-const { promisify } = require('util');
-const zlib = require('zlib');
-
-const pipelineAsync = promisify(pipeline);
-
-// ============================================
-// INTERNET HANDLER CLASS
-// ============================================
 
 class InternetHandler {
     constructor() {
         this.downloadQueue = [];
         this.isDownloading = false;
-        this.maxConcurrentDownloads = 3;
         this.activeDownloads = 0;
+        this.maxConcurrentDownloads = 3;
         this.downloadTimeout = 30000;
-        this.maxFileSize = 50 * 1024 * 1024; // 50MB
+        this.maxFileSize = 50 * 1024 * 1024;
         this.tempDir = path.join(__dirname, 'database', 'temp');
         this.filesDir = path.join(__dirname, 'database', 'files');
         
-        // Ensure directories exist
         fs.ensureDirSync(this.tempDir);
         fs.ensureDirSync(this.filesDir);
         
-        // Start queue processor
         this.processQueue();
     }
-
-    // ============================================
-    // URL VALIDATION & PARSING
-    // ============================================
 
     isValidUrl(urlString) {
         if (!urlString || typeof urlString !== 'string') {
@@ -74,10 +58,6 @@ class InternetHandler {
         }
     }
 
-    // ============================================
-    // FILE DOWNLOAD METHODS
-    // ============================================
-
     async downloadFile(urlString, options = {}) {
         return new Promise((resolve, reject) => {
             if (!this.isValidUrl(urlString)) {
@@ -87,7 +67,6 @@ class InternetHandler {
 
             const parsedUrl = this.parseUrl(urlString);
             const protocol = parsedUrl.protocol === 'https:' ? https : http;
-            
             const timeout = options.timeout || this.downloadTimeout;
             
             const requestOptions = {
@@ -96,7 +75,7 @@ class InternetHandler {
                 path: parsedUrl.pathname + parsedUrl.search,
                 method: 'GET',
                 headers: {
-                    'User-Agent': 'NullName-DB/1.0 (https://nullname.db)',
+                    'User-Agent': 'NullName-DB/1.0',
                     'Accept': '*/*',
                     'Accept-Encoding': 'gzip, deflate',
                     'Connection': 'keep-alive'
@@ -104,13 +83,11 @@ class InternetHandler {
                 timeout: timeout
             };
             
-            // Add custom headers if provided
             if (options.headers) {
                 Object.assign(requestOptions.headers, options.headers);
             }
             
             const req = protocol.request(requestOptions, (res) => {
-                // Handle redirects
                 if (res.statusCode === 301 || res.statusCode === 302) {
                     const redirectUrl = res.headers.location;
                     if (redirectUrl) {
@@ -149,29 +126,9 @@ class InternetHandler {
                 res.on('end', () => {
                     const buffer = Buffer.concat(chunks);
                     
-                    // Handle decompression if needed
-                    const encoding = res.headers['content-encoding'];
-                    let finalBuffer = buffer;
-                    
-                    if (encoding === 'gzip') {
-                        try {
-                            finalBuffer = zlib.gunzipSync(buffer);
-                        } catch (e) {
-                            reject(new Error('Failed to decompress gzip content'));
-                            return;
-                        }
-                    } else if (encoding === 'deflate') {
-                        try {
-                            finalBuffer = zlib.inflateSync(buffer);
-                        } catch (e) {
-                            reject(new Error('Failed to decompress deflate content'));
-                            return;
-                        }
-                    }
-                    
                     resolve({
-                        buffer: finalBuffer,
-                        size: finalBuffer.length,
+                        buffer: buffer,
+                        size: buffer.length,
                         contentType: res.headers['content-type'],
                         contentLength: contentLength,
                         filename: this.extractFilename(res, parsedUrl),
@@ -199,13 +156,11 @@ class InternetHandler {
     }
 
     extractFilename(res, parsedUrl) {
-        // Try from Content-Disposition header
         const disposition = res.headers['content-disposition'];
         if (disposition) {
             const filenameMatch = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
             if (filenameMatch && filenameMatch[1]) {
                 let filename = filenameMatch[1].replace(/['"]/g, '');
-                // Decode URI component if needed
                 try {
                     filename = decodeURIComponent(filename);
                 } catch (e) {}
@@ -213,7 +168,6 @@ class InternetHandler {
             }
         }
         
-        // Try from URL path
         const pathname = parsedUrl.pathname;
         if (pathname && pathname !== '/') {
             const basename = path.basename(pathname);
@@ -225,18 +179,15 @@ class InternetHandler {
             }
         }
         
-        // Generate from URL hostname
         const hostname = parsedUrl.hostname.replace(/[^a-zA-Z0-9]/g, '_');
         return this.sanitizeFilename(`${hostname}_${Date.now()}.bin`);
     }
 
     sanitizeFilename(filename) {
-        // Remove path traversal and special characters
         let clean = filename.replace(/\.\./g, '');
         clean = clean.replace(/[\\/]/g, '_');
         clean = clean.replace(/[^a-zA-Z0-9_.-]/g, '_');
         
-        // Limit length
         if (clean.length > 200) {
             const ext = path.extname(clean);
             const name = clean.slice(0, 200 - ext.length);
@@ -280,10 +231,6 @@ class InternetHandler {
         return mimeMap[mainType] || '.bin';
     }
 
-    // ============================================
-    // SAVE FILE METHODS
-    // ============================================
-
     async saveFile(buffer, filename, subdir = '') {
         const targetDir = subdir ? path.join(this.filesDir, subdir) : this.filesDir;
         await fs.ensureDir(targetDir);
@@ -291,7 +238,6 @@ class InternetHandler {
         let finalFilename = filename;
         let filePath = path.join(targetDir, finalFilename);
         
-        // Handle duplicate filenames
         let counter = 1;
         while (await fs.pathExists(filePath)) {
             const ext = path.extname(finalFilename);
@@ -314,7 +260,6 @@ class InternetHandler {
 
     async downloadAndSave(urlString, customFilename = null, subdir = '') {
         try {
-            // Validate URL
             if (!this.isValidUrl(urlString)) {
                 return {
                     success: false,
@@ -322,10 +267,8 @@ class InternetHandler {
                 };
             }
             
-            // Download file
             const downloadResult = await this.downloadFile(urlString);
             
-            // Determine filename
             let filename = customFilename;
             if (!filename) {
                 const ext = this.getExtensionFromContentType(
@@ -338,7 +281,6 @@ class InternetHandler {
                 filename = this.sanitizeFilename(customFilename);
             }
             
-            // Save file
             const saveResult = await this.saveFile(downloadResult.buffer, filename, subdir);
             
             return {
@@ -361,10 +303,6 @@ class InternetHandler {
             };
         }
     }
-
-    // ============================================
-    // QUEUE SYSTEM FOR MULTIPLE DOWNLOADS
-    // ============================================
 
     addToQueue(urlString, customFilename = null, subdir = '', callback = null) {
         return new Promise((resolve, reject) => {
@@ -429,7 +367,6 @@ class InternetHandler {
             results[index] = result;
         };
         
-        // Process with concurrency limit
         const batches = [];
         for (let i = 0; i < urls.length; i += concurrency) {
             batches.push(urls.slice(i, i + concurrency));
@@ -446,10 +383,6 @@ class InternetHandler {
             results: results
         };
     }
-
-    // ============================================
-    // FILE MANAGEMENT
-    // ============================================
 
     async getFileInfo(filename, subdir = '') {
         const filePath = subdir ? path.join(this.filesDir, subdir, filename) : path.join(this.filesDir, filename);
@@ -510,7 +443,6 @@ class InternetHandler {
     }
 
     async cleanupTempFiles(maxAgeMs = 3600000) {
-        // Delete temp files older than maxAgeMs (default 1 hour)
         if (!await fs.pathExists(this.tempDir)) {
             return { deleted: 0 };
         }
@@ -531,10 +463,6 @@ class InternetHandler {
         
         return { deleted: deleted };
     }
-
-    // ============================================
-    // HTTP REQUESTS (GET, POST)
-    // ============================================
 
     async httpGet(urlString, options = {}) {
         return new Promise((resolve, reject) => {
@@ -635,40 +563,12 @@ class InternetHandler {
         });
     }
 
-    // ============================================
-    // UTILITY METHODS
-    // ============================================
-
     getFileSizeDisplay(bytes) {
         if (bytes === 0) return '0 B';
         const k = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    async getRemoteFileInfo(urlString) {
-        try {
-            const result = await this.httpGet(urlString, { method: 'HEAD' });
-            
-            if (result.statusCode !== 200) {
-                return null;
-            }
-            
-            const contentLength = result.headers['content-length'];
-            const contentType = result.headers['content-type'];
-            const lastModified = result.headers['last-modified'];
-            
-            return {
-                url: urlString,
-                size: contentLength ? parseInt(contentLength) : null,
-                contentType: contentType,
-                lastModified: lastModified,
-                exists: true
-            };
-        } catch (error) {
-            return { url: urlString, exists: false, error: error.message };
-        }
     }
 
     generateUniqueFilename(originalName) {
@@ -680,9 +580,5 @@ class InternetHandler {
         return `${cleanName}_${timestamp}_${random}${ext}`;
     }
 }
-
-// ============================================
-// EXPORT
-// ============================================
 
 module.exports = new InternetHandler();

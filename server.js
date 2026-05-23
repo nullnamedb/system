@@ -23,7 +23,7 @@ let serverInstance = null;
 let isShuttingDown = false;
 
 // ============================================
-// RESPONSE FORMAT CONVERTERS - CLEAN VERSION
+// RESPONSE FORMAT CONVERTERS
 // ============================================
 
 function convertToCSV(data) {
@@ -57,7 +57,6 @@ function convertToCSV(data) {
     
     var csvLines = [];
     
-    // Header row
     var headerRow = [];
     for (var i = 0; i < columns.length; i++) {
         var colName = String(columns[i]);
@@ -65,7 +64,6 @@ function convertToCSV(data) {
     }
     csvLines.push(headerRow.join(','));
     
-    // Data rows
     for (var r = 0; r < rows.length; r++) {
         var row = rows[r];
         var rowData = [];
@@ -170,7 +168,6 @@ function convertToTable(data) {
     
     if (columns.length === 0) return 'No data';
     
-    // Calculate column widths
     var colWidths = [];
     for (var ci = 0; ci < columns.length; ci++) {
         var colLabel = String(columns[ci]);
@@ -187,7 +184,6 @@ function convertToTable(data) {
     
     var lines = [];
     
-    // Header
     var headerLine = '';
     for (var h = 0; h < columns.length; h++) {
         var colHeader = String(columns[h]);
@@ -197,7 +193,6 @@ function convertToTable(data) {
     headerLine = headerLine + '|';
     lines.push(headerLine);
     
-    // Separator
     var sepLine = '';
     for (var s = 0; s < columns.length; s++) {
         sepLine = sepLine + '|-' + '-'.repeat(colWidths[s] - 1);
@@ -205,7 +200,6 @@ function convertToTable(data) {
     sepLine = sepLine + '|';
     lines.push(sepLine);
     
-    // Rows
     for (var rw = 0; rw < rows.length; rw++) {
         var row = rows[rw];
         var rowLine = '';
@@ -225,10 +219,6 @@ function convertToTable(data) {
     
     return lines.join('\n');
 }
-
-// ============================================
-// RESPONSE FORMATTER
-// ============================================
 
 function sendResponse(req, res, data) {
     var format = 'json';
@@ -291,7 +281,6 @@ function sendResponse(req, res, data) {
         return;
     }
     
-    // Default JSON
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     if (pretty) {
         res.send(JSON.stringify({ data: data, _meta: metadata }, null, 2));
@@ -319,10 +308,6 @@ app.use(cors({
 }));
 
 app.use(compression());
-
-// ============================================
-// BODY PARSING
-// ============================================
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -409,7 +394,6 @@ app.all('/q', async function(req, res) {
             res.setHeader('X-Session', authResult.newSession);
         }
         
-        // Use formatted response
         sendResponse(req, res, result);
         
     } catch (error) {
@@ -581,6 +565,26 @@ app.use(function(err, req, res, next) {
 });
 
 // ============================================
+// BLOCK DATABASE DIRECTORY ACCESS
+// ============================================
+
+app.use('/database', function(req, res) {
+    res.status(403).json({ error: 'Access denied' });
+});
+
+app.use('/core', function(req, res) {
+    res.status(403).json({ error: 'Access denied' });
+});
+
+app.use('/.env', function(req, res) {
+    res.status(403).json({ error: 'Access denied' });
+});
+
+app.use('/package.json', function(req, res) {
+    res.status(403).json({ error: 'Access denied' });
+});
+
+// ============================================
 // START SERVER
 // ============================================
 
@@ -589,6 +593,7 @@ async function startServer() {
         var dirs = [
             'database/path', 'database/files', 'database/commits',
             'database/branches', 'database/backups', 'database/temp',
+            'database/users', 'database/logs', 'database/track',
             'logs', 'ui', 'docs'
         ];
         
