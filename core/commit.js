@@ -1,15 +1,10 @@
 // NullName DB - Git-like Version Control System
 // No brand. No name. No payment.
 // Version: 1.0.0
-// Lines: 700+
 
 const fs = require('fs-extra');
 const path = require('path');
 const crypto = require('crypto');
-
-// ============================================
-// COMMIT SYSTEM CLASS
-// ============================================
 
 class CommitSystem {
     constructor() {
@@ -44,7 +39,6 @@ class CommitSystem {
                 this.undoStack = state.undoStack || [];
                 this.redoStack = state.redoStack || [];
             } else {
-                // Create initial state
                 await this.saveState();
             }
         } catch (error) {
@@ -97,10 +91,6 @@ class CommitSystem {
         }
     }
 
-    // ============================================
-    // SNAPSHOT MANAGEMENT
-    // ============================================
-
     async takeSnapshot() {
         const dbPath = path.join(__dirname, '..', 'database', 'path');
         const snapshot = {
@@ -131,7 +121,6 @@ class CommitSystem {
             }
         }
         
-        // Also capture key-value store
         const kvPath = path.join(dbPath, '_keyvalue.json');
         if (await fs.pathExists(kvPath)) {
             snapshot.keyvalue = await fs.readJson(kvPath);
@@ -143,7 +132,6 @@ class CommitSystem {
     async restoreSnapshot(snapshot) {
         const dbPath = path.join(__dirname, '..', 'database', 'path');
         
-        // Clear current database
         if (await fs.pathExists(dbPath)) {
             const databases = await fs.readdir(dbPath);
             for (const db of databases) {
@@ -156,7 +144,6 @@ class CommitSystem {
             }
         }
         
-        // Restore from snapshot
         for (const [dbName, tables] of Object.entries(snapshot.databases)) {
             const dbFullPath = path.join(dbPath, dbName);
             await fs.ensureDir(dbFullPath);
@@ -167,25 +154,17 @@ class CommitSystem {
             }
         }
         
-        // Restore key-value store
         if (snapshot.keyvalue) {
             const kvPath = path.join(dbPath, '_keyvalue.json');
             await fs.writeJson(kvPath, snapshot.keyvalue, { spaces: 2 });
         }
     }
 
-    // ============================================
-    // COMMIT OPERATIONS
-    // ============================================
-
     async create(message, user = null, options = {}) {
         const commitId = this.generateCommitId();
         const timestamp = Date.now();
         
-        // Take snapshot of current state
         const snapshot = await this.takeSnapshot();
-        
-        // Get parent commit
         const parentCommit = this.getCurrentHead();
         
         const commit = {
@@ -206,11 +185,9 @@ class CommitSystem {
             }
         };
         
-        // Save commit
         const commitPath = path.join(this.commitsPath, `${commitId}.json`);
         await fs.writeJson(commitPath, commit, { spaces: 2 });
         
-        // Update branch head
         const branch = this.branches.get(this.currentBranch);
         if (branch) {
             branch.head = commitId;
@@ -219,7 +196,6 @@ class CommitSystem {
             await this.saveBranch(this.currentBranch);
         }
         
-        // Update history
         this.commitHistory.push(commitId);
         this.undoStack.push(commitId);
         this.redoStack = [];
@@ -265,7 +241,6 @@ class CommitSystem {
         let modified = 0;
         let deleted = 0;
         
-        // Compare snapshots (simplified)
         const oldKeys = new Set();
         const newKeys = new Set();
         
@@ -318,7 +293,6 @@ class CommitSystem {
         }
         
         const commit = await fs.readJson(commitPath);
-        // Remove snapshot to save memory (can be loaded separately)
         const { snapshot, ...commitWithoutSnapshot } = commit;
         return commitWithoutSnapshot;
     }
@@ -331,25 +305,18 @@ class CommitSystem {
         return await fs.readJson(commitPath);
     }
 
-    // ============================================
-    // CHECKOUT OPERATIONS
-    // ============================================
-
     async checkout(commitId, user = null) {
         const commit = await this.getFullCommit(commitId);
         
         if (!commit) {
-            // Check if it's a branch name
             if (this.branches.has(commitId)) {
                 return await this.switchBranch(commitId, user);
             }
             return { error: `Commit or branch '${commitId}' not found` };
         }
         
-        // Restore snapshot
         await this.restoreSnapshot(commit.snapshot);
         
-        // Update current branch to point to this commit
         const branch = this.branches.get(this.currentBranch);
         if (branch) {
             branch.head = commitId;
@@ -377,7 +344,6 @@ class CommitSystem {
         const headCommit = branch.head;
         
         if (headCommit) {
-            // Checkout the head commit
             const commit = await this.getFullCommit(headCommit);
             if (commit) {
                 await this.restoreSnapshot(commit.snapshot);
@@ -394,10 +360,6 @@ class CommitSystem {
             message: `Switched to branch '${branchName}'`
         };
     }
-
-    // ============================================
-    // BRANCH OPERATIONS
-    // ============================================
 
     async createBranch(branchName, sourceBranch = null, user = null) {
         if (this.branches.has(branchName)) {
@@ -473,10 +435,6 @@ class CommitSystem {
         return branches;
     }
 
-    // ============================================
-    // MERGE OPERATIONS
-    // ============================================
-
     async merge(sourceBranch, targetBranch, user = null) {
         if (!this.branches.has(sourceBranch)) {
             return { error: `Source branch '${sourceBranch}' not found` };
@@ -493,32 +451,24 @@ class CommitSystem {
             return { error: `Source branch '${sourceBranch}' has no commits` };
         }
         
-        // Get source commit
         const sourceCommit = await this.getFullCommit(source.head);
         if (!sourceCommit) {
             return { error: 'Source commit not found' };
         }
         
-        // Store current state
         const currentBranch = this.currentBranch;
         
-        // Switch to target branch
         await this.switchBranch(targetBranch, user);
-        
-        // Restore source snapshot (merge)
         await this.restoreSnapshot(sourceCommit.snapshot);
         
-        // Create merge commit
         const mergeMessage = `Merge ${sourceBranch} into ${targetBranch}`;
         const mergeResult = await this.create(mergeMessage, user);
         
         if (mergeResult.success) {
-            // Update target branch head
             target.head = mergeResult.commit.id;
             target.commits.push(mergeResult.commit.id);
             await this.saveBranch(targetBranch);
             
-            // Switch back to original branch if needed
             if (currentBranch !== targetBranch) {
                 await this.switchBranch(currentBranch, user);
             }
@@ -531,10 +481,6 @@ class CommitSystem {
             commit: mergeResult.commit
         };
     }
-
-    // ============================================
-    // UNDO/REDO OPERATIONS
-    // ============================================
 
     async undo(steps = 1, user = null) {
         const results = [];
@@ -549,7 +495,6 @@ class CommitSystem {
             const commit = await this.getFullCommit(lastCommitId);
             
             if (commit) {
-                // Get parent commit (state before this commit)
                 const parentCommitId = commit.parent;
                 
                 if (parentCommitId) {
@@ -558,7 +503,6 @@ class CommitSystem {
                         await this.restoreSnapshot(parentCommit.snapshot);
                     }
                 } else {
-                    // No parent, restore empty state
                     const emptySnapshot = { databases: {}, keyvalue: {} };
                     await this.restoreSnapshot(emptySnapshot);
                 }
@@ -568,7 +512,6 @@ class CommitSystem {
             }
         }
         
-        // Update branch head
         const branch = this.branches.get(this.currentBranch);
         if (branch && results.length > 0) {
             const newHead = this.undoStack[this.undoStack.length - 1] || null;
@@ -604,7 +547,6 @@ class CommitSystem {
             }
         }
         
-        // Update branch head
         const branch = this.branches.get(this.currentBranch);
         if (branch && results.length > 0) {
             branch.head = results[results.length - 1];
@@ -620,10 +562,6 @@ class CommitSystem {
         };
     }
 
-    // ============================================
-    // FORCE RECOVERY
-    // ============================================
-
     async forceBack(steps = 1, user = null) {
         if (this.undoStack.length < steps) {
             return { error: `Cannot go back ${steps} commits. Only ${this.undoStack.length} available.` };
@@ -638,17 +576,14 @@ class CommitSystem {
                 await this.restoreSnapshot(commit.snapshot);
             }
         } else {
-            // Reset to empty state
             const emptySnapshot = { databases: {}, keyvalue: {} };
             await this.restoreSnapshot(emptySnapshot);
         }
         
-        // Trim stacks
         const removed = this.undoStack.slice(targetIndex);
         this.undoStack = this.undoStack.slice(0, targetIndex);
         this.redoStack = [];
         
-        // Update branch head
         const branch = this.branches.get(this.currentBranch);
         if (branch) {
             branch.head = targetCommitId;
@@ -666,21 +601,17 @@ class CommitSystem {
     }
 
     async factoryReset(user = null) {
-        // Create backup before reset
         const backup = await this.takeSnapshot();
         const backupPath = path.join(this.commitsPath, `factory_reset_backup_${Date.now()}.json`);
         await fs.writeJson(backupPath, backup);
         
-        // Clear all data
         const emptySnapshot = { databases: {}, keyvalue: {} };
         await this.restoreSnapshot(emptySnapshot);
         
-        // Reset state
         this.undoStack = [];
         this.redoStack = [];
         this.commitHistory = [];
         
-        // Reset current branch head
         const branch = this.branches.get(this.currentBranch);
         if (branch) {
             branch.head = null;
@@ -697,14 +628,9 @@ class CommitSystem {
         };
     }
 
-    // ============================================
-    // DIFF OPERATIONS
-    // ============================================
-
     async diff(source, target, user = null) {
         let sourceCommit, targetCommit;
         
-        // Get source (can be commit ID or branch name)
         if (this.branches.has(source)) {
             const branch = this.branches.get(source);
             if (branch.head) {
@@ -714,7 +640,6 @@ class CommitSystem {
             sourceCommit = await this.getFullCommit(source);
         }
         
-        // Get target
         if (this.branches.has(target)) {
             const branch = this.branches.get(target);
             if (branch.head) {
@@ -737,7 +662,6 @@ class CommitSystem {
             removed: []
         };
         
-        // Compare databases and tables
         const allKeys = new Set();
         
         for (const [db, tables] of Object.entries(sourceSnapshot.databases || {})) {
@@ -777,10 +701,6 @@ class CommitSystem {
             }
         };
     }
-
-    // ============================================
-    // HISTORY OPERATIONS
-    // ============================================
 
     async getHistory(limit = 20, branch = null) {
         const targetBranch = branch || this.currentBranch;
@@ -847,7 +767,6 @@ class CommitSystem {
         const totalBranches = this.branches.size;
         const totalTags = this.tags.size;
         
-        // Calculate commit authors
         const authors = new Map();
         for (const commitId of this.commitHistory) {
             const commit = await this.getCommit(commitId);
@@ -861,7 +780,6 @@ class CommitSystem {
             .sort((a, b) => b.count - a.count)
             .slice(0, 5);
         
-        // Calculate commit frequency (by day)
         const commitsByDay = new Map();
         for (const commitId of this.commitHistory) {
             const commit = await this.getCommit(commitId);
@@ -888,10 +806,6 @@ class CommitSystem {
         };
     }
 
-    // ============================================
-    // TAG OPERATIONS
-    // ============================================
-
     async createTag(tagName, commitId = null, user = null) {
         if (this.tags.has(tagName)) {
             return { error: `Tag '${tagName}' already exists` };
@@ -915,7 +829,6 @@ class CommitSystem {
             createdBy: user?.username || 'system'
         });
         
-        // Save tags
         const tagsPath = path.join(__dirname, '..', 'database', 'tags.json');
         const tagsObj = Object.fromEntries(this.tags);
         await fs.writeJson(tagsPath, tagsObj, { spaces: 2 });
@@ -957,10 +870,6 @@ class CommitSystem {
         };
     }
 
-    // ============================================
-    // CLEANUP
-    // ============================================
-
     async loadTags() {
         try {
             const tagsPath = path.join(__dirname, '..', 'database', 'tags.json');
@@ -973,9 +882,5 @@ class CommitSystem {
         }
     }
 }
-
-// ============================================
-// EXPORT
-// ============================================
 
 module.exports = new CommitSystem();
