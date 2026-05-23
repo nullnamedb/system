@@ -7,14 +7,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="/ui/base.css">
     <style>
-        /* Database Manager Specific Styles */
         .db-manager {
             display: flex;
             height: 100vh;
             overflow: hidden;
         }
 
-        /* Sidebar - Database Tree */
         .db-sidebar {
             width: 300px;
             background: var(--bg-panel);
@@ -23,20 +21,11 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            transition: transform 0.3s ease;
         }
 
         .db-sidebar-header {
             padding: 1rem;
             border-bottom: 1px solid var(--border-primary);
-        }
-
-        .db-sidebar-header h3 {
-            margin: 0;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
         }
 
         .db-search {
@@ -64,7 +53,6 @@
             cursor: pointer;
             border-radius: var(--radius-md);
             margin: 2px 0;
-            transition: all 0.2s;
         }
 
         .db-tree-item:hover {
@@ -83,21 +71,8 @@
 
         .db-tree-table {
             margin-left: 1.5rem;
-            font-size: 0.9rem;
         }
 
-        .db-tree-column {
-            margin-left: 3rem;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .db-tree-icon {
-            width: 1.25rem;
-            display: inline-block;
-        }
-
-        /* Main Content Area */
         .db-main {
             flex: 1;
             display: flex;
@@ -105,7 +80,6 @@
             overflow: hidden;
         }
 
-        /* Toolbar */
         .db-toolbar {
             padding: 0.75rem 1rem;
             background: var(--bg-tertiary);
@@ -113,29 +87,14 @@
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
-            align-items: center;
         }
 
-        .db-toolbar .btn {
-            padding: 0.4rem 0.75rem;
-            font-size: 0.8rem;
-        }
-
-        .db-current-path {
-            flex: 1;
-            font-family: monospace;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        /* Content Area */
         .db-content {
             flex: 1;
             overflow: auto;
             padding: 1rem;
         }
 
-        /* Data Table */
         .data-table-container {
             overflow-x: auto;
             background: var(--bg-card);
@@ -154,7 +113,6 @@
             padding: 0.75rem;
             background: var(--bg-tertiary);
             border-bottom: 1px solid var(--border-primary);
-            font-weight: 600;
             color: var(--accent-primary);
             position: sticky;
             top: 0;
@@ -169,35 +127,14 @@
             background: var(--bg-hover);
         }
 
-        .data-table .id-column {
-            width: 60px;
-            font-weight: 600;
-            color: var(--accent-primary);
-        }
-
-        .data-table .actions-column {
+        .actions-column {
             width: 100px;
             text-align: center;
         }
 
-        .data-table .actions-column button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0.25rem;
-            margin: 0 0.2rem;
-            border-radius: var(--radius-sm);
-        }
+        .edit-btn { color: var(--accent-primary); background: none; border: none; cursor: pointer; }
+        .delete-btn { color: var(--accent-error); background: none; border: none; cursor: pointer; }
 
-        .data-table .edit-btn {
-            color: var(--accent-primary);
-        }
-
-        .data-table .delete-btn {
-            color: var(--accent-error);
-        }
-
-        /* Query Panel */
         .query-panel {
             background: var(--bg-card);
             border-radius: var(--radius-lg);
@@ -211,11 +148,6 @@
             border-bottom: 1px solid var(--border-primary);
             display: flex;
             justify-content: space-between;
-            align-items: center;
-        }
-
-        .query-panel-body {
-            padding: 1rem;
         }
 
         .query-input {
@@ -226,44 +158,9 @@
             padding: 0.75rem;
             color: var(--text-primary);
             font-family: monospace;
-            font-size: 0.85rem;
             resize: vertical;
         }
 
-        .query-result {
-            margin-top: 1rem;
-        }
-
-        /* Form Styles */
-        .form-row {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .form-group {
-            flex: 1;
-            min-width: 150px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.25rem;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 0.5rem;
-            background: var(--bg-input);
-            border: 1px solid var(--border-primary);
-            border-radius: var(--radius-md);
-            color: var(--text-primary);
-        }
-
-        /* Modal */
         .modal {
             position: fixed;
             top: 0;
@@ -283,908 +180,249 @@
             backdrop-filter: blur(20px);
             border: 1px solid var(--border-primary);
             border-radius: var(--radius-lg);
-            max-width: 600px;
+            max-width: 500px;
             width: 90%;
-            max-height: 80vh;
-            overflow: auto;
         }
 
-        .modal-header {
-            padding: 1rem 1.5rem;
+        .modal-header, .modal-footer {
+            padding: 1rem;
             border-bottom: 1px solid var(--border-primary);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-body {
-            padding: 1.5rem;
         }
 
         .modal-footer {
-            padding: 1rem 1.5rem;
+            border-bottom: none;
             border-top: 1px solid var(--border-primary);
             display: flex;
             justify-content: flex-end;
             gap: 0.5rem;
         }
 
-        /* Status Bar */
-        .db-statusbar {
-            padding: 0.5rem 1rem;
-            background: var(--bg-tertiary);
-            border-top: 1px solid var(--border-primary);
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            display: flex;
-            justify-content: space-between;
-        }
+        .modal-body { padding: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.25rem; font-size: 0.8rem; }
+        .form-group input { width: 100%; padding: 0.5rem; background: var(--bg-input); border: 1px solid var(--border-primary); border-radius: var(--radius-md); color: var(--text-primary); }
 
-        /* Responsive */
         @media (max-width: 768px) {
-            .db-sidebar {
-                position: fixed;
-                left: 0;
-                top: 0;
-                height: 100%;
-                z-index: 100;
-                transform: translateX(-100%);
-            }
-            .db-sidebar.open {
-                transform: translateX(0);
-            }
-            .menu-toggle {
-                display: block;
-            }
-            .form-row {
-                flex-direction: column;
-            }
+            .db-sidebar { position: fixed; left: 0; top: 0; height: 100%; z-index: 100; transform: translateX(-100%); }
+            .db-sidebar.open { transform: translateX(0); }
+            .menu-toggle { display: block; }
         }
     </style>
 </head>
 <body>
     <div class="db-manager">
-        <!-- Sidebar -->
         <aside class="db-sidebar" id="dbSidebar">
-            <div class="db-sidebar-header">
-                <h3><i class="fa fa-database"></i> Databases</h3>
-            </div>
-            <div class="db-search">
-                <input type="text" id="dbSearch" placeholder="Search database/table..." class="search-input">
-            </div>
-            <div class="db-tree" id="dbTree">
-                <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
-                    <i class="fa fa-spinner fa-spin"></i> Loading...
-                </div>
-            </div>
+            <div class="db-sidebar-header"><h3><i class="fa fa-database"></i> Databases</h3></div>
+            <div class="db-search"><input type="text" id="dbSearch" placeholder="Search..."></div>
+            <div class="db-tree" id="dbTree"><div style="text-align:center;padding:2rem;">Loading...</div></div>
         </aside>
 
-        <!-- Main Content -->
         <main class="db-main">
-            <!-- Toolbar -->
             <div class="db-toolbar">
-                <button class="menu-toggle" id="menuToggle" style="display: none;">
-                    <i class="fa fa-bars"></i>
-                </button>
-                <button id="refreshBtn" class="btn" title="Refresh">
-                    <i class="fa fa-refresh"></i> Refresh
-                </button>
-                <button id="createDatabaseBtn" class="btn" title="Create Database">
-                    <i class="fa fa-plus-circle"></i> New DB
-                </button>
-                <button id="createTableBtn" class="btn" title="Create Table" style="display: none;">
-                    <i class="fa fa-table"></i> New Table
-                </button>
-                <button id="addRecordBtn" class="btn" title="Add Record" style="display: none;">
-                    <i class="fa fa-plus"></i> Add Record
-                </button>
-                <button id="runSqlBtn" class="btn btn-primary" title="Run SQL">
-                    <i class="fa fa-play"></i> Run SQL
-                </button>
-                <div class="db-current-path" id="currentPath"></div>
+                <button class="menu-toggle" id="menuToggle" style="display:none;"><i class="fa fa-bars"></i></button>
+                <button id="refreshBtn" class="btn"><i class="fa fa-refresh"></i> Refresh</button>
+                <button id="createDatabaseBtn" class="btn"><i class="fa fa-plus"></i> New DB</button>
+                <button id="createTableBtn" class="btn" style="display:none;"><i class="fa fa-table"></i> New Table</button>
+                <button id="addRecordBtn" class="btn" style="display:none;"><i class="fa fa-plus"></i> Add Record</button>
+                <button id="runSqlBtn" class="btn btn-primary"><i class="fa fa-play"></i> Run SQL</button>
             </div>
 
-            <!-- Content Area -->
             <div class="db-content" id="dbContent">
-                <!-- Welcome Screen -->
-                <div id="welcomeScreen" style="text-align: center; padding: 3rem;">
-                    <i class="fa fa-database" style="font-size: 4rem; color: var(--accent-primary); opacity: 0.5;"></i>
+                <div id="welcomeScreen" style="text-align:center;padding:3rem;">
+                    <i class="fa fa-database" style="font-size:4rem;opacity:0.5;"></i>
                     <h3>Database Manager</h3>
-                    <p style="color: var(--text-muted);">Select a database from the left panel</p>
-                    <button id="welcomeCreateDbBtn" class="btn btn-primary" style="margin-top: 1rem;">
-                        <i class="fa fa-plus"></i> Create New Database
-                    </button>
+                    <p>Select a database from the left panel</p>
+                    <button id="welcomeCreateDbBtn" class="btn btn-primary">Create Database</button>
                 </div>
 
-                <!-- Data View (hidden initially) -->
-                <div id="dataView" style="display: none;">
-                    <!-- Query Panel (collapsible) -->
+                <div id="dataView" style="display:none;">
                     <div class="query-panel">
-                        <div class="query-panel-header">
-                            <span><i class="fa fa-terminal"></i> SQL Query</span>
-                            <button id="toggleQueryPanel" class="btn btn-sm">
-                                <i class="fa fa-chevron-up"></i>
-                            </button>
-                        </div>
-                        <div class="query-panel-body" id="queryPanelBody">
-                            <textarea id="sqlQueryInput" class="query-input" rows="4" placeholder="Enter SQL query...&#10;&#10;Examples:&#10;get.users&#10;add.db.table.col.value&#10;update.db.table.id.col=value&#10;delete.db.table.id"></textarea>
-                            <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                        <div class="query-panel-header"><span><i class="fa fa-terminal"></i> SQL Query</span></div>
+                        <div style="padding:1rem;">
+                            <textarea id="sqlQueryInput" class="query-input" rows="3" placeholder="SELECT * FROM users"></textarea>
+                            <div style="margin-top:0.5rem;display:flex;gap:0.5rem;">
                                 <button id="executeQueryBtn" class="btn btn-primary">Execute</button>
                                 <button id="clearQueryBtn" class="btn">Clear</button>
                             </div>
-                            <div id="queryResult" class="query-result" style="display: none;">
-                                <div class="data-table-container">
-                                    <div id="queryResultData"></div>
-                                </div>
-                            </div>
+                            <div id="queryResult" style="margin-top:1rem;display:none;"></div>
                         </div>
                     </div>
-
-                    <!-- Data Table -->
-                    <div id="dataTableContainer" class="data-table-container">
-                        <div style="padding: 1rem; text-align: center; color: var(--text-muted);">
-                            Loading data...
-                        </div>
-                    </div>
+                    <div class="data-table-container" id="dataTableContainer">Loading...</div>
                 </div>
             </div>
 
-            <!-- Status Bar -->
-            <div class="db-statusbar">
-                <span id="dbStatus">Ready</span>
-                <span id="dbInfo">-</span>
-            </div>
+            <div class="db-statusbar"><span id="dbStatus">Ready</span><span id="dbInfo">-</span></div>
         </main>
     </div>
 
-    <!-- Create Database Modal -->
-    <div id="createDbModal" class="modal" style="display: none;">
+    <div id="createDbModal" class="modal" style="display:none;">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3>Create New Database</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Database Name</label>
-                    <input type="text" id="newDbName" placeholder="Enter database name (letters, numbers, underscore)">
-                </div>
-                <div id="dbError" style="color: var(--accent-error); font-size: 0.75rem; margin-top: 0.5rem; display: none;"></div>
-            </div>
-            <div class="modal-footer">
-                <button id="createDbConfirm" class="btn btn-primary">Create</button>
-                <button class="modal-cancel btn">Cancel</button>
-            </div>
+            <div class="modal-header"><h3>Create Database</h3><button class="modal-close">&times;</button></div>
+            <div class="modal-body"><input type="text" id="newDbName" placeholder="Database name" style="width:100%;padding:0.5rem;"></div>
+            <div class="modal-footer"><button id="createDbConfirm" class="btn btn-primary">Create</button><button class="modal-cancel btn">Cancel</button></div>
         </div>
     </div>
 
-    <!-- Create Table Modal -->
-    <div id="createTableModal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 700px;">
-            <div class="modal-header">
-                <h3>Create New Table</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Table Name</label>
-                    <input type="text" id="newTableName" placeholder="Enter table name">
-                </div>
-                <div style="margin-top: 1rem;">
-                    <label>Columns</label>
-                    <div id="columnsList">
-                        <div class="form-row" style="margin-bottom: 0.5rem;">
-                            <input type="text" placeholder="Column name" style="flex: 2;">
-                            <select style="flex: 1;">
-                                <option value="string">String</option>
-                                <option value="number">Number</option>
-                                <option value="boolean">Boolean</option>
-                                <option value="json">JSON</option>
-                            </select>
-                            <button class="remove-column-btn" style="background: none; border: none; color: var(--accent-error);">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <button id="addColumnBtn" class="btn btn-sm" style="margin-top: 0.5rem;">
-                        <i class="fa fa-plus"></i> Add Column
-                    </button>
-                </div>
-                <div id="tableError" style="color: var(--accent-error); font-size: 0.75rem; margin-top: 0.5rem; display: none;"></div>
-            </div>
-            <div class="modal-footer">
-                <button id="createTableConfirm" class="btn btn-primary">Create</button>
-                <button class="modal-cancel btn">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add/Edit Record Modal -->
-    <div id="recordModal" class="modal" style="display: none;">
+    <div id="recordModal" class="modal" style="display:none;">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="recordModalTitle">Add Record</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body" id="recordModalBody">
-                <!-- Dynamic form fields -->
-            </div>
-            <div class="modal-footer">
-                <button id="saveRecordBtn" class="btn btn-primary">Save</button>
-                <button class="modal-cancel btn">Cancel</button>
-            </div>
+            <div class="modal-header"><h3 id="recordModalTitle">Add Record</h3><button class="modal-close">&times;</button></div>
+            <div class="modal-body" id="recordModalBody"></div>
+            <div class="modal-footer"><button id="saveRecordBtn" class="btn btn-primary">Save</button><button class="modal-cancel btn">Cancel</button></div>
         </div>
     </div>
 
     <script src="/ui/session.js"></script>
     <script>
-        // ============================================
-        // Database Manager State
-        // ============================================
-        let currentDatabase = null;
-        let currentTable = null;
-        let databaseTree = {};
-        let isQueryPanelVisible = true;
+        let currentDatabase = null, currentTable = null;
 
-        // ============================================
-        // Helper Functions
-        // ============================================
-        function getSession() {
-            return localStorage.getItem('nullname_session');
-        }
+        function getSession() { return localStorage.getItem('nullname_session'); }
+        async function apiRequest(query) { const res = await fetch(`/q?q=${encodeURIComponent(query)}&ses=${getSession()}`); return res.json(); }
 
-        async function apiRequest(query, method = 'GET') {
-            const session = getSession();
-            const response = await fetch(`/q?q=${encodeURIComponent(query)}&ses=${session}`);
-            return response.json();
-        }
-
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `notification notification-${type}`;
-            notification.innerHTML = `<div class="notification-content">${message}</div>`;
-            notification.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: var(--bg-panel);
-                backdrop-filter: blur(20px);
-                border: 1px solid var(--border-primary);
-                border-radius: var(--radius-md);
-                padding: 0.75rem 1.25rem;
-                color: ${type === 'error' ? 'var(--accent-error)' : type === 'success' ? 'var(--accent-secondary)' : 'var(--text-primary)'};
-                z-index: 3000;
-                animation: slideIn 0.3s ease;
-            `;
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 3000);
-        }
-
-        function updateStatus(message, isError = false) {
-            const statusEl = document.getElementById('dbStatus');
-            if (statusEl) {
-                statusEl.innerHTML = isError ? `<i class="fa fa-exclamation-circle" style="color: var(--accent-error);"></i> ${message}` : `<i class="fa fa-circle" style="color: var(--accent-success); font-size: 0.6rem;"></i> ${message}`;
-            }
-        }
-
-        // ============================================
-        // Load Database Tree
-        // ============================================
         async function loadDatabaseTree() {
-            const treeContainer = document.getElementById('dbTree');
-            treeContainer.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fa fa-spinner fa-spin"></i> Loading...</div>';
-            
-            try {
-                const data = await apiRequest('get.');
-                databaseTree = data;
-                
-                renderTree(data);
-            } catch (error) {
-                treeContainer.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--accent-error);">Error loading databases</div>`;
-                console.error('Failed to load database tree:', error);
-            }
-        }
-
-        function renderTree(data) {
-            const treeContainer = document.getElementById('dbTree');
-            const searchTerm = document.getElementById('dbSearch')?.value.toLowerCase() || '';
-            
-            treeContainer.innerHTML = '';
-            
-            if (!data || Object.keys(data).length === 0) {
-                treeContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">No databases found<br><button id="emptyCreateDbBtn" class="btn btn-sm" style="margin-top: 0.5rem;"><i class="fa fa-plus"></i> Create Database</button></div>';
-                const emptyBtn = document.getElementById('emptyCreateDbBtn');
-                if (emptyBtn) emptyBtn.onclick = () => showCreateDatabaseModal();
-                return;
-            }
-            
-            for (const [dbName, tables] of Object.entries(data)) {
-                // Filter by search
-                if (searchTerm && !dbName.toLowerCase().includes(searchTerm)) {
-                    let hasMatch = false;
-                    if (tables && typeof tables === 'object') {
-                        for (const tableName of Object.keys(tables)) {
-                            if (tableName.toLowerCase().includes(searchTerm)) {
-                                hasMatch = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!hasMatch) continue;
-                }
-                
+            const data = await apiRequest('get.');
+            const treeDiv = document.getElementById('dbTree');
+            treeDiv.innerHTML = '';
+            for (const [db, tables] of Object.entries(data)) {
                 const dbDiv = document.createElement('div');
                 dbDiv.className = 'db-tree-item db-tree-database';
-                dbDiv.innerHTML = `<span class="db-tree-icon"><i class="fa fa-database"></i></span> ${escapeHtml(dbName)}`;
-                dbDiv.onclick = (e) => {
-                    e.stopPropagation();
-                    selectDatabase(dbName);
-                };
-                treeContainer.appendChild(dbDiv);
-                
+                dbDiv.innerHTML = `<i class="fa fa-database"></i> ${db}`;
+                dbDiv.onclick = () => selectDatabase(db);
+                treeDiv.appendChild(dbDiv);
                 if (tables && typeof tables === 'object') {
-                    const tablesContainer = document.createElement('div');
-                    tablesContainer.style.marginLeft = '1.5rem';
-                    
-                    for (const [tableName, columns] of Object.entries(tables)) {
-                        if (searchTerm && !tableName.toLowerCase().includes(searchTerm)) continue;
-                        
+                    const tablesDiv = document.createElement('div');
+                    tablesDiv.style.marginLeft = '1.5rem';
+                    for (const table of Object.keys(tables)) {
                         const tableDiv = document.createElement('div');
                         tableDiv.className = 'db-tree-item db-tree-table';
-                        tableDiv.innerHTML = `<span class="db-tree-icon"><i class="fa fa-table"></i></span> ${escapeHtml(tableName)}`;
-                        tableDiv.onclick = (e) => {
-                            e.stopPropagation();
-                            selectTable(dbName, tableName);
-                        };
-                        tablesContainer.appendChild(tableDiv);
-                        
-                        // Show columns when table is selected/hovered (optional)
-                        if (currentDatabase === dbName && currentTable === tableName) {
-                            tableDiv.classList.add('active');
-                        }
+                        tableDiv.innerHTML = `<i class="fa fa-table"></i> ${table}`;
+                        tableDiv.onclick = (e) => { e.stopPropagation(); selectTable(db, table); };
+                        tablesDiv.appendChild(tableDiv);
                     }
-                    
-                    treeContainer.appendChild(tablesContainer);
+                    treeDiv.appendChild(tablesDiv);
                 }
             }
         }
 
-        function selectDatabase(dbName) {
-            currentDatabase = dbName;
+        async function selectDatabase(db) {
+            currentDatabase = db;
             currentTable = null;
-            
-            // Update UI
-            document.getElementById('currentPath').innerHTML = `<i class="fa fa-database"></i> ${escapeHtml(dbName)}`;
             document.getElementById('createTableBtn').style.display = 'inline-flex';
             document.getElementById('addRecordBtn').style.display = 'none';
-            
-            // Load tables of selected database
-            loadDatabaseContent(dbName);
-            
-            // Highlight active in tree
-            document.querySelectorAll('.db-tree-item').forEach(el => el.classList.remove('active'));
-            updateStatus(`Database: ${dbName}`);
-        }
-
-        async function selectTable(dbName, tableName) {
-            currentDatabase = dbName;
-            currentTable = tableName;
-            
-            // Update UI
-            document.getElementById('currentPath').innerHTML = `<i class="fa fa-database"></i> ${escapeHtml(dbName)} / <i class="fa fa-table"></i> ${escapeHtml(tableName)}`;
-            document.getElementById('createTableBtn').style.display = 'inline-flex';
-            document.getElementById('addRecordBtn').style.display = 'inline-flex';
-            
-            // Load table data
-            await loadTableData(dbName, tableName);
-            
-            // Highlight active in tree
-            document.querySelectorAll('.db-tree-item').forEach(el => el.classList.remove('active'));
-            updateStatus(`Table: ${tableName}`);
-        }
-
-        // ============================================
-        // Load Data
-        // ============================================
-        async function loadDatabaseContent(dbName) {
-            const dataView = document.getElementById('dataView');
-            const welcomeScreen = document.getElementById('welcomeScreen');
-            const dataTableContainer = document.getElementById('dataTableContainer');
-            
-            welcomeScreen.style.display = 'none';
-            dataView.style.display = 'flex';
-            
-            dataTableContainer.innerHTML = '<div style="padding: 2rem; text-align: center;">Loading tables...</div>';
-            
-            try {
-                const data = await apiRequest(`get.${dbName}`);
-                if (data && typeof data === 'object') {
-                    renderTablesList(data);
-                } else {
-                    dataTableContainer.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">No tables found. Click "New Table" to create one.</div>';
-                }
-            } catch (error) {
-                dataTableContainer.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--accent-error);">Error loading data: ${error.message}</div>`;
-            }
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('dataView').style.display = 'flex';
+            document.getElementById('dataTableContainer').innerHTML = '<div style="padding:2rem;text-align:center;">Loading tables...</div>';
+            const data = await apiRequest(`get.${db}`);
+            renderTablesList(data);
         }
 
         function renderTablesList(tables) {
-            const dataTableContainer = document.getElementById('dataTableContainer');
-            
+            const container = document.getElementById('dataTableContainer');
             if (!tables || Object.keys(tables).length === 0) {
-                dataTableContainer.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">No tables found. Click "New Table" to create one.</div>';
+                container.innerHTML = '<div style="padding:2rem;text-align:center;">No tables. Click "New Table".</div>';
                 return;
             }
-            
-            let html = '<div class="data-table-container"><table class="data-table"><thead><tr><th>Table Name</th><th>Records</th><th>Actions</th></tr></thead><tbody>';
-            
-            for (const [tableName, tableData] of Object.entries(tables)) {
-                const recordCount = tableData && typeof tableData === 'object' ? Object.keys(tableData).filter(k => !isNaN(k)).length : 0;
-                html += `<tr>
-                    <td><i class="fa fa-table"></i> ${escapeHtml(tableName)}</td>
-                    <td>${recordCount}</td>
-                    <td class="actions-column">
-                        <button class="edit-btn" onclick="window.selectTable('${currentDatabase}', '${tableName}')" title="Browse"><i class="fa fa-eye"></i></button>
-                        <button class="delete-btn" onclick="deleteTable('${currentDatabase}', '${tableName}')" title="Drop"><i class="fa fa-trash"></i></button>
-                    </td>
-                </tr>`;
+            let html = '<table class="data-table"><thead><tr><th>Table</th><th>Records</th><th>Actions</th></tr></thead><tbody>';
+            for (const [table, data] of Object.entries(tables)) {
+                const count = data && typeof data === 'object' ? Object.keys(data).filter(k=>!isNaN(k)).length : 0;
+                html += `<tr><td>${table}</td><td>${count}</td><td><button class="edit-btn" onclick="selectTable('${currentDatabase}','${table}')">Browse</button> <button class="delete-btn" onclick="deleteTable('${currentDatabase}','${table}')">Drop</button></td></tr>`;
             }
-            
-            html += '</tbody></table></div>';
-            dataTableContainer.innerHTML = html;
-        }
-
-        async function loadTableData(dbName, tableName) {
-            const dataTableContainer = document.getElementById('dataTableContainer');
-            dataTableContainer.innerHTML = '<div style="padding: 2rem; text-align: center;"><i class="fa fa-spinner fa-spin"></i> Loading data...</div>';
-            
-            try {
-                const data = await apiRequest(`get.${dbName}.${tableName}`);
-                renderTableData(data, tableName);
-                document.getElementById('dbInfo').innerHTML = `Table: ${tableName} | ${Object.keys(data).filter(k => !isNaN(k)).length} records`;
-            } catch (error) {
-                dataTableContainer.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--accent-error);">Error loading table data: ${error.message}</div>`;
-            }
-        }
-
-        function renderTableData(data, tableName) {
-            if (!data || Object.keys(data).length === 0) {
-                document.getElementById('dataTableContainer').innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">No records found. Click "Add Record" to insert data.</div>';
-                return;
-            }
-            
-            // Get all column names from all records
-            const columns = new Set();
-            const records = [];
-            
-            for (const [id, row] of Object.entries(data)) {
-                if (id === '_nextId') continue;
-                records.push({ id, ...row });
-                Object.keys(row).forEach(col => columns.add(col));
-            }
-            
-            const columnList = ['id', ...Array.from(columns)];
-            
-            let html = '<div class="data-table-container"><table class="data-table"><thead><tr>';
-            for (const col of columnList) {
-                html += `<th>${escapeHtml(col)}</th>`;
-            }
-            html += '<th>Actions</th></tr></thead><tbody>';
-            
-            for (const record of records) {
-                html += '<tr>';
-                for (const col of columnList) {
-                    let value = record[col];
-                    if (value === undefined || value === null) value = '<span style="color: var(--text-muted);">NULL</span>';
-                    if (typeof value === 'object') value = JSON.stringify(value);
-                    html += `<td title="${escapeHtml(String(value))}">${escapeHtml(String(value).substring(0, 50))}${String(value).length > 50 ? '...' : ''}</td>`;
-                }
-                html += `<td class="actions-column">
-                    <button class="edit-btn" onclick="editRecord('${currentDatabase}', '${currentTable}', '${record.id}')" title="Edit"><i class="fa fa-edit"></i></button>
-                    <button class="delete-btn" onclick="deleteRecord('${currentDatabase}', '${currentTable}', '${record.id}')" title="Delete"><i class="fa fa-trash"></i></button>
-                </td>`;
-                html += '</tr>';
-            }
-            
-            html += '</tbody></table></div>';
-            document.getElementById('dataTableContainer').innerHTML = html;
-        }
-
-        // ============================================
-        // CRUD Operations
-        // ============================================
-        window.editRecord = async function(database, table, id) {
-            try {
-                const data = await apiRequest(`get.${database}.${table}.${id}`);
-                if (data && data[id]) {
-                    showRecordModal('Edit Record', database, table, id, data[id]);
-                }
-            } catch (error) {
-                showNotification('Error loading record', 'error');
-            }
-        };
-
-        window.deleteRecord = async function(database, table, id) {
-            if (confirm(`Delete record ${id}? This action cannot be undone.`)) {
-                try {
-                    const result = await apiRequest(`delete.${database}.${table}.${id}`);
-                    if (result.success) {
-                        showNotification('Record deleted', 'success');
-                        loadTableData(database, table);
-                        loadDatabaseTree(); // Refresh tree
-                    } else {
-                        showNotification(result.error || 'Delete failed', 'error');
-                    }
-                } catch (error) {
-                    showNotification('Error deleting record', 'error');
-                }
-            }
-        };
-
-        window.deleteTable = async function(database, table) {
-            if (confirm(`Drop table '${table}'? This will delete all data in this table. This action cannot be undone.`)) {
-                try {
-                    const result = await apiRequest(`delete.${database}.${table}`);
-                    if (result.success) {
-                        showNotification(`Table '${table}' dropped`, 'success');
-                        if (currentTable === table) {
-                            currentTable = null;
-                            document.getElementById('addRecordBtn').style.display = 'none';
-                        }
-                        loadDatabaseContent(database);
-                        loadDatabaseTree();
-                    } else {
-                        showNotification(result.error || 'Drop failed', 'error');
-                    }
-                } catch (error) {
-                    showNotification('Error dropping table', 'error');
-                }
-            }
-        };
-
-        function showRecordModal(title, database, table, id = null, data = {}) {
-            const modal = document.getElementById('recordModal');
-            const modalTitle = document.getElementById('recordModalTitle');
-            const modalBody = document.getElementById('recordModalBody');
-            
-            modalTitle.textContent = title;
-            
-            // Generate form fields from data or empty
-            let fieldsHtml = '<div class="form-group"><label>ID (readonly)</label><input type="text" id="recordId" value="' + (id || 'auto') + '" disabled></div>';
-            
-            if (data && Object.keys(data).length > 0) {
-                for (const [key, value] of Object.entries(data)) {
-                    const displayValue = typeof value === 'object' ? JSON.stringify(value) : value;
-                    fieldsHtml += `<div class="form-group">
-                        <label>${escapeHtml(key)}</label>
-                        <input type="text" id="field_${escapeHtml(key)}" value="${escapeHtml(String(displayValue))}" placeholder="Enter value">
-                    </div>`;
-                }
-            } else {
-                // Add default field for new record
-                fieldsHtml += `<div class="form-group">
-                    <label>Column Name</label>
-                    <input type="text" id="newColumnName" placeholder="column_name">
-                </div>
-                <div class="form-group">
-                    <label>Value</label>
-                    <input type="text" id="newColumnValue" placeholder="value">
-                </div>`;
-            }
-            
-            modalBody.innerHTML = fieldsHtml;
-            modal.style.display = 'flex';
-            
-            // Save handler
-            const saveBtn = document.getElementById('saveRecordBtn');
-            const newSaveHandler = async () => {
-                if (id) {
-                    // Update existing record
-                    const updates = [];
-                    for (const [key, value] of Object.entries(data)) {
-                        const newValue = document.getElementById(`field_${key}`)?.value;
-                        if (newValue !== undefined && String(value) !== newValue) {
-                            updates.push({ column: key, value: newValue });
-                        }
-                    }
-                    
-                    for (const update of updates) {
-                        await apiRequest(`update.${database}.${table}.${id}.${update.column}=${encodeURIComponent(update.value)}`);
-                    }
-                    showNotification('Record updated', 'success');
-                } else {
-                    // Create new record
-                    const colName = document.getElementById('newColumnName')?.value;
-                    const colValue = document.getElementById('newColumnValue')?.value;
-                    if (colName && colValue) {
-                        await apiRequest(`add.${database}.${table}.${colName}.${encodeURIComponent(colValue)}`);
-                        showNotification('Record added', 'success');
-                    } else {
-                        showNotification('Please enter column name and value', 'error');
-                        return;
-                    }
-                }
-                
-                modal.style.display = 'none';
-                loadTableData(database, table);
-                loadDatabaseTree();
-            };
-            
-            saveBtn.onclick = newSaveHandler;
-        }
-
-        // ============================================
-        // SQL Query Execution
-        // ============================================
-        async function executeSql() {
-            const query = document.getElementById('sqlQueryInput').value.trim();
-            if (!query) {
-                showNotification('Please enter a query', 'warning');
-                return;
-            }
-            
-            const queryResultDiv = document.getElementById('queryResult');
-            const queryResultData = document.getElementById('queryResultData');
-            
-            queryResultDiv.style.display = 'block';
-            queryResultData.innerHTML = '<div style="padding: 1rem; text-align: center;"><i class="fa fa-spinner fa-spin"></i> Executing...</div>';
-            
-            try {
-                const result = await apiRequest(query);
-                
-                if (result && typeof result === 'object') {
-                    if (result.success !== false) {
-                        // Display results
-                        if (Array.isArray(result) || typeof result === 'object') {
-                            displayQueryResults(result, queryResultData);
-                        } else {
-                            queryResultData.innerHTML = `<pre style="background: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius-md); overflow-x: auto;">${JSON.stringify(result, null, 2)}</pre>`;
-                        }
-                        showNotification('Query executed successfully', 'success');
-                    } else {
-                        queryResultData.innerHTML = `<div style="color: var(--accent-error); padding: 1rem;">Error: ${result.error || 'Unknown error'}</div>`;
-                        showNotification(result.error || 'Query failed', 'error');
-                    }
-                } else {
-                    queryResultData.innerHTML = `<pre style="background: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius-md);">${result}</pre>`;
-                }
-            } catch (error) {
-                queryResultData.innerHTML = `<div style="color: var(--accent-error); padding: 1rem;">Error: ${error.message}</div>`;
-                showNotification('Query execution failed', 'error');
-            }
-        }
-
-        function displayQueryResults(data, container) {
-            if (!data || Object.keys(data).length === 0) {
-                container.innerHTML = '<div style="padding: 1rem; color: var(--text-muted);">No results</div>';
-                return;
-            }
-            
-            // Convert to array if object
-            let records = [];
-            if (Array.isArray(data)) {
-                records = data;
-            } else {
-                for (const [key, value] of Object.entries(data)) {
-                    if (typeof value === 'object' && value !== null) {
-                        records.push({ id: key, ...value });
-                    } else {
-                        records.push({ id: key, value: value });
-                    }
-                }
-            }
-            
-            if (records.length === 0) {
-                container.innerHTML = '<div style="padding: 1rem; color: var(--text-muted);">No results</div>';
-                return;
-            }
-            
-            const columns = new Set();
-            records.forEach(record => {
-                Object.keys(record).forEach(col => columns.add(col));
-            });
-            
-            let html = '<div class="data-table-container"><table class="data-table"><thead><tr>';
-            for (const col of columns) {
-                html += `<th>${escapeHtml(col)}</th>`;
-            }
-            html += '</thead><tbody>';
-            
-            for (const record of records) {
-                html += '<tr>';
-                for (const col of columns) {
-                    let value = record[col];
-                    if (value === undefined || value === null) value = '<span style="color: var(--text-muted);">NULL</span>';
-                    if (typeof value === 'object') value = JSON.stringify(value);
-                    html += `<td>${escapeHtml(String(value).substring(0, 100))}${String(value).length > 100 ? '...' : ''}</td>`;
-                }
-                html += '</tr>';
-            }
-            
-            html += '</tbody></table></div>';
+            html += '</tbody></table>';
             container.innerHTML = html;
         }
 
-        // ============================================
-        // Create Database/Table
-        // ============================================
-        function showCreateDatabaseModal() {
-            const modal = document.getElementById('createDbModal');
-            const input = document.getElementById('newDbName');
-            input.value = '';
-            modal.style.display = 'flex';
+        window.selectTable = async function(db, table) {
+            currentDatabase = db; currentTable = table;
+            document.getElementById('addRecordBtn').style.display = 'inline-flex';
+            const data = await apiRequest(`get.${db}.${table}`);
+            renderTableData(data, table);
+        };
+
+        function renderTableData(data, table) {
+            const container = document.getElementById('dataTableContainer');
+            if (!data || Object.keys(data).length === 0) {
+                container.innerHTML = '<div style="padding:2rem;text-align:center;">No records. Click "Add Record".</div>';
+                return;
+            }
+            const columns = new Set();
+            const records = [];
+            for (const [id, row] of Object.entries(data)) {
+                if (id === '_nextId') continue;
+                records.push({ id, ...row });
+                Object.keys(row).forEach(c => columns.add(c));
+            }
+            let html = '<table class="data-table"><thead><tr><th>ID</th>';
+            for (const col of columns) html += `<th>${col}</th>`;
+            html += '<th>Actions</th></tr></thead><tbody>';
+            for (const rec of records) {
+                html += `<tr><td>${rec.id}</td>`;
+                for (const col of columns) html += `<td>${rec[col] !== undefined ? rec[col] : ''}</td>`;
+                html += `<td><button class="edit-btn" onclick="editRecord('${currentDatabase}','${currentTable}','${rec.id}')">Edit</button> <button class="delete-btn" onclick="deleteRecord('${currentDatabase}','${currentTable}','${rec.id}')">Delete</button></td></tr>`;
+            }
+            html += '</tbody></table>';
+            container.innerHTML = html;
         }
+
+        window.editRecord = async function(db, table, id) {
+            const data = await apiRequest(`get.${db}.${table}.${id}`);
+            const modal = document.getElementById('recordModal');
+            const body = document.getElementById('recordModalBody');
+            document.getElementById('recordModalTitle').innerText = 'Edit Record';
+            let html = '';
+            for (const [key, val] of Object.entries(data[id] || {})) {
+                html += `<div class="form-group"><label>${key}</label><input type="text" id="field_${key}" value="${val}"></div>`;
+            }
+            body.innerHTML = html;
+            modal.style.display = 'flex';
+            document.getElementById('saveRecordBtn').onclick = async () => {
+                for (const [key] of Object.entries(data[id] || {})) {
+                    const newVal = document.getElementById(`field_${key}`).value;
+                    await apiRequest(`update.${db}.${table}.${id}.${key}=${encodeURIComponent(newVal)}`);
+                }
+                modal.style.display = 'none';
+                selectTable(db, table);
+            };
+        };
+
+        window.deleteRecord = async function(db, table, id) {
+            if (confirm('Delete this record?')) {
+                await apiRequest(`delete.${db}.${table}.${id}`);
+                selectTable(db, table);
+            }
+        };
+
+        window.deleteTable = async function(db, table) {
+            if (confirm(`Drop table '${table}'?`)) {
+                await apiRequest(`delete.${db}.${table}`);
+                selectDatabase(db);
+                loadDatabaseTree();
+            }
+        };
 
         async function createDatabase() {
-            const dbName = document.getElementById('newDbName').value.trim();
-            const errorDiv = document.getElementById('dbError');
-            
-            if (!dbName) {
-                errorDiv.textContent = 'Database name is required';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
-            if (!/^[a-zA-Z0-9_]+$/.test(dbName)) {
-                errorDiv.textContent = 'Database name can only contain letters, numbers, and underscores';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
-            try {
-                const result = await apiRequest(`create.${dbName}`);
-                if (result.success) {
-                    showNotification(`Database '${dbName}' created`, 'success');
-                    document.getElementById('createDbModal').style.display = 'none';
-                    loadDatabaseTree();
-                    selectDatabase(dbName);
-                } else {
-                    errorDiv.textContent = result.error || 'Creation failed';
-                    errorDiv.style.display = 'block';
-                }
-            } catch (error) {
-                errorDiv.textContent = error.message;
-                errorDiv.style.display = 'block';
-            }
+            const name = document.getElementById('newDbName').value.trim();
+            if (name) { await apiRequest(`create.${name}`); loadDatabaseTree(); selectDatabase(name); }
+            document.getElementById('createDbModal').style.display = 'none';
         }
 
-        async function createTable() {
-            const tableName = document.getElementById('newTableName').value.trim();
-            const errorDiv = document.getElementById('tableError');
-            
-            if (!tableName) {
-                errorDiv.textContent = 'Table name is required';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
-            if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
-                errorDiv.textContent = 'Table name can only contain letters, numbers, and underscores';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
-            try {
-                const result = await apiRequest(`create.${currentDatabase}.${tableName}`);
-                if (result.success) {
-                    showNotification(`Table '${tableName}' created`, 'success');
-                    document.getElementById('createTableModal').style.display = 'none';
-                    loadDatabaseContent(currentDatabase);
-                    loadDatabaseTree();
-                    selectTable(currentDatabase, tableName);
-                } else {
-                    errorDiv.textContent = result.error || 'Creation failed';
-                    errorDiv.style.display = 'block';
-                }
-            } catch (error) {
-                errorDiv.textContent = error.message;
-                errorDiv.style.display = 'block';
-            }
+        async function executeSQL() {
+            const query = document.getElementById('sqlQueryInput').value;
+            const result = await apiRequest(query);
+            document.getElementById('queryResult').style.display = 'block';
+            document.getElementById('queryResult').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
         }
 
-        // ============================================
-        // Event Listeners & Initialization
-        // ============================================
-        function initEventListeners() {
-            document.getElementById('refreshBtn').onclick = () => {
-                loadDatabaseTree();
-                if (currentDatabase) loadDatabaseContent(currentDatabase);
-                if (currentDatabase && currentTable) loadTableData(currentDatabase, currentTable);
-                showNotification('Refreshed', 'success');
-            };
-            
-            document.getElementById('createDatabaseBtn').onclick = showCreateDatabaseModal;
-            document.getElementById('welcomeCreateDbBtn').onclick = showCreateDatabaseModal;
-            document.getElementById('createTableBtn').onclick = () => {
-                if (currentDatabase) {
-                    document.getElementById('createTableModal').style.display = 'flex';
-                } else {
-                    showNotification('Select a database first', 'warning');
-                }
-            };
-            document.getElementById('addRecordBtn').onclick = () => {
-                if (currentDatabase && currentTable) {
-                    showRecordModal('Add Record', currentDatabase, currentTable);
-                } else {
-                    showNotification('Select a table first', 'warning');
-                }
-            };
-            document.getElementById('runSqlBtn').onclick = () => {
-                document.getElementById('queryPanelBody').style.display = isQueryPanelVisible ? 'none' : 'block';
-                isQueryPanelVisible = !isQueryPanelVisible;
-                document.getElementById('toggleQueryPanel').querySelector('i').className = isQueryPanelVisible ? 'fa fa-chevron-up' : 'fa fa-chevron-down';
-            };
-            document.getElementById('executeQueryBtn').onclick = executeSql;
-            document.getElementById('clearQueryBtn').onclick = () => {
-                document.getElementById('sqlQueryInput').value = '';
-                document.getElementById('queryResult').style.display = 'none';
-            };
-            
-            // Modal close handlers
-            document.querySelectorAll('.modal-close, .modal-cancel').forEach(btn => {
-                btn.onclick = () => {
-                    document.getElementById('createDbModal').style.display = 'none';
-                    document.getElementById('createTableModal').style.display = 'none';
-                    document.getElementById('recordModal').style.display = 'none';
-                };
-            });
-            
-            document.getElementById('createDbConfirm').onclick = createDatabase;
-            document.getElementById('createTableConfirm').onclick = createTable;
-            
-            // Add column to table creation
-            document.getElementById('addColumnBtn').onclick = () => {
-                const columnsList = document.getElementById('columnsList');
-                const newRow = document.createElement('div');
-                newRow.className = 'form-row';
-                newRow.style.marginBottom = '0.5rem';
-                newRow.innerHTML = `
-                    <input type="text" placeholder="Column name" style="flex: 2;">
-                    <select style="flex: 1;">
-                        <option value="string">String</option>
-                        <option value="number">Number</option>
-                        <option value="boolean">Boolean</option>
-                        <option value="json">JSON</option>
-                    </select>
-                    <button class="remove-column-btn" style="background: none; border: none; color: var(--accent-error);"><i class="fa fa-trash"></i></button>
-                `;
-                newRow.querySelector('.remove-column-btn').onclick = () => newRow.remove();
-                columnsList.appendChild(newRow);
-            };
-            
-            // Search functionality
-            document.getElementById('dbSearch').oninput = () => loadDatabaseTree();
-            
-            // Mobile menu toggle
-            const menuToggle = document.getElementById('menuToggle');
-            const sidebar = document.getElementById('dbSidebar');
-            if (menuToggle) {
-                menuToggle.style.display = window.innerWidth <= 768 ? 'inline-flex' : 'none';
-                menuToggle.onclick = () => sidebar.classList.toggle('open');
-            }
-        }
+        document.getElementById('refreshBtn').onclick = () => { loadDatabaseTree(); if(currentDatabase) selectDatabase(currentDatabase); };
+        document.getElementById('createDatabaseBtn').onclick = () => document.getElementById('createDbModal').style.display = 'flex';
+        document.getElementById('welcomeCreateDbBtn').onclick = () => document.getElementById('createDbModal').style.display = 'flex';
+        document.getElementById('createTableBtn').onclick = () => alert('Create table feature - use SQL: create.db.table');
+        document.getElementById('addRecordBtn').onclick = () => { if(currentTable) editRecord(currentDatabase, currentTable, null); else alert('Select a table first'); };
+        document.getElementById('runSqlBtn').onclick = () => document.getElementById('queryResult').style.display = document.getElementById('queryResult').style.display === 'none' ? 'flex' : 'none';
+        document.getElementById('executeQueryBtn').onclick = executeSQL;
+        document.getElementById('clearQueryBtn').onclick = () => { document.getElementById('sqlQueryInput').value = ''; document.getElementById('queryResult').style.display = 'none'; };
+        document.getElementById('createDbConfirm').onclick = createDatabase;
+        document.querySelectorAll('.modal-close, .modal-cancel').forEach(btn => btn.onclick = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'));
 
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Export functions to global for onclick handlers
-        window.selectTable = selectTable;
-        window.deleteTable = deleteTable;
-        window.editRecord = editRecord;
-        window.deleteRecord = deleteRecord;
-
-        // Initialize
-        async function init() {
-            initEventListeners();
-            await loadDatabaseTree();
-            updateStatus('Connected');
-        }
-        
-        init();
+        loadDatabaseTree();
     </script>
 </body>
 </html>
