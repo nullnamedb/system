@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,228 +7,31 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="/ui/base.css">
     <style>
-        /* API Documentation Styles */
-        .api-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        .api-header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .api-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .api-header p {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-        }
-
-        .api-grid {
-            display: grid;
-            grid-template-columns: 280px 1fr;
-            gap: 2rem;
-        }
-
-        /* Sidebar Navigation */
-        .api-sidebar {
-            position: sticky;
-            top: 2rem;
-            height: fit-content;
-            background: var(--bg-panel);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border-primary);
-            border-radius: var(--radius-lg);
-            padding: 1rem;
-        }
-
-        .api-sidebar h3 {
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--border-primary);
-        }
-
-        .api-sidebar ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .api-sidebar li {
-            margin-bottom: 0.25rem;
-        }
-
-        .api-sidebar a {
-            display: block;
-            padding: 0.4rem 0.75rem;
-            border-radius: var(--radius-md);
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-
-        .api-sidebar a:hover {
-            background: var(--bg-hover);
-            color: var(--accent-primary);
-        }
-
-        /* Main Content */
-        .api-content {
-            min-width: 0;
-        }
-
-        .api-section {
-            background: var(--bg-panel);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border-primary);
-            border-radius: var(--radius-lg);
-            margin-bottom: 2rem;
-            overflow: hidden;
-        }
-
-        .section-header {
-            padding: 1rem 1.5rem;
-            background: var(--bg-tertiary);
-            border-bottom: 1px solid var(--border-primary);
-        }
-
-        .section-header h2 {
-            margin: 0;
-            font-size: 1.25rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .section-header h2 i {
-            color: var(--accent-primary);
-        }
-
-        .section-content {
-            padding: 1.5rem;
-        }
-
-        /* Endpoint Card */
-        .endpoint {
-            background: var(--bg-tertiary);
-            border-radius: var(--radius-md);
-            margin-bottom: 1.5rem;
-            overflow: hidden;
-        }
-
-        .endpoint-header {
-            padding: 1rem 1.5rem;
-            background: var(--bg-input);
-            border-bottom: 1px solid var(--border-primary);
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .method {
-            display: inline-block;
-            padding: 0.2rem 0.6rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
+        .api-container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .api-header { text-align: center; margin-bottom: 2rem; }
+        .api-header h1 { font-size: 2.5rem; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .api-section { background: var(--bg-panel); backdrop-filter: blur(20px); border: 1px solid var(--border-primary); border-radius: var(--radius-lg); margin-bottom: 1.5rem; overflow: hidden; }
+        .section-header { padding: 1rem 1.5rem; background: var(--bg-tertiary); border-bottom: 1px solid var(--border-primary); }
+        .section-header h2 { margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
+        .section-header h2 i { color: var(--accent-primary); }
+        .section-content { padding: 1.5rem; }
+        .endpoint { background: var(--bg-tertiary); border-radius: var(--radius-md); margin-bottom: 1rem; overflow: hidden; }
+        .endpoint-header { padding: 0.75rem 1rem; background: var(--bg-input); border-bottom: 1px solid var(--border-primary); display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+        .method { display: inline-block; padding: 0.2rem 0.6rem; border-radius: var(--radius-sm); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
         .method-get { background: #00d2ff; color: #000; }
         .method-post { background: #00ff88; color: #000; }
         .method-put { background: #ffaa00; color: #000; }
         .method-delete { background: #ff007f; color: #fff; }
-
-        .endpoint-url {
-            font-family: monospace;
-            font-size: 0.9rem;
-            color: var(--text-primary);
-            word-break: break-all;
-        }
-
-        .endpoint-body {
-            padding: 1rem 1.5rem;
-        }
-
-        .param-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-        }
-
-        .param-table th, .param-table td {
-            padding: 0.5rem 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-secondary);
-        }
-
-        .param-table th {
-            background: var(--bg-tertiary);
-            font-weight: 600;
-            color: var(--accent-primary);
-        }
-
-        .code-example {
-            background: var(--bg-tertiary);
-            border-radius: var(--radius-md);
-            padding: 1rem;
-            margin: 1rem 0;
-            font-family: monospace;
-            font-size: 0.85rem;
-            overflow-x: auto;
-            border-left: 3px solid var(--accent-primary);
-        }
-
-        .response-example {
-            background: rgba(0, 210, 255, 0.05);
-            border-radius: var(--radius-md);
-            padding: 1rem;
-            margin-top: 0.5rem;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 0.2rem 0.5rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.7rem;
-            margin-left: 0.5rem;
-        }
-
+        .endpoint-url { font-family: monospace; font-size: 0.85rem; word-break: break-all; }
+        .endpoint-body { padding: 1rem; }
+        .code-example { background: var(--bg-tertiary); border-radius: var(--radius-md); padding: 1rem; margin: 1rem 0; font-family: monospace; font-size: 0.8rem; overflow-x: auto; border-left: 3px solid var(--accent-primary); }
+        .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.7rem; margin-left: 0.5rem; }
         .badge-auth { background: var(--accent-warning); color: #000; }
         .badge-admin { background: var(--accent-error); color: #fff; }
-        .badge-public { background: var(--accent-secondary); color: #000; }
-
-        hr {
-            border: none;
-            border-top: 1px solid var(--border-primary);
-            margin: 1rem 0;
-        }
-
-        @media (max-width: 900px) {
-            .api-grid {
-                grid-template-columns: 1fr;
-            }
-            .api-sidebar {
-                position: static;
-                margin-bottom: 1rem;
-            }
-            .endpoint-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border-secondary); }
+        th { background: var(--bg-tertiary); color: var(--accent-primary); }
+        @media (max-width: 768px) { .api-container { padding: 1rem; } .endpoint-header { flex-direction: column; align-items: flex-start; } }
     </style>
 </head>
 <body>
@@ -239,656 +41,142 @@
             <p>RESTful API — Simple, Powerful, Free</p>
         </div>
 
-        <div class="api-grid">
-            <!-- Sidebar Navigation -->
-            <aside class="api-sidebar">
-                <h3><i class="fa fa-bars"></i> API Sections</h3>
-                <ul>
-                    <li><a href="#overview">Overview</a></li>
-                    <li><a href="#authentication">Authentication</a></li>
-                    <li><a href="#data-operations">Data Operations</a></li>
-                    <li><a href="#file-operations">File Operations</a></li>
-                    <li><a href="#version-control">Version Control</a></li>
-                    <li><a href="#backup">Backup & Restore</a></li>
-                    <li><a href="#user-management">User Management</a></li>
-                    <li><a href="#system">System</a></li>
-                    <li><a href="#response-formats">Response Formats</a></li>
-                    <li><a href="#errors">Error Codes</a></li>
-                    <li><a href="#examples">Code Examples</a></li>
-                </ul>
-                <hr>
-                <h3><i class="fa fa-link"></i> Base URL</h3>
-                <div class="code-example" style="font-size: 0.7rem;">https://yourdb.com/</div>
-            </aside>
+        <!-- Overview -->
+        <div class="api-section">
+            <div class="section-header"><h2><i class="fa fa-info-circle"></i> Overview</h2></div>
+            <div class="section-content">
+                <p>Base URL: <code>https://yourdb.com/</code></p>
+                <div class="code-example"><pre>https://yourdb.com/q?q=your_command_here</pre></div>
+                <p>Authentication: Session key via <code>&ses=key</code> or <code>X-Session</code> header.<br>
+                Response Formats: JSON (default), CSV, Text, Table</p>
+            </div>
+        </div>
 
-            <!-- Main Content -->
-            <main class="api-content">
-                <!-- Overview -->
-                <div id="overview" class="api-section">
-                    <div class="section-header">
-                        <h2><i class="fa fa-info-circle"></i> Overview</h2>
-                    </div>
-                    <div class="section-content">
-                        <p>NullName DB provides a simple HTTP API for all database operations. All endpoints accept <code>GET</code> and <code>POST</code> requests with the query string parameter <code>q=</code>.</p>
-                        <div class="code-example">
-                            <pre>https://yourdb.com/q?q=your_command_here</pre>
-                        </div>
-                        <p><strong>Base URL:</strong> <code>https://yourdb.com/</code><br>
-                        <strong>Response Format:</strong> JSON (default), CSV, Text, Table<br>
-                        <strong>Authentication:</strong> Session key via <code>&ses=key</code> or <code>X-Session</code> header</p>
-                    </div>
+        <!-- Authentication -->
+        <div class="api-section">
+            <div class="section-header"><h2><i class="fa fa-lock"></i> Authentication</h2></div>
+            <div class="section-content">
+                <div class="endpoint">
+                    <div class="endpoint-header"><span class="method method-post">POST</span><span class="endpoint-url">/q?q=login.username.password</span></div>
+                    <div class="endpoint-body"><div class="code-example"><pre>curl https://yourdb.com/q?q=login.admin.nullname2025</pre></div></div>
                 </div>
-
-                <!-- Authentication -->
-                <div id="authentication" class="api-section">
-                    <div class="section-header">
-                        <h2><i class="fa fa-lock"></i> Authentication</h2>
-                    </div>
-                    <div class="section-content">
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/q?q=login.username.password</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Authenticate and receive a session key.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=login.admin.nullname2025</pre>
-                                </div>
-                                <div class="response-example">
-                                    <strong>Response:</strong>
-                                    <pre>{"success":true,"session":"abc123...","user":{"username":"admin","role":"admin"}}</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/q?q=signup.username.password</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Create a new user account.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=signup.john.doe123</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/q?q=logout&ses=session_key</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Invalidate current session.</p>
-                            </div>
-                        </div>
-                    </div>
+                <div class="endpoint">
+                    <div class="endpoint-header"><span class="method method-post">POST</span><span class="endpoint-url">/q?q=signup.username.password</span></div>
+                    <div class="endpoint-body"><div class="code-example"><pre>curl https://yourdb.com/q?q=signup.john.doe123</pre></div></div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Data Operations -->
-                <div id="data-operations" class="api-section">
-                    <div class="section-header">
-                        <h2><i class="fa fa-database"></i> Data Operations</h2>
-                    </div>
-                    <div class="section-content">
-                        <!-- Simple Key-Value -->
-                        <h3 style="color: var(--accent-primary); margin-bottom: 1rem;">Simple Key-Value</h3>
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET/POST</span>
-                                <span class="endpoint-url">/q?q=key=value</span>
-                                <span class="badge badge-public">Public</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Store a value.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=score=100</pre>
-                                </div>
-                            </div>
-                        </div>
+        <!-- Data Operations -->
+        <div class="api-section">
+            <div class="section-header"><h2><i class="fa fa-database"></i> Data Operations</h2></div>
+            <div class="section-content">
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-post">POST</span><span class="endpoint-url">/q?q=create.databasename</span></div><div class="endpoint-body"><div class="code-example"><pre>curl https://yourdb.com/q?q=create.mydb</pre></div></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-post">POST</span><span class="endpoint-url">/q?q=add.db.table.column.value</span></div><div class="endpoint-body"><div class="code-example"><pre>curl https://yourdb.com/q?q=add.mydb.users.name.John</pre></div></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-get">GET</span><span class="endpoint-url">/q?q=get.db.table</span></div><div class="endpoint-body"><div class="code-example"><pre>curl https://yourdb.com/q?q=get.mydb.users</pre></div></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-get">GET</span><span class="endpoint-url">/q?q=get.db.table.id</span></div><div class="endpoint-body"><div class="code-example"><pre>curl https://yourdb.com/q?q=get.mydb.users.1</pre></div></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-put">PUT</span><span class="endpoint-url">/q?q=update.db.table.id.column=value</span></div><div class="endpoint-body"><div class="code-example"><pre>curl https://yourdb.com/q?q=update.mydb.users.1.name=Johnny</pre></div></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-delete">DELETE</span><span class="endpoint-url">/q?q=delete.db.table.id</span></div><div class="endpoint-body"><div class="code-example"><pre>curl https://yourdb.com/q?q=delete.mydb.users.1</pre></div></div></div>
+            </div>
+        </div>
 
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/q?q=key</span>
-                                <span class="badge badge-public">Public</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Retrieve a value.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=score</pre>
-                                </div>
-                            </div>
-                        </div>
+        <!-- File Operations -->
+        <div class="api-section">
+            <div class="section-header"><h2><i class="fa fa-file"></i> File Operations</h2></div>
+            <div class="section-content">
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-post">POST</span><span class="endpoint-url">/upload</span></div><div class="endpoint-body"><div class="code-example"><pre>curl -X POST -F "file=@/path/to/image.jpg" https://yourdb.com/upload?ses=key</pre></div></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-post">POST</span><span class="endpoint-url">/upload/url</span></div><div class="endpoint-body"><div class="code-example"><pre>curl -X POST -H "Content-Type: application/json" -d '{"url":"https://example.com/image.jpg"}' https://yourdb.com/upload/url?ses=key</pre></div></div></div>
+            </div>
+        </div>
 
-                        <!-- Structured Data -->
-                        <h3 style="color: var(--accent-primary); margin: 1.5rem 0 1rem;">Structured Data</h3>
-                        
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/q?q=create.databasename</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Create a new database.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=create.mydb</pre>
-                                </div>
-                            </div>
-                        </div>
+        <!-- Version Control -->
+        <div class="api-section">
+            <div class="section-header"><h2><i class="fa fa-code-fork"></i> Version Control</h2></div>
+            <div class="section-content">
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-post">POST</span><span class="endpoint-url">/q?q=commit "message"</span></div><div class="endpoint-body"><div class="code-example"><pre>curl https://yourdb.com/q?q=commit "first version"</pre></div></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-get">GET</span><span class="endpoint-url">/q?q=commits</span></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-post">POST</span><span class="endpoint-url">/q?q=branch.name</span></div><div class="endpoint-body"><div class="code-example"><pre>curl https://yourdb.com/q?q=branch.test</pre></div></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-post">POST</span><span class="endpoint-url">/q?q=merge.source.into.target</span></div><div class="endpoint-body"><div class="code-example"><pre>curl https://yourdb.com/q?q=merge.test.into.main</pre></div></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-post">POST</span><span class="endpoint-url">/q?q=undo</span></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-get">GET</span><span class="endpoint-url">/f1, /f2, /f3</span><span class="badge badge-admin">Admin</span></div><div class="endpoint-body"><div class="code-example"><pre>curl https://yourdb.com/f1?ses=admin_session</pre></div></div></div>
+            </div>
+        </div>
 
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/q?q=add.db.table.column.value</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Add data to a table.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=add.mydb.users.name.John</pre>
-                                </div>
-                                <div class="param-table">
-                                    <table>
-                                        <tr><th>Parameter</th><th>Description</th></tr>
-                                        <tr><td><code>db</code></td><td>Database name</td></tr>
-                                        <tr><td><code>table</code></td><td>Table name</td></tr>
-                                        <tr><td><code>column</code></td><td>Column name</td></tr>
-                                        <tr><td><code>value</code></td><td>Value to store</td></tr>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
+        <!-- User Management -->
+        <div class="api-section">
+            <div class="section-header"><h2><i class="fa fa-users"></i> User Management</h2></div>
+            <div class="section-content">
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-get">GET</span><span class="endpoint-url">/q?q=user.list</span><span class="badge badge-admin">Admin</span></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-post">POST</span><span class="endpoint-url">/q?q=user.role.username.newrole</span><span class="badge badge-admin">Admin</span></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-delete">DELETE</span><span class="endpoint-url">/q?q=user.delete.username</span><span class="badge badge-admin">Admin</span></div></div>
+            </div>
+        </div>
 
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/q?q=get.db.table</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Retrieve all data from a table.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=get.mydb.users</pre>
-                                </div>
-                            </div>
-                        </div>
+        <!-- System -->
+        <div class="api-section">
+            <div class="section-header"><h2><i class="fa fa-server"></i> System</h2></div>
+            <div class="section-content">
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-get">GET</span><span class="endpoint-url">/health</span></div><div class="endpoint-body"><div class="code-example"><pre>{"status":"ok","timestamp":"..."}</pre></div></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-get">GET</span><span class="endpoint-url">/q?q=status</span></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-get">GET</span><span class="endpoint-url">/q?q=stats</span></div></div>
+                <div class="endpoint"><div class="endpoint-header"><span class="method method-get">GET</span><span class="endpoint-url">/q?q=help</span></div></div>
+            </div>
+        </div>
 
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/q?q=get.db.table.id</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Retrieve a specific record by ID.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=get.mydb.users.1</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-put">PUT</span>
-                                <span class="endpoint-url">/q?q=update.db.table.id.column=value</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Update a specific record.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=update.mydb.users.1.name=Johnny</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-delete">DELETE</span>
-                                <span class="endpoint-url">/q?q=delete.db.table.id</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Delete a specific record.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=delete.mydb.users.1</pre>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- File Operations -->
-                <div id="file-operations" class="api-section">
-                    <div class="section-header">
-                        <h2><i class="fa fa-file"></i> File Operations</h2>
-                    </div>
-                    <div class="section-content">
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/upload</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Upload a file (multipart/form-data).</p>
-                                <div class="code-example">
-                                    <pre>curl -X POST -F "file=@/path/to/image.jpg" https://yourdb.com/upload&ses=session_key</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/upload/url</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Upload a file from a URL.</p>
-                                <div class="code-example">
-                                    <pre>curl -X POST -H "Content-Type: application/json" -d '{"url":"https://example.com/image.jpg"}' https://yourdb.com/upload/url?ses=session_key</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/files/{filename}</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Download a file.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/files/image.jpg</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/q?q=files.list</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>List all uploaded files.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Version Control -->
-                <div id="version-control" class="api-section">
-                    <div class="section-header">
-                        <h2><i class="fa fa-code-fork"></i> Version Control</h2>
-                    </div>
-                    <div class="section-content">
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/q?q=commit "message"</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Create a commit snapshot.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=commit "first version"</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/q?q=commits</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>List commit history.</p>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/q?q=branch.name</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Create a new branch.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=branch.test</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/q?q=merge.source.into.target</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Merge branches.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=merge.test.into.main</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/q?q=undo</span>
-                                <span class="badge badge-auth">Auth Required</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Undo last operation.</p>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/f1, /f2, /f3</span>
-                                <span class="badge badge-admin">Admin Only</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Emergency force back 1, 2, or 3 commits.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/f1?ses=admin_session</pre>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Backup & Restore -->
-                <div id="backup" class="api-section">
-                    <div class="section-header">
-                        <h2><i class="fa fa-archive"></i> Backup & Restore</h2>
-                    </div>
-                    <div class="section-content">
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/q?q=backup</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Create a backup.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=backup&ses=admin_session</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/q?q=backups</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>List all backups.</p>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/q?q=restore.name</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Restore from backup.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=restore.backup_20250101&ses=admin_session</pre>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- User Management -->
-                <div id="user-management" class="api-section">
-                    <div class="section-header">
-                        <h2><i class="fa fa-users"></i> User Management</h2>
-                    </div>
-                    <div class="section-content">
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/q?q=user.list</span>
-                                <span class="badge badge-admin">Admin Only</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>List all users.</p>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/q?q=user.role.username.newrole</span>
-                                <span class="badge badge-admin">Admin Only</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Change user role.</p>
-                                <div class="code-example">
-                                    <pre>curl https://yourdb.com/q?q=user.role.john.editor&ses=admin_session</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-delete">DELETE</span>
-                                <span class="endpoint-url">/q?q=user.delete.username</span>
-                                <span class="badge badge-admin">Admin Only</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Delete a user.</p>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-post">POST</span>
-                                <span class="endpoint-url">/q?q=user.changepass.old.new</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Change your own password.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- System -->
-                <div id="system" class="api-section">
-                    <div class="section-header">
-                        <h2><i class="fa fa-server"></i> System Endpoints</h2>
-                    </div>
-                    <div class="section-content">
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/health</span>
-                                <span class="badge badge-public">Public</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Health check endpoint.</p>
-                                <div class="response-example">
-                                    <pre>{"status":"ok","timestamp":"2025-01-01T00:00:00.000Z","stats":{...}}</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/q?q=status</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>System status information.</p>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/q?q=stats</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Database statistics.</p>
-                            </div>
-                        </div>
-
-                        <div class="endpoint">
-                            <div class="endpoint-header">
-                                <span class="method method-get">GET</span>
-                                <span class="endpoint-url">/q?q=help</span>
-                                <span class="badge badge-public">Public</span>
-                            </div>
-                            <div class="endpoint-body">
-                                <p>Help reference.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Response Formats -->
-                <div id="response-formats" class="api-section">
-                    <div class="section-header">
-                        <h2><i class="fa fa-file-code-o"></i> Response Formats</h2>
-                    </div>
-                    <div class="section-content">
-                        <p>Use the <code>format</code> parameter to specify response format:</p>
-                        <div class="param-table">
-                            <table>
-                                <tr><th>Format</th><th>Parameter</th><th>Content-Type</th><th>Example</th></tr>
-                                <tr><td>JSON</td><td><code>&format=json</code></td><td>application/json</td><td>Default, prettified with &pretty=true</td></tr>
-                                <tr><td>Plain Text</td><td><code>&format=text</code></td><td>text/plain</td><td>Human readable key:value pairs</td></tr>
-                                <tr><td>Table</td><td><code>&format=table</code></td><td>text/plain</td><td>ASCII table format</td></tr>
-                                <tr><td>CSV</td><td><code>&format=csv</code></td><td>text/csv</td><td>Comma-separated values for Excel</td></tr>
-                                <tr><td>JSONP</td><td><code>&format=jsonp&callback=func</code></td><td>application/javascript</td><td>JSON with padding</td></tr>
-                            </table>
-                        </div>
-                        <div class="code-example">
-                            <pre># Get as CSV
+        <!-- Response Formats -->
+        <div class="api-section">
+            <div class="section-header"><h2><i class="fa fa-file-code-o"></i> Response Formats</h2></div>
+            <div class="section-content">
+                <div class="code-example"><pre># CSV
 curl https://yourdb.com/q?q=get.users&format=csv
 
-# Get as table
+# Plain Text
+curl https://yourdb.com/q?q=get.users&format=text
+
+# Table
 curl https://yourdb.com/q?q=get.users&format=table
 
-# Get pretty JSON
-curl https://yourdb.com/q?q=get.users&pretty=true</pre>
-                        </div>
-                    </div>
-                </div>
+# Pretty JSON
+curl https://yourdb.com/q?q=get.users&pretty=true</pre></div>
+            </div>
+        </div>
 
-                <!-- Error Codes -->
-                <div id="errors" class="api-section">
-                    <div class="section-header">
-                        <h2><i class="fa fa-exclamation-triangle"></i> Error Codes</h2>
-                    </div>
-                    <div class="section-content">
-                        <div class="param-table">
-                            <table>
-                                <tr><th>Code</th><th>Meaning</th><th>Description</th></tr>
-                                <tr><td>200</td><td>OK</td><td>Request succeeded</td></tr>
-                                <tr><td>400</td><td>Bad Request</td><td>Invalid query syntax</td></tr>
-                                <tr><td>401</td><td>Unauthorized</td><td>Authentication required</td></tr>
-                                <tr><td>403</td><td>Forbidden</td><td>Insufficient permissions</td></tr>
-                                <tr><td>404</td><td>Not Found</td><td>Resource not found</td></tr>
-                                <tr><td>429</td><td>Too Many Requests</td><td>Rate limit exceeded</td></tr>
-                                <tr><td>500</td><td>Internal Server Error</td><td>Server error</td></tr>
-                                <tr><td>504</td><td>Gateway Timeout</td><td>Query timeout</td></tr>
-                            </table>
-                        </div>
-                        <div class="code-example">
-                            <pre># Error Response Example
-{
-  "error": "Unauthorized",
-  "message": "Invalid session key",
-  "code": 401
-}</pre>
-                        </div>
-                    </div>
-                </div>
+        <!-- Error Codes -->
+        <div class="api-section">
+            <div class="section-header"><h2><i class="fa fa-exclamation-triangle"></i> Error Codes</h2></div>
+            <div class="section-content">
+                <table>
+                    <thead><tr><th>Code</th><th>Meaning</th></thead>
+                    <tbody>
+                        <tr><td>401</td><td>Unauthorized - Authentication required</td></tr>
+                        <tr><td>403</td><td>Forbidden - Insufficient permissions</td></tr>
+                        <tr><td>404</td><td>Not Found</td></tr>
+                        <tr><td>429</td><td>Too Many Requests</td></tr>
+                        <tr><td>500</td><td>Internal Server Error</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                <!-- Code Examples -->
-                <div id="examples" class="api-section">
-                    <div class="section-header">
-                        <h2><i class="fa fa-code"></i> Code Examples</h2>
-                    </div>
-                    <div class="section-content">
-                        <h3>JavaScript (Fetch)</h3>
-                        <div class="code-example">
-                            <pre>// Save data
-const response = await fetch('https://yourdb.com/q?q=score=100');
-const data = await response.json();
+        <!-- Code Examples -->
+        <div class="api-section">
+            <div class="section-header"><h2><i class="fa fa-code"></i> Code Examples</h2></div>
+            <div class="section-content">
+                <h3>JavaScript</h3>
+                <div class="code-example"><pre>const res = await fetch('https://yourdb.com/q?q=score=100');
+const data = await res.json();</pre></div>
+                <h3>Python</h3>
+                <div class="code-example"><pre>import requests
+r = requests.get('https://yourdb.com/q?q=score=100')
+print(r.json())</pre></div>
+                <h3>cURL</h3>
+                <div class="code-example"><pre>curl "https://yourdb.com/q?q=add.mydb.users.name.John&ses=abc123"
+curl "https://yourdb.com/q?q=get.mydb.users&format=table"</pre></div>
+            </div>
+        </div>
 
-// Get data
-const getResponse = await fetch('https://yourdb.com/q?q=score');
-const value = await getResponse.json();</pre>
-                        </div>
-
-                        <h3>Python (Requests)</h3>
-                        <div class="code-example">
-                            <pre>import requests
-
-# Save data
-response = requests.get('https://yourdb.com/q?q=score=100')
-
-# Get data
-response = requests.get('https://yourdb.com/q?q=score')
-print(response.json())</pre>
-                        </div>
-
-                        <h3>cURL</h3>
-                        <div class="code-example">
-                            <pre># Save
-curl "https://yourdb.com/q?q=score=100"
-
-# Get
-curl "https://yourdb.com/q?q=score"
-
-# With session
-curl "https://yourdb.com/q?q=add.mydb.users.name.John&ses=abc123"
-
-# With format
-curl "https://yourdb.com/q?q=get.users&format=table"</pre>
-                        </div>
-
-                        <h3>Node.js</h3>
-                        <div class="code-example">
-                            <pre>const https = require('https');
-
-const query = 'score=100';
-https.get(`https://yourdb.com/q?q=${encodeURIComponent(query)}`, (res) => {
-    let data = '';
-    res.on('data', chunk => data += chunk);
-    res.on('end', () => console.log(JSON.parse(data)));
-});</pre>
-                        </div>
-
-                        <h3>PHP</h3>
-                        <div class="code-example">
-                            <pre>&lt;?php
-$query = urlencode('score=100');
-$response = file_get_contents("https://yourdb.com/q?q=$query");
-$data = json_decode($response, true);
-?&gt;</pre>
-                        </div>
-
-                        <h3>Go</h3>
-                        <div class="code-example">
-                            <pre>package main
-
-import (
-    "fmt"
-    "io/ioutil"
-    "net/http"
-)
-
-func main() {
-    resp, _ := http.Get("https://yourdb.com/q?q=score=100")
-    body, _ := ioutil.ReadAll(resp.Body)
-    fmt.Println(string(body))
-}</pre>
-                        </div>
-                    </div>
-                </div>
-            </main>
+        <div class="footer" style="text-align:center;padding:2rem;color:var(--text-muted);font-size:0.8rem;">
+            <p><a href="https://github.com/nullnamedb" target="_blank"><i class="fa fa-github"></i> GitHub</a> | <a href="/dashboard">Dashboard</a> | <a href="/docs/uses">User Guide</a></p>
         </div>
     </div>
 </body>

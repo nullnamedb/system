@@ -7,204 +7,26 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="/ui/base.css">
     <style>
-        /* Documentation Styles */
-        .docs-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        .docs-header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .docs-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .docs-header p {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-        }
-
-        .docs-nav {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            justify-content: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border-primary);
-        }
-
-        .docs-nav a {
-            padding: 0.5rem 1rem;
-            border-radius: var(--radius-md);
-            color: var(--text-secondary);
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-
-        .docs-nav a:hover {
-            background: var(--bg-hover);
-            color: var(--accent-primary);
-        }
-
-        .docs-section {
-            background: var(--bg-panel);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border-primary);
-            border-radius: var(--radius-lg);
-            margin-bottom: 2rem;
-            overflow: hidden;
-        }
-
-        .section-header {
-            padding: 1.25rem 1.5rem;
-            background: var(--bg-tertiary);
-            border-bottom: 1px solid var(--border-primary);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .section-header i {
-            font-size: 1.5rem;
-            color: var(--accent-primary);
-        }
-
-        .section-header h2 {
-            margin: 0;
-            font-size: 1.25rem;
-        }
-
-        .section-content {
-            padding: 1.5rem;
-        }
-
-        .section-content h3 {
-            font-size: 1.1rem;
-            margin: 1.5rem 0 0.75rem 0;
-            color: var(--accent-primary);
-        }
-
-        .section-content h3:first-of-type {
-            margin-top: 0;
-        }
-
-        .section-content h4 {
-            font-size: 1rem;
-            margin: 1rem 0 0.5rem 0;
-            color: var(--text-secondary);
-        }
-
-        .section-content p {
-            color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 1rem;
-        }
-
-        .code-block {
-            background: var(--bg-tertiary);
-            border-radius: var(--radius-md);
-            padding: 1rem;
-            margin: 1rem 0;
-            overflow-x: auto;
-            font-family: monospace;
-            font-size: 0.85rem;
-            border-left: 3px solid var(--accent-primary);
-        }
-
-        .code-block pre {
-            margin: 0;
-            background: none;
-            padding: 0;
-        }
-
-        .note-box {
-            background: rgba(0, 210, 255, 0.1);
-            border-left: 3px solid var(--accent-primary);
-            padding: 1rem;
-            border-radius: var(--radius-md);
-            margin: 1rem 0;
-        }
-
-        .warning-box {
-            background: rgba(255, 170, 0, 0.1);
-            border-left: 3px solid var(--accent-warning);
-            padding: 1rem;
-            border-radius: var(--radius-md);
-            margin: 1rem 0;
-        }
-
-        .tip-box {
-            background: rgba(0, 255, 136, 0.1);
-            border-left: 3px solid var(--accent-secondary);
-            padding: 1rem;
-            border-radius: var(--radius-md);
-            margin: 1rem 0;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1rem 0;
-        }
-
-        th, td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-secondary);
-        }
-
-        th {
-            background: var(--bg-tertiary);
-            color: var(--accent-primary);
-            font-weight: 600;
-        }
-
-        .role-badge {
-            display: inline-block;
-            padding: 0.2rem 0.5rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-
+        .docs-container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+        .docs-header { text-align: center; margin-bottom: 2rem; }
+        .docs-header h1 { font-size: 2.5rem; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .docs-section { background: var(--bg-panel); backdrop-filter: blur(20px); border: 1px solid var(--border-primary); border-radius: var(--radius-lg); margin-bottom: 1.5rem; overflow: hidden; }
+        .section-header { padding: 1rem 1.5rem; background: var(--bg-tertiary); border-bottom: 1px solid var(--border-primary); display: flex; align-items: center; gap: 0.75rem; }
+        .section-header i { font-size: 1.25rem; color: var(--accent-primary); }
+        .section-header h2 { margin: 0; font-size: 1.25rem; }
+        .section-content { padding: 1.5rem; }
+        .section-content h3 { font-size: 1.1rem; margin: 1rem 0 0.5rem; color: var(--accent-primary); }
+        .code-block { background: var(--bg-tertiary); border-radius: var(--radius-md); padding: 1rem; margin: 1rem 0; font-family: monospace; font-size: 0.85rem; border-left: 3px solid var(--accent-primary); overflow-x: auto; }
+        .tip-box { background: rgba(0, 210, 255, 0.1); border-left: 3px solid var(--accent-primary); padding: 1rem; border-radius: var(--radius-md); margin: 1rem 0; }
+        .warning-box { background: rgba(255, 170, 0, 0.1); border-left: 3px solid var(--accent-warning); padding: 1rem; border-radius: var(--radius-md); margin: 1rem 0; }
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-secondary); }
+        th { background: var(--bg-tertiary); color: var(--accent-primary); }
+        .role-badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.7rem; font-weight: 600; }
         .role-admin { background: #ff007f; color: white; }
-        .role-editor { background: #00d2ff; color: #000; }
-        .role-viewer { background: #ffaa00; color: #000; }
         .role-user { background: #00ff88; color: #000; }
-        .role-root { background: #ff00ff; color: #000; }
-
-        .footer {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-muted);
-            font-size: 0.8rem;
-        }
-
-        @media (max-width: 768px) {
-            .docs-container {
-                padding: 1rem;
-            }
-            .section-header {
-                padding: 1rem;
-            }
-            .section-content {
-                padding: 1rem;
-            }
-            th, td {
-                padding: 0.5rem;
-                font-size: 0.8rem;
-            }
-        }
+        .role-viewer { background: #ffaa00; color: #000; }
+        @media (max-width: 768px) { .docs-container { padding: 1rem; } .section-content { padding: 1rem; } }
     </style>
 </head>
 <body>
@@ -214,389 +36,149 @@
             <p>No brand. No name. No payment. — The simplest database in the universe</p>
         </div>
 
-        <div class="docs-nav">
-            <a href="#getting-started">Getting Started</a>
-            <a href="#users-roles">Users & Roles</a>
-            <a href="#queries">Queries</a>
-            <a href="#files">File Management</a>
-            <a href="#version-control">Version Control</a>
-            <a href="#backup">Backup & Restore</a>
-            <a href="#faq">FAQ</a>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- GETTING STARTED -->
-        <!-- ============================================ -->
-        <div id="getting-started" class="docs-section">
-            <div class="section-header">
-                <i class="fa fa-rocket"></i>
-                <h2>Getting Started</h2>
-            </div>
+        <!-- Getting Started -->
+        <div class="docs-section">
+            <div class="section-header"><i class="fa fa-rocket"></i><h2>Getting Started</h2></div>
             <div class="section-content">
-                <p>NullName DB is a zero-configuration, file-based database that works immediately. No installation, no setup, no payment. Just start using it.</p>
-
-                <h3>First Query</h3>
-                <div class="code-block">
-                    <pre># Save data
-https://yourdb.com/q?q=score=100
-
-# Retrieve data
-https://yourdb.com/q?q=score
-
-# Returns: 100</pre>
-                </div>
-
-                <div class="tip-box">
-                    <i class="fa fa-lightbulb-o"></i> <strong>Tip:</strong> You can use any HTTP client: browser, curl, Postman, or your programming language's HTTP library.
-                </div>
-
-                <h3>Dashboard Access</h3>
-                <p>For a visual interface, access the dashboard at <code>/dashboard</code>. Login with your admin credentials (default: admin / nullname2025).</p>
-
-                <div class="code-block">
-                    <pre>https://yourdb.com/dashboard</pre>
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- USERS & ROLES -->
-        <!-- ============================================ -->
-        <div id="users-roles" class="docs-section">
-            <div class="section-header">
-                <i class="fa fa-users"></i>
-                <h2>Users & Roles System</h2>
-            </div>
-            <div class="section-content">
-                <p>NullName DB has a complete user management system with role-based access control (RBAC). Each user has a role that determines their permissions.</p>
-
-                <h3>User Roles</h3>
-                <table>
-                    <thead>
-                        <tr><th>Role</th><th>Permissions</th><th>Description</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td><span class="role-badge role-root">ROOT</span></td><td>All permissions (*)</td><td>Full system access, can do anything</td></tr>
-                        <tr><td><span class="role-badge role-admin">ADMIN</span></td><td>read, write, delete, create, manage_users, manage_system, backup, restore, force</td><td>Full administrative access</td></tr>
-                        <tr><td><span class="role-badge role-editor">EDITOR</span></td><td>read, write, update, create, backup</td><td>Can create and modify data, create backups</td></tr>
-                        <tr><td><span class="role-badge role-user">USER</span></td><td>read, write, update</td><td>Standard user with read/write access</td></tr>
-                        <tr><td><span class="role-badge role-viewer">VIEWER</span></td><td>read</td><td>Read-only access</td></tr>
-                    </tbody>
-                </table>
-
-                <h3>User Management Commands</h3>
-                <div class="code-block">
-                    <pre># Create a new user
-/q?q=signup.username.password
-
-# Login (returns session key)
-/q?q=login.username.password
-
-# List all users (admin only)
-/q?q=user.list
-
-# Change user role (admin only)
-/q?q=user.role.username.newrole
-
-# Delete user (admin only)
-/q?q=user.delete.username
-
-# Change your own password
-/q?q=user.changepass.oldpassword.newpassword</pre>
-                </div>
-
-                <h3>Authentication Methods</h3>
-                <p>NullName DB supports multiple authentication methods:</p>
-                <ul>
-                    <li><strong>Session Key</strong> - Obtained after login, use <code>&ses=session_key</code> in queries</li>
-                    <li><strong>API Key</strong> - Generate persistent keys for applications</li>
-                    <li><strong>Root Key</strong> - Emergency access using <code>ROOT_KEY</code> from .env</li>
-                    <li><strong>Public Access</strong> - Read operations are public by default (can be disabled)</li>
-                </ul>
-
-                <div class="warning-box">
-                    <i class="fa fa-exclamation-triangle"></i> <strong>Security Note:</strong> Change the default admin password immediately after first deployment!
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- QUERIES -->
-        <!-- ============================================ -->
-        <div id="queries" class="docs-section">
-            <div class="section-header">
-                <i class="fa fa-terminal"></i>
-                <h2>Query System</h2>
-            </div>
-            <div class="section-content">
-                <p>NullName DB uses a simple, intuitive query language. All queries are sent via the <code>q=</code> parameter.</p>
-
-                <h3>Simple Key-Value Operations</h3>
-                <div class="code-block">
-                    <pre># Store a value
+                <p>NullName DB is a zero-configuration, file-based database. No installation, no setup, no payment.</p>
+                <div class="code-block"><pre># Save data
 /q?q=score=100
 
-# Retrieve a value
+# Retrieve data
 /q?q=score
+# Returns: 100</pre></div>
+                <div class="tip-box"><i class="fa fa-lightbulb-o"></i> <strong>Tip:</strong> Access the dashboard at <code>/dashboard</code> for a visual interface.</div>
+            </div>
+        </div>
 
-# Delete a value
-/q?q=score=</pre>
-                </div>
+        <!-- Users & Roles -->
+        <div class="docs-section">
+            <div class="section-header"><i class="fa fa-users"></i><h2>Users & Roles</h2></div>
+            <div class="section-content">
+                <p>Role-based access control with simple username/password authentication. No email required.</p>
+                <table>
+                    <thead><tr><th>Role</th><th>Permissions</th></tr></thead>
+                    <tbody>
+                        <tr><td><span class="role-badge role-admin">ADMIN</span></td><td>Everything (read, write, delete, manage users)</td></tr>
+                        <tr><td><span class="role-badge role-user">USER</span></td><td>Read + write own data</td></tr>
+                        <tr><td><span class="role-badge role-viewer">VIEWER</span></td><td>Read only</td></tr>
+                    </tbody>
+                </table>
+                <div class="code-block"><pre># Signup (username + password only)
+/q?q=signup.john.doe123
 
-                <h3>Structured Data Operations</h3>
-                <div class="code-block">
-                    <pre># Create database
+# Login (returns session key)
+/q?q=login.john.doe123
+
+# All queries need session
+/q?q=add.mydb.users.name.John&ses=abc123</pre></div>
+            </div>
+        </div>
+
+        <!-- Queries -->
+        <div class="docs-section">
+            <div class="section-header"><i class="fa fa-terminal"></i><h2>Queries</h2></div>
+            <div class="section-content">
+                <div class="code-block"><pre># Create database
 /q?q=create.mydb
 
 # Add data
 /q?q=add.mydb.users.name.John
 /q?q=add.mydb.users.age.25
 
-# Get all users
+# Get data
 /q?q=get.mydb.users
 
-# Get specific user by ID
-/q?q=get.mydb.users.1
-
-# Update user
+# Update
 /q?q=update.mydb.users.1.name=Johnny
 
-# Delete user
-/q?q=delete.mydb.users.1</pre>
-                </div>
-
+# Delete
+/q?q=delete.mydb.users.1</pre></div>
                 <h3>Response Formats</h3>
-                <p>You can specify the response format using the <code>format</code> parameter:</p>
                 <table>
-                    <thead><tr><th>Format</th><th>Parameter</th><th>Use Case</th></tr></thead>
+                    <thead><tr><th>Format</th><th>Parameter</th></tr></thead>
                     <tbody>
-                        <tr><td>JSON</td><td><code>&format=json</code></td><td>APIs, applications (default)</td></tr>
-                        <tr><td>Plain Text</td><td><code>&format=text</code></td><td>Terminals, curl, quick views</td></tr>
-                        <tr><td>Table</td><td><code>&format=table</code></td><td>Human-readable ASCII table</td></tr>
-                        <tr><td>CSV</td><td><code>&format=csv</code></td><td>Excel, data analysis</td></tr>
+                        <tr><td>JSON</td><td><code>&format=json</code></td></tr>
+                        <tr><td>Plain Text</td><td><code>&format=text</code></td></tr>
+                        <tr><td>Table</td><td><code>&format=table</code></td></tr>
+                        <tr><td>CSV</td><td><code>&format=csv</code></td></tr>
                     </tbody>
                 </table>
-
-                <div class="code-block">
-                    <pre># Get as CSV
-/q?q=get.mydb.users&format=csv
-
-# Get as plain text
-/q?q=get.mydb.users&format=text</pre>
-                </div>
             </div>
         </div>
 
-        <!-- ============================================ -->
-        <!-- FILE MANAGEMENT -->
-        <!-- ============================================ -->
-        <div id="files" class="docs-section">
-            <div class="section-header">
-                <i class="fa fa-file"></i>
-                <h2>File Management</h2>
-            </div>
+        <!-- Version Control -->
+        <div class="docs-section">
+            <div class="section-header"><i class="fa fa-code-fork"></i><h2>Version Control</h2></div>
             <div class="section-content">
-                <p>NullName DB includes built-in file storage. Upload files via URL or direct upload.</p>
-
-                <h3>Upload from URL</h3>
-                <div class="code-block">
-                    <pre># Store file reference (URL only)
-/q?q=logo=https://example.com/image.jpg
-
-# Download and store file locally
-/q?q=logo=https://example.com/image.jpg.upload</pre>
-                </div>
-
-                <h3>Upload via Form</h3>
-                <div class="code-block">
-                    <pre># POST to /upload endpoint
-curl -X POST -F "file=@/path/to/file.jpg" https://yourdb.com/upload</pre>
-                </div>
-
-                <h3>File Operations</h3>
-                <div class="code-block">
-                    <pre># List uploaded files
-/q?q=files.list
-
-# Get file info
-/q?q=files.info.filename.jpg
-
-# Delete file
-/q?q=files.delete.filename.jpg</pre>
-                </div>
-
-                <div class="note-box">
-                    <i class="fa fa-info-circle"></i> <strong>Note:</strong> Maximum file size is 50MB by default. This can be changed in the .env configuration.
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- VERSION CONTROL -->
-        <!-- ============================================ -->
-        <div id="version-control" class="docs-section">
-            <div class="section-header">
-                <i class="fa fa-code-fork"></i>
-                <h2>Version Control (Git-like)</h2>
-            </div>
-            <div class="section-content">
-                <p>NullName DB includes a complete Git-like version control system. Track changes, create branches, merge, undo, and rollback.</p>
-
-                <h3>Commits</h3>
-                <div class="code-block">
-                    <pre># Create a commit
+                <div class="code-block"><pre># Create commit
 /q?q=commit "initial setup"
 
-# View commit history
+# View history
 /q?q=commits
 
-# Checkout a specific commit
-/q?q=checkout.commit_xxx</pre>
-                </div>
+# Create branch
+/q?q=branch.feature
 
-                <h3>Branches</h3>
-                <div class="code-block">
-                    <pre># Create a branch
-/q?q=branch.feature-login
+# Merge
+/q?q=merge.feature.into.main
 
-# Switch to branch
-/q?q=switch.feature-login
-
-# List all branches
-/q?q=branches
-
-# Merge branch
-/q?q=merge.feature-login.into.main</pre>
-                </div>
-
-                <h3>Undo & Redo</h3>
-                <div class="code-block">
-                    <pre># Undo last change
+# Undo last change
 /q?q=undo
 
-# Redo last undone
-/q?q=redo
-
-# Force back 1, 2, or 3 commits
-/q?q=f1
-/q?q=f2
-/q?q=f3</pre>
-                </div>
-
-                <div class="tip-box">
-                    <i class="fa fa-rocket"></i> <strong>Pro Tip:</strong> Use <code>f1</code>, <code>f2</code>, <code>f3</code> shortcuts for emergency recovery!
-                </div>
+# Force recovery
+/f1&ses=admin_session</pre></div>
             </div>
         </div>
 
-        <!-- ============================================ -->
-        <!-- BACKUP & RESTORE -->
-        <!-- ============================================ -->
-        <div id="backup" class="docs-section">
-            <div class="section-header">
-                <i class="fa fa-archive"></i>
-                <h2>Backup & Restore</h2>
-            </div>
+        <!-- File Management -->
+        <div class="docs-section">
+            <div class="section-header"><i class="fa fa-file"></i><h2>File Management</h2></div>
             <div class="section-content">
-                <p>Automatic and manual backup system to protect your data.</p>
+                <div class="code-block"><pre># Upload from URL
+/q?q=add.mydb.users.avatar=https://image.jpg.upload
 
-                <h3>Manual Backup</h3>
-                <div class="code-block">
-                    <pre># Create a backup
+# List files
+/q?q=files.list
+
+# Delete file
+/q?q=files.delete.filename.jpg</pre></div>
+            </div>
+        </div>
+
+        <!-- Backup -->
+        <div class="docs-section">
+            <div class="section-header"><i class="fa fa-archive"></i><h2>Backup & Restore</h2></div>
+            <div class="section-content">
+                <div class="code-block"><pre># Create backup
 /q?q=backup
 
-# Create named backup
-/q?q=backup.my_backup_name
-
-# List all backups
+# List backups
 /q?q=backups
 
-# Restore from backup
-/q?q=restore.backup_name</pre>
-                </div>
-
-                <h3>Automatic Backup</h3>
-                <p>Configure automatic backups in the <code>.env</code> file:</p>
-                <div class="code-block">
-                    <pre>BACKUP_INTERVAL_HOURS=24
-MAX_BACKUPS_KEEP=10
-BACKUP_COMPRESSION=true</pre>
-                </div>
-
-                <div class="warning-box">
-                    <i class="fa fa-exclamation-triangle"></i> <strong>Important:</strong> Regular backups are recommended. Test your restore process periodically.
-                </div>
+# Restore
+/q?q=restore.backup_name</pre></div>
             </div>
         </div>
 
-        <!-- ============================================ -->
         <!-- FAQ -->
-        <!-- ============================================ -->
-        <div id="faq" class="docs-section">
-            <div class="section-header">
-                <i class="fa fa-question-circle"></i>
-                <h2>Frequently Asked Questions</h2>
-            </div>
-            <div class="section-content">
-                <h3>What is NullName DB?</h3>
-                <p>A zero-configuration, file-based database that requires no setup, no installation, and no payment. Just start using it with simple URL queries.</p>
-
-                <h3>Is it really free?</h3>
-                <p>Yes. Completely free. No premium tiers. No payment methods. No hidden costs. Forever.</p>
-
-                <h3>Where is my data stored?</h3>
-                <p>Data is stored as encrypted JSON files in the <code>/database/path/</code> directory on your VPS. You own your data completely.</p>
-
-                <h3>How do I secure my instance?</h3>
-                <p>Change the default admin password immediately. Use HTTPS in production. Set up IP whitelisting. Disable public signup if not needed.</p>
-
-                <h3>Can I use it for production?</h3>
-                <p>Yes, but we recommend testing first. For large-scale production, consider adding a reverse proxy (Nginx) and load balancer.</p>
-
-                <h3>What are the limits?</h3>
-                <p>No hard limits, but performance depends on your VPS resources. The system can handle millions of records with proper hardware.</p>
-
-                <h3>How do I update?</h3>
-                <p>Run <code>git pull</code> in the installation directory, then restart the service with <code>sudo systemctl restart nullname</code>.</p>
-
-                <h3>Can I contribute?</h3>
-                <p>Yes! NullName DB is open source. Visit <a href="https://github.com/nullnamedb" target="_blank">github.com/nullnamedb</a> to contribute.</p>
-
-                <h3>How do I get support?</h3>
-                <p>Community support is available via GitHub Issues. For enterprise support, contact your system administrator.</p>
-            </div>
-        </div>
-
-        <!-- ============================================ -->
-        <!-- SHORTCUTS REFERENCE -->
-        <!-- ============================================ -->
         <div class="docs-section">
-            <div class="section-header">
-                <i class="fa fa-keyboard-o"></i>
-                <h2>Keyboard Shortcuts</h2>
-            </div>
+            <div class="section-header"><i class="fa fa-question-circle"></i><h2>FAQ</h2></div>
             <div class="section-content">
-                <table>
-                    <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
-                    <tbody>
-                        <tr><td><code>Ctrl/Cmd + Enter</code></td><td>Execute query</td></tr>
-                        <tr><td><code>Ctrl/Cmd + K</code></td><td>Focus query input</td></tr>
-                        <tr><td><code>Ctrl/Cmd + L</code></td><td>Clear results</td></tr>
-                        <tr><td><code>F1</code></td><td>Emergency force back 1 commit</td></tr>
-                        <tr><td><code>F2</code></td><td>Emergency force back 2 commits</td></tr>
-                        <tr><td><code>F3</code></td><td>Emergency force back 3 commits</td></tr>
-                    </tbody>
-                </table>
+                <h3>Is it really free?</h3>
+                <p>Yes. Completely free. No premium tiers. No payment. Forever.</p>
+                <h3>Where is my data stored?</h3>
+                <p>As encrypted JSON files in <code>/database/path/</code> on your VPS.</p>
+                <h3>No email? No password recovery?</h3>
+                <p>Correct. Simple username + password only. No email, no reset. Keep your password safe.</p>
+                <h3>How to update?</h3>
+                <p>Run <code>git pull</code> in installation directory, then <code>sudo systemctl restart nullname</code>.</p>
             </div>
         </div>
 
-        <!-- ============================================ -->
-        <!-- FOOTER -->
-        <!-- ============================================ -->
-        <div class="footer">
+        <div class="footer" style="text-align:center;padding:2rem;color:var(--text-muted);font-size:0.8rem;">
             <p>NullName DB — No brand. No name. No payment.</p>
             <p><a href="https://github.com/nullnamedb" target="_blank"><i class="fa fa-github"></i> GitHub</a> | <a href="/dashboard">Dashboard</a> | <a href="/api">API Docs</a></p>
-            <p>&copy; 2025 NullName Community — Free forever</p>
         </div>
     </div>
 </body>
