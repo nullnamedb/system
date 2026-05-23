@@ -1,19 +1,11 @@
 // NullName DB - Backup and Restore System
 // No brand. No name. No payment.
 // Version: 1.0.0
-// Lines: 600+
 
 const fs = require('fs-extra');
 const path = require('path');
 const crypto = require('crypto');
 const zlib = require('zlib');
-const { pipeline } = require('stream');
-const { promisify } = require('util');
-const pipelineAsync = promisify(pipeline);
-
-// ============================================
-// BACKUP SYSTEM CLASS
-// ============================================
 
 class BackupSystem {
     constructor() {
@@ -23,7 +15,6 @@ class BackupSystem {
         this.isBackingUp = false;
         this.currentBackup = null;
         
-        // Backup metadata
         this.backupIndex = new Map();
         this.indexFile = path.join(this.backupPath, 'backup_index.json');
         
@@ -58,10 +49,6 @@ class BackupSystem {
         }
     }
 
-    // ============================================
-    // CREATE BACKUP
-    // ============================================
-
     async createBackup(name = null, user = null, options = {}) {
         if (this.isBackingUp) {
             return { success: false, error: 'A backup is already in progress' };
@@ -79,7 +66,6 @@ class BackupSystem {
             
             console.log(`Starting backup: ${backupName} (${backupId})`);
             
-            // Create metadata
             const metadata = {
                 id: backupId,
                 name: backupName,
@@ -103,32 +89,26 @@ class BackupSystem {
             
             await fs.writeJson(path.join(backupDir, 'metadata.json'), metadata, { spaces: 2 });
             
-            // Backup database
             if (metadata.includes.databases) {
                 await this.backupDatabases(backupDir);
             }
             
-            // Backup files
             if (metadata.includes.files) {
                 await this.backupFiles(backupDir);
             }
             
-            // Backup commits
             if (metadata.includes.commits) {
                 await this.backupCommits(backupDir);
             }
             
-            // Backup users
             if (metadata.includes.users) {
                 await this.backupUsers(backupDir);
             }
             
-            // Backup tracking
             if (metadata.includes.tracking) {
                 await this.backupTracking(backupDir);
             }
             
-            // Calculate total size
             const totalSize = await this.getDirectorySize(backupDir);
             metadata.size = totalSize;
             metadata.sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
@@ -137,7 +117,6 @@ class BackupSystem {
             
             await fs.writeJson(path.join(backupDir, 'metadata.json'), metadata, { spaces: 2 });
             
-            // Compress if requested
             let finalPath = backupDir;
             let compressed = false;
             
@@ -153,7 +132,6 @@ class BackupSystem {
                 }
             }
             
-            // Store in index
             this.backupIndex.set(backupId, {
                 id: backupId,
                 name: backupName,
@@ -165,9 +143,7 @@ class BackupSystem {
                 path: finalPath
             });
             
-            // Clean old backups
             await this.cleanOldBackups();
-            
             await this.saveIndex();
             
             console.log(`Backup completed: ${backupName} (${metadata.sizeMB} MB) in ${metadata.durationMs}ms`);
@@ -193,7 +169,6 @@ class BackupSystem {
             this.isBackingUp = false;
             this.currentBackup = null;
             
-            // Cleanup temp
             if (await fs.pathExists(this.tempPath)) {
                 await fs.remove(this.tempPath);
                 await fs.ensureDir(this.tempPath);
@@ -269,8 +244,6 @@ class BackupSystem {
         const tarPath = `${backupDir}.tar.gz`;
         
         try {
-            // Simple compression - create archive
-            // In production, use tar module for better compression
             const archiver = require('archiver');
             const output = fs.createWriteStream(tarPath);
             const archive = archiver('tar', { gzip: true, gzipOptions: { level: 9 } });
@@ -302,14 +275,9 @@ class BackupSystem {
         }
     }
 
-    // ============================================
-    // LIST BACKUPS
-    // ============================================
-
     async listBackups() {
         const backups = [];
         
-        // From index
         for (const [id, backup] of this.backupIndex.entries()) {
             backups.push({
                 id: id,
@@ -321,7 +289,6 @@ class BackupSystem {
             });
         }
         
-        // Also scan directory for any missing backups
         const items = await fs.readdir(this.backupPath);
         
         for (const item of items) {
@@ -362,12 +329,10 @@ class BackupSystem {
     }
 
     async getBackupInfo(backupId) {
-        // Check index first
         if (this.backupIndex.has(backupId)) {
             return this.backupIndex.get(backupId);
         }
         
-        // Check directory
         const backupDir = path.join(this.backupPath, backupId);
         const compressedPath = `${backupDir}.tar.gz`;
         
@@ -390,14 +355,9 @@ class BackupSystem {
         return null;
     }
 
-    // ============================================
-    // RESTORE BACKUP
-    // ============================================
-
     async restoreBackup(backupId, user = null, options = {}) {
         const startTime = Date.now();
         
-        // Find backup
         let backupPath = path.join(this.backupPath, backupId);
         let compressed = false;
         
@@ -412,7 +372,6 @@ class BackupSystem {
         }
         
         try {
-            // Read metadata
             const metadataPath = path.join(backupPath, 'metadata.json');
             if (!await fs.pathExists(metadataPath)) {
                 return { success: false, error: 'Backup metadata not found' };
@@ -422,12 +381,10 @@ class BackupSystem {
             
             console.log(`Restoring backup: ${metadata.name} (${backupId})`);
             
-            // Create backup before restore (safety)
             if (options.createBackup !== false) {
                 await this.createBackup(`before_restore_${backupId}`, user, { compressed: true });
             }
             
-            // Restore databases
             const dbBackup = path.join(backupPath, 'database');
             const dbPath = path.join(__dirname, '..', 'database', 'path');
             
@@ -437,7 +394,6 @@ class BackupSystem {
                 console.log('✓ Databases restored');
             }
             
-            // Restore files
             const filesBackup = path.join(backupPath, 'files');
             const filesPath = path.join(__dirname, '..', 'database', 'files');
             
@@ -447,7 +403,6 @@ class BackupSystem {
                 console.log('✓ Files restored');
             }
             
-            // Restore commits
             const commitsBackup = path.join(backupPath, 'commits');
             const commitsPath = path.join(__dirname, '..', 'database', 'commits');
             
@@ -457,7 +412,6 @@ class BackupSystem {
                 console.log('✓ Commits restored');
             }
             
-            // Restore users
             const usersBackup = path.join(backupPath, 'users.json');
             const usersPath = path.join(__dirname, '..', 'database', 'users.json');
             
@@ -466,7 +420,6 @@ class BackupSystem {
                 console.log('✓ Users restored');
             }
             
-            // Restore tracking
             const trackingBackup = path.join(backupPath, 'tracking.json');
             const trackingPath = path.join(__dirname, '..', 'database', 'tracking.json');
             
@@ -495,23 +448,17 @@ class BackupSystem {
             console.error('Restore failed:', error);
             return { success: false, error: error.message };
         } finally {
-            // Cleanup decompressed backup if needed
             if (compressed && await fs.pathExists(backupPath)) {
                 await fs.remove(backupPath);
             }
         }
     }
 
-    // ============================================
-    // DELETE BACKUP
-    // ============================================
-
     async deleteBackup(backupId, user = null) {
         try {
             let deleted = false;
             let sizeMB = 0;
             
-            // Delete directory
             const backupDir = path.join(this.backupPath, backupId);
             if (await fs.pathExists(backupDir)) {
                 const size = await this.getDirectorySize(backupDir);
@@ -520,7 +467,6 @@ class BackupSystem {
                 deleted = true;
             }
             
-            // Delete compressed file
             const compressedPath = `${backupDir}.tar.gz`;
             if (await fs.pathExists(compressedPath)) {
                 const stat = await fs.stat(compressedPath);
@@ -533,7 +479,6 @@ class BackupSystem {
                 return { success: false, error: `Backup '${backupId}' not found` };
             }
             
-            // Remove from index
             this.backupIndex.delete(backupId);
             await this.saveIndex();
             
@@ -548,10 +493,6 @@ class BackupSystem {
             return { success: false, error: error.message };
         }
     }
-
-    // ============================================
-    // SCHEDULER
-    // ============================================
 
     startScheduler() {
         const intervalHours = parseInt(process.env.BACKUP_INTERVAL_HOURS) || 24;
@@ -590,10 +531,6 @@ class BackupSystem {
         }
     }
 
-    // ============================================
-    // CLEANUP
-    // ============================================
-
     async cleanOldBackups() {
         const maxBackups = parseInt(process.env.MAX_BACKUPS_KEEP) || 10;
         const backups = await this.listBackups();
@@ -614,10 +551,6 @@ class BackupSystem {
         
         return { kept: maxBackups, deleted: deleted };
     }
-
-    // ============================================
-    // UTILITIES
-    // ============================================
 
     async getDirectorySize(dirPath) {
         let size = 0;
@@ -674,13 +607,11 @@ class BackupSystem {
             return { success: false, error: 'Backup files not accessible' };
         }
         
-        // Verify metadata
         const metadataPath = path.join(backupPath, 'metadata.json');
         if (!await fs.pathExists(metadataPath)) {
             return { success: false, error: 'Metadata missing' };
         }
         
-        // Verify database directory
         const dbBackup = path.join(backupPath, 'database');
         if (!await fs.pathExists(dbBackup)) {
             return { success: false, error: 'Database backup missing' };
@@ -695,9 +626,5 @@ class BackupSystem {
         };
     }
 }
-
-// ============================================
-// EXPORT
-// ============================================
 
 module.exports = new BackupSystem();
