@@ -7,69 +7,52 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="/ui/base.css">
     <style>
-        /* Additional error page specific styles */
-        .error-container {
-            min-height: 100vh;
+        body {
             display: flex;
             align-items: center;
             justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 1rem;
+        }
+        .error-container {
+            max-width: 500px;
             padding: 2rem;
         }
-        
-        .error-card {
-            max-width: 600px;
-            width: 100%;
-            text-align: center;
-            padding: 3rem 2rem;
-        }
-        
         .error-icon {
-            font-size: 5rem;
-            margin-bottom: 1.5rem;
+            font-size: 4rem;
+            margin-bottom: 1rem;
         }
-        
-        .error-icon i {
-            font-size: 5rem;
-        }
-        
         .error-code {
             font-size: 6rem;
             font-weight: 800;
             letter-spacing: -0.05em;
             margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-error) 100%);
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-error));
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
-        
         .error-title {
             font-size: 1.5rem;
             font-weight: 600;
             margin-bottom: 1rem;
-            color: var(--text-primary);
         }
-        
         .error-message {
             color: var(--text-muted);
             margin-bottom: 2rem;
-            line-height: 1.6;
         }
-        
         .error-details {
             background: var(--bg-tertiary);
             border-radius: var(--radius-md);
             padding: 1rem;
             margin-bottom: 2rem;
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            color: var(--text-secondary);
+            font-family: monospace;
+            font-size: 0.8rem;
             text-align: left;
             overflow-x: auto;
-            white-space: pre-wrap;
-            word-break: break-word;
+            display: none;
         }
-        
         .error-actions {
             display: flex;
             gap: 1rem;
@@ -77,424 +60,100 @@
             flex-wrap: wrap;
             margin-bottom: 2rem;
         }
-        
-        .error-actions .btn {
-            min-width: 140px;
-            justify-content: center;
-        }
-        
         .error-footer {
             border-top: 1px solid var(--border-primary);
             padding-top: 1.5rem;
-            margin-top: 0.5rem;
             color: var(--text-muted);
-            font-size: 0.85rem;
+            font-size: 0.75rem;
         }
-        
-        .error-footer a {
-            color: var(--accent-primary);
-        }
-        
         .trace-link {
             cursor: pointer;
             color: var(--accent-primary);
             font-size: 0.8rem;
-            margin-top: 1rem;
-            display: inline-block;
         }
-        
-        .trace-link:hover {
-            text-decoration: underline;
-        }
-        
-        /* Status colors */
-        .error-icon.error-404 i { color: var(--accent-warning); text-shadow: 0 0 20px rgba(255, 170, 0, 0.3); }
-        .error-icon.error-403 i { color: var(--accent-warning); text-shadow: 0 0 20px rgba(255, 170, 0, 0.3); }
-        .error-icon.error-500 i { color: var(--accent-error); text-shadow: 0 0 20px rgba(255, 0, 127, 0.3); }
-        .error-icon.error-401 i { color: var(--accent-error); text-shadow: 0 0 20px rgba(255, 0, 127, 0.3); }
-        .error-icon.error-400 i { color: var(--accent-warning); text-shadow: 0 0 20px rgba(255, 170, 0, 0.3); }
-        .error-icon.error-502 i { color: var(--accent-error); text-shadow: 0 0 20px rgba(255, 0, 127, 0.3); }
-        .error-icon.error-503 i { color: var(--accent-error); text-shadow: 0 0 20px rgba(255, 0, 127, 0.3); }
-        
-        /* Animation */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-            20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
-        
-        .error-icon.shake {
-            animation: shake 0.5s ease-in-out;
-        }
-        
-        /* Suggestions */
-        .suggestions {
-            text-align: left;
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background: var(--bg-panel);
-            border-radius: var(--radius-md);
-            border-left: 3px solid var(--accent-primary);
-        }
-        
-        .suggestions h4 {
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            color: var(--accent-primary);
-        }
-        
-        .suggestions ul {
-            margin-left: 1.5rem;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-        
-        .suggestions li {
-            margin: 0.25rem 0;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .error-card {
-                padding: 2rem 1.5rem;
-            }
-            .error-code {
-                font-size: 4rem;
-            }
-            .error-icon {
-                font-size: 3.5rem;
-            }
-            .error-icon i {
-                font-size: 3.5rem;
-            }
-            .error-title {
-                font-size: 1.25rem;
-            }
-            .error-actions .btn {
-                min-width: 120px;
-                padding: 0.5rem 1rem;
-            }
-        }
-        
         @media (max-width: 480px) {
-            .error-actions {
-                flex-direction: column;
-            }
-            .error-actions .btn {
-                width: 100%;
-            }
+            .error-code { font-size: 4rem; }
+            .error-icon { font-size: 3rem; }
+            .error-actions { flex-direction: column; }
+            .error-actions .btn { width: 100%; }
         }
     </style>
 </head>
 <body>
     <div class="error-container">
-        <div class="error-card panel-glass">
-            <div class="error-icon" id="errorIcon">
-                <i class="fa fa-exclamation-triangle"></i>
-            </div>
-            <div class="error-code" id="errorCode">404</div>
-            <div class="error-title" id="errorTitle">Page Not Found</div>
-            <div class="error-message" id="errorMessage">
-                The page you are looking for does not exist or has been moved.
-            </div>
-            <div class="error-details" id="errorDetails" style="display: none;"></div>
-            <div class="error-actions">
-                <a href="/dashboard" class="btn btn-primary">
-                    <i class="fa fa-home"></i> Dashboard
-                </a>
-                <button onclick="history.back()" class="btn">
-                    <i class="fa fa-arrow-left"></i> Go Back
-                </button>
-                <button onclick="location.reload()" class="btn">
-                    <i class="fa fa-refresh"></i> Retry
-                </button>
-            </div>
-            <div id="suggestions" class="suggestions" style="display: none;"></div>
-            <div class="error-footer">
-                <span id="timestamp"></span><br>
-                <a href="#" class="trace-link" id="traceLink" style="display: none;">
-                    <i class="fa fa-code"></i> Show Details
-                </a>
-                <br>
-                <a href="/login">Return to Login</a> | 
-                <a href="https://github.com/nullname/db/issues" target="_blank">Report Issue</a>
-            </div>
+        <div class="error-icon" id="errorIcon">
+            <i class="fa fa-exclamation-triangle"></i>
+        </div>
+        <div class="error-code" id="errorCode">404</div>
+        <div class="error-title" id="errorTitle">Page Not Found</div>
+        <div class="error-message" id="errorMessage">The page you are looking for does not exist.</div>
+        <div class="error-details" id="errorDetails"></div>
+        <div class="error-actions">
+            <a href="/dashboard" class="btn btn-primary"><i class="fa fa-home"></i> Dashboard</a>
+            <button onclick="history.back()" class="btn"><i class="fa fa-arrow-left"></i> Go Back</button>
+            <button onclick="location.reload()" class="btn"><i class="fa fa-refresh"></i> Retry</button>
+        </div>
+        <div class="error-footer">
+            <span id="timestamp"></span><br>
+            <a href="#" class="trace-link" id="traceLink" style="display:none;"><i class="fa fa-code"></i> Show Details</a><br>
+            <a href="/login">Return to Login</a> | <a href="https://github.com/nullnamedb" target="_blank">Report Issue</a>
         </div>
     </div>
 
     <script>
-        // Parse error information from URL or referrer
         const urlParams = new URLSearchParams(window.location.search);
-        
-        // Error codes mapping
         const errorCodes = {
-            '400': {
-                title: 'Bad Request',
-                message: 'The request could not be understood by the server due to malformed syntax.',
-                icon: 'fa-exclamation-circle',
-                suggestions: [
-                    'Check your query syntax',
-                    'Ensure all parameters are properly encoded',
-                    'Try a simpler query first'
-                ]
-            },
-            '401': {
-                title: 'Unauthorized',
-                message: 'You need to be authenticated to access this resource.',
-                icon: 'fa-lock',
-                suggestions: [
-                    'Please login to continue',
-                    'Check your session has not expired',
-                    'Verify your credentials are correct'
-                ]
-            },
-            '403': {
-                title: 'Forbidden',
-                message: 'You do not have permission to access this resource.',
-                icon: 'fa-ban',
-                suggestions: [
-                    'Contact your administrator for access',
-                    'Check your user role permissions',
-                    'Verify you have the correct API key'
-                ]
-            },
-            '404': {
-                title: 'Page Not Found',
-                message: 'The requested resource could not be found on this server.',
-                icon: 'fa-search',
-                suggestions: [
-                    'Check the URL for typos',
-                    'Return to dashboard and try again',
-                    'Verify the database, table, or record exists'
-                ]
-            },
-            '405': {
-                title: 'Method Not Allowed',
-                message: 'The HTTP method used is not supported for this endpoint.',
-                icon: 'fa-ban',
-                suggestions: [
-                    'Use GET for reading data',
-                    'Use POST for creating data',
-                    'Check the API documentation'
-                ]
-            },
-            '408': {
-                title: 'Request Timeout',
-                message: 'The server timed out waiting for the request.',
-                icon: 'fa-clock-o',
-                suggestions: [
-                    'Try a simpler query',
-                    'Check your network connection',
-                    'Try again later'
-                ]
-            },
-            '409': {
-                title: 'Conflict',
-                message: 'The request could not be completed due to a conflict.',
-                icon: 'fa-exclamation-circle',
-                suggestions: [
-                    'The resource may already exist',
-                    'Check for duplicate entries',
-                    'Try a different identifier'
-                ]
-            },
-            '429': {
-                title: 'Too Many Requests',
-                message: 'You have exceeded the rate limit. Please slow down.',
-                icon: 'fa-hourglass-half',
-                suggestions: [
-                    'Wait a moment before trying again',
-                    'Reduce the frequency of your requests',
-                    'Consider using bulk operations'
-                ]
-            },
-            '500': {
-                title: 'Internal Server Error',
-                message: 'Something went wrong on our end. Please try again later.',
-                icon: 'fa-bug',
-                suggestions: [
-                    'Try again in a few moments',
-                    'Check system status',
-                    'Contact support if issue persists'
-                ]
-            },
-            '502': {
-                title: 'Bad Gateway',
-                message: 'The server received an invalid response from the upstream server.',
-                icon: 'fa-exchange',
-                suggestions: [
-                    'The service may be temporarily unavailable',
-                    'Try again in a few minutes',
-                    'Check network connectivity'
-                ]
-            },
-            '503': {
-                title: 'Service Unavailable',
-                message: 'The server is temporarily unable to handle the request.',
-                icon: 'fa-wrench',
-                suggestions: [
-                    'The server may be under maintenance',
-                    'Try again later',
-                    'Check service status page'
-                ]
-            },
-            '504': {
-                title: 'Gateway Timeout',
-                message: 'The upstream server failed to respond in time.',
-                icon: 'fa-clock-o',
-                suggestions: [
-                    'The request may be taking too long',
-                    'Try a simpler query',
-                    'Try again later'
-                ]
-            }
+            '400': { title: 'Bad Request', message: 'The request could not be understood.', icon: 'fa-exclamation-circle' },
+            '401': { title: 'Unauthorized', message: 'You need to be authenticated.', icon: 'fa-lock' },
+            '403': { title: 'Forbidden', message: 'You do not have permission.', icon: 'fa-ban' },
+            '404': { title: 'Page Not Found', message: 'The requested resource does not exist.', icon: 'fa-search' },
+            '405': { title: 'Method Not Allowed', message: 'HTTP method not supported.', icon: 'fa-ban' },
+            '408': { title: 'Request Timeout', message: 'The server timed out waiting.', icon: 'fa-clock-o' },
+            '429': { title: 'Too Many Requests', message: 'Rate limit exceeded. Please slow down.', icon: 'fa-hourglass-half' },
+            '500': { title: 'Internal Server Error', message: 'Something went wrong on our end.', icon: 'fa-bug' },
+            '502': { title: 'Bad Gateway', message: 'Invalid response from upstream.', icon: 'fa-exchange' },
+            '503': { title: 'Service Unavailable', message: 'Server temporarily unavailable.', icon: 'fa-wrench' },
+            '504': { title: 'Gateway Timeout', message: 'Upstream server timeout.', icon: 'fa-clock-o' }
         };
-        
-        // Get error information
+
         let code = urlParams.get('code') || urlParams.get('error') || '404';
         let title = urlParams.get('title');
         let message = urlParams.get('message');
         let details = urlParams.get('details');
         let path = urlParams.get('path') || window.location.pathname;
-        
-        // Validate code
-        if (!errorCodes[code]) {
-            code = '404';
-        }
-        
-        const errorInfo = errorCodes[code];
-        
-        // Set title
-        if (!title) {
-            title = errorInfo.title;
-        }
-        
-        // Set message
-        if (!message) {
-            message = errorInfo.message;
-        }
-        
-        // Add path info to message if 404
-        if (code === '404' && path && path !== '/' && path !== '/error') {
-            message += `\n\nPath: ${path}`;
-        }
-        
-        // Update DOM
+
+        if (!errorCodes[code]) code = '404';
+        const info = errorCodes[code];
+
         document.getElementById('errorCode').textContent = code;
-        document.getElementById('errorTitle').textContent = title;
-        document.getElementById('errorMessage').textContent = message;
+        document.getElementById('errorTitle').textContent = title || info.title;
+        document.getElementById('errorMessage').textContent = (message || info.message) + (code === '404' && path !== '/' ? `\n\nPath: ${path}` : '');
         
-        // Update icon
-        const iconElement = document.querySelector('.error-icon i');
-        if (iconElement) {
-            iconElement.className = `fa ${errorInfo.icon}`;
-        }
-        
-        // Add status class for styling
-        const errorIconDiv = document.getElementById('errorIcon');
-        errorIconDiv.className = `error-icon error-${code}`;
-        
-        // Add shake animation
-        setTimeout(() => {
-            errorIconDiv.classList.add('shake');
-            setTimeout(() => {
-                errorIconDiv.classList.remove('shake');
-            }, 500);
-        }, 100);
-        
-        // Add suggestions
-        if (errorInfo.suggestions && errorInfo.suggestions.length > 0) {
-            const suggestionsDiv = document.getElementById('suggestions');
-            const suggestionsHtml = `
-                <h4><i class="fa fa-lightbulb-o"></i> Suggestions</h4>
-                <ul>
-                    ${errorInfo.suggestions.map(s => `<li>${s}</li>`).join('')}
-                </ul>
-            `;
-            suggestionsDiv.innerHTML = suggestionsHtml;
-            suggestionsDiv.style.display = 'block';
-        }
-        
-        // Add timestamp
-        const timestamp = new Date().toLocaleString();
-        document.getElementById('timestamp').textContent = `Error occurred at: ${timestamp}`;
-        
-        // Handle details if provided
+        const iconEl = document.querySelector('.error-icon i');
+        if (iconEl) iconEl.className = `fa ${info.icon}`;
+        document.querySelector('.error-icon').className = `error-icon error-${code}`;
+
         if (details) {
-            try {
-                const parsedDetails = JSON.parse(details);
-                document.getElementById('errorDetails').textContent = JSON.stringify(parsedDetails, null, 2);
-                document.getElementById('traceLink').style.display = 'inline-block';
-            } catch (e) {
-                document.getElementById('errorDetails').textContent = details;
-                document.getElementById('traceLink').style.display = 'inline-block';
+            document.getElementById('errorDetails').textContent = details;
+            document.getElementById('traceLink').style.display = 'inline-block';
+        }
+
+        document.getElementById('timestamp').textContent = `Error at: ${new Date().toLocaleString()}`;
+
+        document.getElementById('traceLink')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            const detailsDiv = document.getElementById('errorDetails');
+            if (detailsDiv.style.display === 'none') {
+                detailsDiv.style.display = 'block';
+                e.target.innerHTML = '<i class="fa fa-code"></i> Hide Details';
+            } else {
+                detailsDiv.style.display = 'none';
+                e.target.innerHTML = '<i class="fa fa-code"></i> Show Details';
             }
-        }
-        
-        // Toggle details
-        const traceLink = document.getElementById('traceLink');
-        const errorDetails = document.getElementById('errorDetails');
-        
-        if (traceLink) {
-            traceLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (errorDetails.style.display === 'none') {
-                    errorDetails.style.display = 'block';
-                    traceLink.innerHTML = '<i class="fa fa-code"></i> Hide Details';
-                } else {
-                    errorDetails.style.display = 'none';
-                    traceLink.innerHTML = '<i class="fa fa-code"></i> Show Details';
-                }
-            });
-        }
-        
-        // Log error to console
-        console.error(`[Error ${code}] ${title}: ${message}`);
-        if (details) {
-            console.error('Details:', details);
-        }
-        
-        // Add referrer info if available
-        if (document.referrer) {
-            const referrerInfo = document.createElement('div');
-            referrerInfo.style.fontSize = '0.7rem';
-            referrerInfo.style.marginTop = '0.5rem';
-            referrerInfo.style.color = 'var(--text-muted)';
-            referrerInfo.innerHTML = `<i class="fa fa-link"></i> From: ${document.referrer}`;
-            document.querySelector('.error-footer').appendChild(referrerInfo);
-        }
-        
-        // Add user agent info for debugging
-        if (urlParams.get('debug') === 'true') {
-            const userAgent = navigator.userAgent;
-            const debugInfo = document.createElement('div');
-            debugInfo.style.fontSize = '0.7rem';
-            debugInfo.style.marginTop = '0.5rem';
-            debugInfo.style.color = 'var(--text-muted)';
-            debugInfo.style.wordBreak = 'break-all';
-            debugInfo.innerHTML = `<i class="fa fa-info-circle"></i> UA: ${userAgent.substring(0, 100)}...`;
-            document.querySelector('.error-footer').appendChild(debugInfo);
-        }
-        
-        // Auto redirect for specific errors (optional)
-        if (code === '401' && !urlParams.get('redirect')) {
-            // Auto redirect to login after 3 seconds
-            setTimeout(() => {
-                window.location.href = '/login';
-            }, 3000);
-        }
-        
-        // Handle session expired message
-        if (message.toLowerCase().includes('session') || message.toLowerCase().includes('expired')) {
-            const sessionMessage = document.createElement('div');
-            sessionMessage.style.marginTop = '1rem';
-            sessionMessage.style.padding = '0.5rem';
-            sessionMessage.style.background = 'rgba(0, 210, 255, 0.1)';
-            sessionMessage.style.borderRadius = 'var(--radius-md)';
-            sessionMessage.style.fontSize = '0.85rem';
-            sessionMessage.innerHTML = '<i class="fa fa-info-circle"></i> Redirecting to login page...';
-            document.querySelector('.error-actions').after(sessionMessage);
-        }
+        });
+
+        if (code === '401') setTimeout(() => window.location.href = '/login', 3000);
+        console.error(`[Error ${code}] ${title || info.title}: ${message || info.message}`);
     </script>
 </body>
 </html>
