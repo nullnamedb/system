@@ -1,38 +1,30 @@
 // NullName DB - Core Database Engine
 // No brand. No name. No payment.
 // Version: 1.0.0
-// Lines: 700+
 
 const fs = require('fs-extra');
 const path = require('path');
 const crypto = require('crypto');
 
-// ============================================
-// DATABASE ENGINE CLASS
-// ============================================
-
 class DatabaseEngine {
     constructor() {
         this.dataPath = path.join(__dirname, '..', 'database', 'path');
+        this.usersPath = path.join(__dirname, '..', 'database', 'users');
         this.cache = new Map();
         this.locks = new Map();
-        this.cacheTimeout = 60000; // 1 minute
+        this.cacheTimeout = 60000;
         this.writeQueue = [];
         this.isWriting = false;
         
-        // Initialize
         this.init();
     }
 
     async init() {
         await fs.ensureDir(this.dataPath);
+        await fs.ensureDir(this.usersPath);
         console.log('Database engine initialized');
         this.startCacheCleanup();
     }
-
-    // ============================================
-    // CACHE MANAGEMENT
-    // ============================================
 
     startCacheCleanup() {
         setInterval(() => {
@@ -42,7 +34,7 @@ class DatabaseEngine {
                     this.cache.delete(key);
                 }
             }
-        }, 300000); // 5 minutes
+        }, 300000);
     }
 
     getCacheKey(dbName, tableName = null, id = null) {
@@ -65,10 +57,6 @@ class DatabaseEngine {
         }
         return null;
     }
-
-    // ============================================
-    // FILE OPERATIONS
-    // ============================================
 
     getDbPath(dbName) {
         return path.join(this.dataPath, dbName);
@@ -204,7 +192,6 @@ class DatabaseEngine {
         
         await this.ensureDbDir(dbName);
         
-        // Clear cache
         this.cache.delete(this.getCacheKey(dbName));
         
         return {
@@ -222,7 +209,6 @@ class DatabaseEngine {
             return { error: `Database '${dbName}' not found` };
         }
         
-        // Get size before deletion
         let size = 0;
         const files = await fs.readdir(dbPath);
         for (const file of files) {
@@ -233,7 +219,6 @@ class DatabaseEngine {
         
         await fs.remove(dbPath);
         
-        // Clear cache
         this.cache.delete(this.getCacheKey(dbName));
         
         return {
@@ -283,18 +268,10 @@ class DatabaseEngine {
             return { error: `Table '${tableName}' already exists in database '${dbName}'` };
         }
         
-        const initialData = {};
-        
-        // If columns provided, create empty structure
-        if (columns && columns.length > 0) {
-            for (const column of columns) {
-                initialData[column] = [];
-            }
-        }
+        const initialData = { _nextId: 1 };
         
         await this.writeJson(tablePath, initialData);
         
-        // Clear cache
         this.cache.delete(this.getCacheKey(dbName, tableName));
         
         return {
@@ -317,7 +294,6 @@ class DatabaseEngine {
         const stat = await fs.stat(tablePath);
         await fs.remove(tablePath);
         
-        // Clear cache
         this.cache.delete(this.getCacheKey(dbName, tableName));
         
         return {
@@ -331,7 +307,7 @@ class DatabaseEngine {
     }
 
     // ============================================
-    // RECORD OPERATIONS (ADD, GET, UPDATE, DELETE)
+    // RECORD OPERATIONS
     // ============================================
 
     async add(dbName, tableName, columnName, value, user = null) {
@@ -340,7 +316,6 @@ class DatabaseEngine {
         const tablePath = this.getTablePath(dbName, tableName);
         let data = await this.readJson(tablePath);
         
-        // Initialize if empty
         if (Object.keys(data).length === 0) {
             data = { _nextId: 1 };
         }
@@ -349,19 +324,18 @@ class DatabaseEngine {
             data._nextId = 1;
         }
         
-        // Handle array values (comma-separated)
         if (typeof value === 'string' && value.includes(',') && !value.startsWith('[')) {
             const values = value.split(',').map(v => this.parseValue(v.trim()));
             
+            const ids = [];
             for (const v of values) {
                 const id = data._nextId++;
                 if (!data[id]) data[id] = {};
                 data[id][columnName] = v;
+                ids.push(id);
             }
             
             await this.writeJson(tablePath, data);
-            
-            // Clear cache
             this.cache.delete(this.getCacheKey(dbName, tableName));
             
             return {
@@ -370,19 +344,16 @@ class DatabaseEngine {
                 table: tableName,
                 column: columnName,
                 count: values.length,
-                ids: Object.keys(data).filter(k => !isNaN(k)).slice(-values.length),
+                ids: ids,
                 by: user?.username || 'system'
             };
         }
         
-        // Single value
         const id = data._nextId++;
         if (!data[id]) data[id] = {};
         data[id][columnName] = this.parseValue(value);
         
         await this.writeJson(tablePath, data);
-        
-        // Clear cache
         this.cache.delete(this.getCacheKey(dbName, tableName));
         
         return {
@@ -436,25 +407,6 @@ class DatabaseEngine {
         return { id: id, ...row };
     }
 
-    async getAllRecords(dbName, tableName, user = null) {
-        const tablePath = this.getTablePath(dbName, tableName);
-        
-        if (!await fs.pathExists(tablePath)) {
-            return { error: `Table '${tableName}' not found` };
-        }
-        
-        const data = await this.readJson(tablePath);
-        const result = {};
-        
-        for (const [id, row] of Object.entries(data)) {
-            if (id !== '_nextId') {
-                result[id] = row;
-            }
-        }
-        
-        return result;
-    }
-
     async update(dbName, tableName, id, columnName, value, user = null) {
         const tablePath = this.getTablePath(dbName, tableName);
         
@@ -472,8 +424,6 @@ class DatabaseEngine {
         data[id][columnName] = this.parseValue(value);
         
         await this.writeJson(tablePath, data);
-        
-        // Clear cache
         this.cache.delete(this.getCacheKey(dbName, tableName));
         
         return {
@@ -505,8 +455,6 @@ class DatabaseEngine {
         delete data[id];
         
         await this.writeJson(tablePath, data);
-        
-        // Clear cache
         this.cache.delete(this.getCacheKey(dbName, tableName));
         
         return {
@@ -582,14 +530,12 @@ class DatabaseEngine {
         if (value === 'true') return true;
         if (value === 'false') return false;
         
-        // Try parsing as number
         if (!isNaN(value) && value !== '') {
             const num = Number(value);
             if (Number.isInteger(num)) return num;
             return num;
         }
         
-        // Try parsing as JSON
         if (typeof value === 'string') {
             const trimmed = value.trim();
             if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
@@ -642,117 +588,11 @@ class DatabaseEngine {
         };
     }
 
-    async getFullExport() {
-        const exportData = {};
-        const dbDirs = await fs.readdir(this.dataPath);
-        
-        for (const db of dbDirs) {
-            const dbPath = path.join(this.dataPath, db);
-            const stat = await fs.stat(dbPath);
-            
-            if (stat.isDirectory()) {
-                exportData[db] = {};
-                const tableFiles = await fs.readdir(dbPath);
-                
-                for (const table of tableFiles) {
-                    if (table.endsWith('.json')) {
-                        const tableName = table.replace('.json', '');
-                        const tablePath = path.join(dbPath, table);
-                        exportData[db][tableName] = await this.readJson(tablePath);
-                    }
-                }
-            }
-        }
-        
-        return exportData;
-    }
-
-    async importData(importData, user = null) {
-        let imported = 0;
-        
-        for (const [dbName, tables] of Object.entries(importData)) {
-            const dbPath = this.getDbPath(dbName);
-            await this.ensureDbDir(dbName);
-            
-            for (const [tableName, data] of Object.entries(tables)) {
-                const tablePath = this.getTablePath(dbName, tableName);
-                await this.writeJson(tablePath, data);
-                imported++;
-                
-                // Clear cache
-                this.cache.delete(this.getCacheKey(dbName, tableName));
-            }
-        }
-        
-        return {
-            success: true,
-            imported: imported,
-            by: user?.username || 'system'
-        };
-    }
-
     async clearCache() {
         const size = this.cache.size;
         this.cache.clear();
         return { cleared: size };
     }
-
-    // ============================================
-    // SEARCH OPERATIONS
-    // ============================================
-
-    async search(query, options = {}) {
-        const results = [];
-        const searchLower = query.toLowerCase();
-        const limit = options.limit || 100;
-        
-        const dbDirs = await fs.readdir(this.dataPath);
-        
-        for (const db of dbDirs) {
-            const dbPath = path.join(this.dataPath, db);
-            const stat = await fs.stat(dbPath);
-            
-            if (stat.isDirectory()) {
-                const tableFiles = await fs.readdir(dbPath);
-                
-                for (const table of tableFiles) {
-                    if (table.endsWith('.json')) {
-                        const tableName = table.replace('.json', '');
-                        const tablePath = path.join(dbPath, table);
-                        const data = await this.readJson(tablePath);
-                        
-                        for (const [id, row] of Object.entries(data)) {
-                            if (id === '_nextId') continue;
-                            
-                            const rowStr = JSON.stringify(row).toLowerCase();
-                            if (rowStr.includes(searchLower)) {
-                                results.push({
-                                    database: db,
-                                    table: tableName,
-                                    id: id,
-                                    data: row
-                                });
-                                
-                                if (results.length >= limit) break;
-                            }
-                        }
-                    }
-                    if (results.length >= limit) break;
-                }
-            }
-            if (results.length >= limit) break;
-        }
-        
-        return {
-            query: query,
-            count: results.length,
-            results: results.slice(0, limit)
-        };
-    }
 }
-
-// ============================================
-// EXPORT
-// ============================================
 
 module.exports = new DatabaseEngine();

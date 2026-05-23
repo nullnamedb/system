@@ -1,16 +1,11 @@
 // NullName DB - Core System Management
 // No brand. No name. No payment.
 // Version: 1.0.0
-// Lines: 600+
 
 const fs = require('fs-extra');
 const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
-
-// ============================================
-// CORE SYSTEM CLASS
-// ============================================
 
 class CoreSystem {
     constructor() {
@@ -20,14 +15,12 @@ class CoreSystem {
         this.name = 'NullName DB';
         this.tagline = 'No brand. No name. No payment.';
         
-        // Paths
         this.stateFile = path.join(__dirname, '..', 'database', 'system_state.json');
         this.configFile = path.join(__dirname, '..', 'database', 'system_config.json');
         this.eventsFile = path.join(__dirname, '..', 'database', 'system_events.json');
         this.metricsFile = path.join(__dirname, '..', 'database', 'system_metrics.json');
         this.lockFile = path.join(__dirname, '..', 'database', 'system.lock');
         
-        // State
         this.state = null;
         this.config = null;
         this.metrics = {
@@ -38,16 +31,9 @@ class CoreSystem {
             cpu: {}
         };
         
-        // Event listeners
         this.eventListeners = new Map();
-        
-        // Health check interval
         this.healthInterval = null;
     }
-
-    // ============================================
-    // INITIALIZATION
-    // ============================================
 
     async initialize() {
         if (this.initialized) {
@@ -60,25 +46,12 @@ class CoreSystem {
         console.log('========================================');
         
         try {
-            // Ensure directories exist
             await this.ensureDirectories();
-            
-            // Initialize system state
             await this.initSystemState();
-            
-            // Load configuration
             await this.loadConfig();
-            
-            // Load metrics
             await this.loadMetrics();
-            
-            // Check for lock file (prevent multiple instances)
             await this.checkLock();
-            
-            // Start health monitoring
             this.startHealthMonitoring();
-            
-            // Start metrics collection
             this.startMetricsCollection();
             
             this.initialized = true;
@@ -90,7 +63,6 @@ class CoreSystem {
             console.log(`Started: ${new Date(this.systemStartTime).toISOString()}`);
             console.log('========================================');
             
-            // Log system start event
             await this.trackEvent('system_start', {
                 version: this.version,
                 node_version: process.version,
@@ -112,6 +84,9 @@ class CoreSystem {
             path.join(__dirname, '..', 'database', 'branches'),
             path.join(__dirname, '..', 'database', 'backups'),
             path.join(__dirname, '..', 'database', 'temp'),
+            path.join(__dirname, '..', 'database', 'users'),
+            path.join(__dirname, '..', 'database', 'logs'),
+            path.join(__dirname, '..', 'database', 'track'),
             path.join(__dirname, '..', 'logs'),
             path.join(__dirname, '..', 'ui'),
             path.join(__dirname, '..', 'docs')
@@ -147,7 +122,7 @@ class CoreSystem {
                     fileUploads: true,
                     userManagement: true,
                     backupSystem: true,
-                    publicRead: true
+                    publicRead: false
                 }
             };
             
@@ -160,44 +135,38 @@ class CoreSystem {
             this.config = await fs.readJson(this.configFile);
         } else {
             this.config = {
-                // Server settings
                 server: {
                     port: parseInt(process.env.PORT) || 3000,
-                    domain: process.env.DOMAIN || 'localhost:3000',
+                    domain: process.env.DOMAIN || 'localhost',
                     env: process.env.NODE_ENV || 'production'
                 },
-                // Security settings
                 security: {
                     sessionTimeout: parseInt(process.env.SESSION_TIMEOUT) || 86400000,
                     maxLoginAttempts: 5,
                     lockoutTime: 900000,
                     bcryptRounds: 10
                 },
-                // Storage settings
                 storage: {
                     maxSizeMB: parseInt(process.env.MAX_STORAGE_MB) || 1024,
                     autoCleanupDays: parseInt(process.env.AUTO_CLEANUP_DAYS) || 30,
                     maxFileSizeMB: parseInt(process.env.MAX_FILE_SIZE_MB) || 50,
                     tempCleanupMs: parseInt(process.env.TEMP_FILE_CLEANUP_MS) || 3600000
                 },
-                // Backup settings
                 backup: {
                     autoBackup: true,
                     intervalHours: parseInt(process.env.BACKUP_INTERVAL_HOURS) || 24,
                     maxBackups: parseInt(process.env.MAX_BACKUPS_KEEP) || 10,
                     compression: true
                 },
-                // Logging settings
                 logging: {
                     level: process.env.LOG_LEVEL || 'info',
                     enableRequestLog: true,
                     enableQueryTracking: true,
                     maxHistory: 10000
                 },
-                // Feature flags
                 features: {
                     enableSignup: process.env.ENABLE_SIGNUP !== 'false',
-                    enablePublicRead: process.env.ENABLE_PUBLIC_READ !== 'false',
+                    enablePublicRead: process.env.ENABLE_PUBLIC_READ === 'true',
                     enableFileUploads: process.env.ENABLE_FILE_UPLOADS !== 'false',
                     enableVersionControl: process.env.ENABLE_VERSION_CONTROL !== 'false',
                     enableBackupSystem: process.env.ENABLE_BACKUP_SYSTEM !== 'false'
@@ -227,7 +196,6 @@ class CoreSystem {
             const lockData = await fs.readJson(this.lockFile);
             const lockAge = Date.now() - lockData.timestamp;
             
-            // If lock is older than 5 minutes, assume crashed
             if (lockAge < 300000) {
                 console.warn('⚠️ Lock file exists. Another instance may be running.');
                 console.warn(`   Lock created: ${new Date(lockData.timestamp).toISOString()}`);
@@ -242,17 +210,12 @@ class CoreSystem {
             }
         }
         
-        // Create lock file
         await fs.writeJson(this.lockFile, {
             pid: process.pid,
             timestamp: Date.now(),
             startTime: this.systemStartTime
         });
     }
-
-    // ============================================
-    // HEALTH MONITORING
-    // ============================================
 
     startHealthMonitoring() {
         if (this.healthInterval) {
@@ -266,7 +229,7 @@ class CoreSystem {
                 console.warn('⚠️ Health check warning:', health);
                 await this.trackEvent('health_warning', health);
             }
-        }, 60000); //每分钟检查一次
+        }, 60000);
         
         console.log('✓ Health monitoring started (interval: 60s)');
     }
@@ -319,7 +282,7 @@ class CoreSystem {
     startMetricsCollection() {
         setInterval(async () => {
             await this.collectMetrics();
-        }, 300000); //每5分钟收集一次
+        }, 300000);
         
         console.log('✓ Metrics collection started (interval: 5min)');
     }
@@ -350,14 +313,13 @@ class CoreSystem {
                             
                             if (table.endsWith('.json')) {
                                 const data = await fs.readJson(tablePath);
-                                records += Object.keys(data).length;
+                                records += Object.keys(data).filter(k => !isNaN(k)).length;
                             }
                         }
                     }
                 }
             }
             
-            // File stats
             const filesPath = path.join(__dirname, '..', 'database', 'files');
             let fileCount = 0;
             let fileSize = 0;
@@ -383,7 +345,6 @@ class CoreSystem {
                 fileMB: (fileSize / (1024 * 1024)).toFixed(2)
             };
             
-            // System metrics
             this.metrics.uptime = this.getUptime();
             this.metrics.memory = process.memoryUsage();
             this.metrics.cpu = process.cpuUsage();
@@ -397,10 +358,6 @@ class CoreSystem {
         }
     }
 
-    // ============================================
-    // QUERY TRACKING
-    // ============================================
-
     async incrementQueryCount(success = true, duration = 0) {
         this.state.totalQueries = (this.state.totalQueries || 0) + 1;
         this.metrics.queries.total++;
@@ -411,11 +368,9 @@ class CoreSystem {
             this.metrics.queries.failed++;
         }
         
-        // Update average time
         const totalTime = this.metrics.queries.avgTime * (this.metrics.queries.total - 1) + duration;
         this.metrics.queries.avgTime = totalTime / this.metrics.queries.total;
         
-        // Save state periodically (every 100 queries)
         if (this.state.totalQueries % 100 === 0) {
             await fs.writeJson(this.stateFile, this.state, { spaces: 2 });
             await this.saveMetrics();
@@ -437,14 +392,12 @@ class CoreSystem {
             timestampISO: new Date().toISOString()
         });
         
-        // Keep only last 10000 events
         if (events.length > 10000) {
             events = events.slice(-10000);
         }
         
         await fs.writeJson(this.eventsFile, events, { spaces: 2 });
         
-        // Trigger event listeners
         const listeners = this.eventListeners.get(eventName) || [];
         for (const listener of listeners) {
             try {
@@ -475,10 +428,6 @@ class CoreSystem {
         
         return events.slice(-limit).reverse();
     }
-
-    // ============================================
-    // SYSTEM INFORMATION
-    // ============================================
 
     getUptime() {
         return Math.floor((Date.now() - this.systemStartTime) / 1000);
@@ -536,10 +485,6 @@ class CoreSystem {
         };
     }
 
-    // ============================================
-    // CONFIGURATION MANAGEMENT
-    // ============================================
-
     async getConfig() {
         return { ...this.config };
     }
@@ -547,7 +492,6 @@ class CoreSystem {
     async updateConfig(updates, user = null) {
         const oldConfig = { ...this.config };
         
-        // Deep merge
         const mergeDeep = (target, source) => {
             for (const key in source) {
                 if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
@@ -576,34 +520,20 @@ class CoreSystem {
         return { success: true, config: this.config };
     }
 
-    // ============================================
-    // SYSTEM ACTIONS
-    // ============================================
-
     async restart(reason = null) {
         await this.trackEvent('system_restart', { reason: reason });
-        
-        console.log('System restart initiated...');
-        
-        // Wait for events to be written
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
         process.exit(0);
     }
 
     async shutdown(reason = null) {
         await this.trackEvent('system_shutdown', { reason: reason });
         
-        console.log('System shutdown initiated...');
-        
-        // Remove lock file
         if (await fs.pathExists(this.lockFile)) {
             await fs.remove(this.lockFile);
         }
         
-        // Wait for events to be written
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
         process.exit(0);
     }
 
@@ -615,8 +545,7 @@ class CoreSystem {
             freedSpaceMB: 0
         };
         
-        // Clean temp files
-        const tempPath = path.join(__dirname, '..', 'database', 'temp');
+              const tempPath = path.join(__dirname, '..', 'database', 'temp');
         if (await fs.pathExists(tempPath)) {
             const temps = await fs.readdir(tempPath);
             for (const temp of temps) {
@@ -629,7 +558,6 @@ class CoreSystem {
             }
         }
         
-        // Clean old events
         let events = [];
         if (await fs.pathExists(this.eventsFile)) {
             events = await fs.readJson(this.eventsFile);
@@ -649,10 +577,6 @@ class CoreSystem {
         
         return results;
     }
-
-    // ============================================
-    // UTILITY METHODS
-    // ============================================
 
     generateId(prefix = '') {
         const id = crypto.randomBytes(8).toString('hex');
@@ -685,9 +609,5 @@ class CoreSystem {
         return true;
     }
 }
-
-// ============================================
-// EXPORT
-// ============================================
 
 module.exports = new CoreSystem();

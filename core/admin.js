@@ -1,15 +1,10 @@
 // NullName DB - Admin Management System
 // No brand. No name. No payment.
 // Version: 1.0.0
-// Lines: 600+
 
 const fs = require('fs-extra');
 const path = require('path');
 const os = require('os');
-
-// ============================================
-// ADMIN SYSTEM CLASS
-// ============================================
 
 class AdminSystem {
     constructor() {
@@ -22,13 +17,11 @@ class AdminSystem {
             issues: []
         };
         
-        // Paths
         this.logsPath = path.join(__dirname, '..', 'logs');
         this.adminLogFile = path.join(this.logsPath, 'admin.json');
         this.auditFile = path.join(this.logsPath, 'audit.json');
         this.metricsFile = path.join(__dirname, '..', 'database', 'system_metrics.json');
         
-        // Initialize
         this.init();
     }
 
@@ -52,7 +45,6 @@ class AdminSystem {
 
     async saveLogs() {
         try {
-            // Keep only last maxLogs
             if (this.adminLogs.length > this.maxLogs) {
                 this.adminLogs = this.adminLogs.slice(-this.maxLogs);
             }
@@ -81,10 +73,6 @@ class AdminSystem {
         }
     }
 
-    // ============================================
-    // SYSTEM STATISTICS
-    // ============================================
-
     async getStats() {
         const dbPath = path.join(__dirname, '..', 'database', 'path');
         const filesPath = path.join(__dirname, '..', 'database', 'files');
@@ -94,7 +82,6 @@ class AdminSystem {
         let recordCount = 0;
         let totalSize = 0;
         
-        // Calculate database stats
         if (await fs.pathExists(dbPath)) {
             const databases = await fs.readdir(dbPath);
             databaseCount = databases.length;
@@ -120,7 +107,6 @@ class AdminSystem {
             }
         }
         
-        // File stats
         let fileCount = 0;
         let fileSize = 0;
         if (await fs.pathExists(filesPath)) {
@@ -133,7 +119,6 @@ class AdminSystem {
             }
         }
         
-        // Memory stats
         const memoryUsage = process.memoryUsage();
         const cpuUsage = process.cpuUsage();
         const uptime = process.uptime();
@@ -195,17 +180,12 @@ class AdminSystem {
         return parts.join(' ');
     }
 
-    // ============================================
-    // SYSTEM HEALTH
-    // ============================================
-
     async getSystemHealth() {
         const stats = await this.getStats();
         const warnings = [];
         const errors = [];
         let status = 'healthy';
         
-        // Check storage
         const maxStorageMB = parseInt(process.env.MAX_STORAGE_MB) || 1024;
         const currentStorageMB = parseFloat(stats.total.sizeMB);
         
@@ -214,10 +194,9 @@ class AdminSystem {
             errors.push(`Storage exceeded: ${currentStorageMB}MB / ${maxStorageMB}MB`);
         } else if (currentStorageMB > maxStorageMB * 0.9) {
             status = 'warning';
-            warnings.push(`Storage near limit: ${currentStorageMB}MB / ${maxStorageMB}MB (${Math.round((currentStorageMB / maxStorageMB) * 100)}%)`);
+            warnings.push(`Storage near limit: ${currentStorageMB}MB / ${maxStorageMB}MB`);
         }
         
-        // Check memory
         const heapUsed = parseFloat(stats.system.memory.heapUsed);
         const heapTotal = parseFloat(stats.system.memory.heapTotal);
         const memoryPercent = (heapUsed / heapTotal) * 100;
@@ -230,12 +209,10 @@ class AdminSystem {
             warnings.push(`Memory usage high: ${memoryPercent.toFixed(1)}%`);
         }
         
-        // Check uptime
         if (stats.system.uptime.seconds < 60) {
             warnings.push('System recently started');
         }
         
-        // Check database connectivity
         const dbPath = path.join(__dirname, '..', 'database', 'path');
         if (!await fs.pathExists(dbPath)) {
             status = 'critical';
@@ -253,10 +230,6 @@ class AdminSystem {
         return this.systemHealth;
     }
 
-    // ============================================
-    // CLEANUP OPERATIONS
-    // ============================================
-
     async cleanup(options = {}) {
         const results = {
             deletedFiles: [],
@@ -267,12 +240,11 @@ class AdminSystem {
             timestamp: new Date().toISOString()
         };
         
-        // Clean temp files
         const tempPath = path.join(__dirname, '..', 'database', 'temp');
+        const maxAge = options.tempMaxAge || 86400000;
+        
         if (await fs.pathExists(tempPath)) {
             const temps = await fs.readdir(tempPath);
-            const maxAge = options.tempMaxAge || 86400000; // 24 hours default
-            
             for (const temp of temps) {
                 const tempFile = path.join(tempPath, temp);
                 const stat = await fs.stat(tempFile);
@@ -284,7 +256,6 @@ class AdminSystem {
             }
         }
         
-        // Clean old backups (keep last N)
         const backupsPath = path.join(__dirname, '..', 'database', 'backups');
         const keepCount = options.backupKeepCount || 10;
         
@@ -307,9 +278,8 @@ class AdminSystem {
             }
         }
         
-        // Clean old logs (keep last 7 days)
         const logsPath = path.join(__dirname, '..', 'logs');
-        const logMaxAge = options.logMaxAge || 7 * 86400000; // 7 days default
+        const logMaxAge = options.logMaxAge || 7 * 86400000;
         
         if (await fs.pathExists(logsPath)) {
             const logs = await fs.readdir(logsPath);
@@ -331,10 +301,6 @@ class AdminSystem {
         return results;
     }
 
-    // ============================================
-    // ADMIN ACTION LOGGING
-    // ============================================
-
     async logAdminAction(action, details, adminUser = null) {
         const logEntry = {
             id: Date.now(),
@@ -347,21 +313,17 @@ class AdminSystem {
         
         this.adminLogs.unshift(logEntry);
         
-        // Keep only last maxLogs
         if (this.adminLogs.length > this.maxLogs) {
             this.adminLogs = this.adminLogs.slice(0, this.maxLogs);
         }
         
         await this.saveLogs();
-        
-        // Also add to audit trail
         await this.addAuditTrail(logEntry);
     }
 
     async addAuditTrail(entry) {
         this.adminActions.unshift(entry);
         
-        // Keep only last 5000 audit entries
         if (this.adminActions.length > 5000) {
             this.adminActions = this.adminActions.slice(0, 5000);
         }
@@ -399,10 +361,6 @@ class AdminSystem {
         };
     }
 
-    // ============================================
-    // USER MANAGEMENT (Admin Only)
-    // ============================================
-
     async isAdmin(user) {
         return user && (user.role === 'admin' || user.role === 'root');
     }
@@ -420,10 +378,6 @@ class AdminSystem {
         return users.filter(u => u.role === 'admin' || u.role === 'root');
     }
 
-    // ============================================
-    // SYSTEM METRICS
-    // ============================================
-
     async getMetrics(timeRange = 'hour') {
         let metrics = await this.readMetrics();
         
@@ -431,25 +385,15 @@ class AdminSystem {
         let cutoff;
         
         switch(timeRange) {
-            case 'hour':
-                cutoff = now - 3600000;
-                break;
-            case 'day':
-                cutoff = now - 86400000;
-                break;
-            case 'week':
-                cutoff = now - 604800000;
-                break;
-            case 'month':
-                cutoff = now - 2592000000;
-                break;
-            default:
-                cutoff = now - 3600000;
+            case 'hour': cutoff = now - 3600000; break;
+            case 'day': cutoff = now - 86400000; break;
+            case 'week': cutoff = now - 604800000; break;
+            case 'month': cutoff = now - 2592000000; break;
+            default: cutoff = now - 3600000;
         }
         
         const filtered = metrics.filter(m => m.timestamp > cutoff);
         
-        // Calculate aggregates
         const aggregates = {
             avgQueryTime: 0,
             totalQueries: 0,
@@ -486,7 +430,7 @@ class AdminSystem {
             timeRange: timeRange,
             dataPoints: filtered.length,
             aggregates: aggregates,
-            raw: filtered.slice(-100) // Last 100 data points
+            raw: filtered.slice(-100)
         };
     }
 
@@ -506,7 +450,6 @@ class AdminSystem {
             timestampISO: new Date().toISOString()
         });
         
-        // Keep only last 10000 metrics
         if (metrics.length > 10000) {
             metrics = metrics.slice(-10000);
         }
@@ -514,61 +457,39 @@ class AdminSystem {
         await fs.writeJson(this.metricsFile, metrics, { spaces: 2 });
     }
 
-    // ============================================
-    // SYSTEM COMMANDS (Admin Only)
-    // ============================================
-
     async restartSystem(adminUser) {
         await this.logAdminAction('system_restart', {}, adminUser);
-        
-        // Wait for log to be written
         await new Promise(resolve => setTimeout(resolve, 500));
-        
         process.exit(0);
     }
 
     async shutdownSystem(adminUser) {
         await this.logAdminAction('system_shutdown', {}, adminUser);
-        
-        // Wait for log to be written
         await new Promise(resolve => setTimeout(resolve, 500));
-        
         process.exit(0);
     }
 
     async clearAllCache(adminUser) {
         const database = require('./database');
         const result = await database.clearCache();
-        
         await this.logAdminAction('clear_cache', result, adminUser);
-        
         return result;
     }
 
     async createSystemBackup(adminUser, name = null) {
         const backup = require('./backup');
         const backupName = name || `admin_backup_${Date.now()}`;
-        
         const result = await backup.createBackup(backupName, adminUser);
-        
         await this.logAdminAction('create_backup', { name: backupName, result }, adminUser);
-        
         return result;
     }
 
     async restoreSystemBackup(backupName, adminUser) {
         const backup = require('./backup');
-        
         const result = await backup.restoreBackup(backupName, adminUser);
-        
         await this.logAdminAction('restore_backup', { name: backupName, result }, adminUser);
-        
         return result;
     }
-
-    // ============================================
-    // CONFIGURATION MANAGEMENT (Admin Only)
-    // ============================================
 
     async getSystemConfig(adminUser) {
         const coreSystem = require('./system');
@@ -577,22 +498,14 @@ class AdminSystem {
 
     async updateSystemConfig(updates, adminUser) {
         const coreSystem = require('./system');
-        
         const result = await coreSystem.updateConfig(updates, adminUser);
-        
         await this.logAdminAction('update_config', { updates, result }, adminUser);
-        
         return result;
     }
-
-    // ============================================
-    // SYSTEM INFO
-    // ============================================
 
     async getSystemInfo(adminUser) {
         const coreSystem = require('./system');
         const systemInfo = await coreSystem.getSystemInfo();
-        
         const stats = await this.getStats();
         
         return {
@@ -613,7 +526,6 @@ class AdminSystem {
             return audit.entries;
         }
         
-        // Combined logs
         const adminLogs = await this.getAdminLogs(limit);
         const auditLogs = await this.getAuditTrail(limit);
         
@@ -643,9 +555,5 @@ class AdminSystem {
         return result;
     }
 }
-
-// ============================================
-// EXPORT
-// ============================================
 
 module.exports = new AdminSystem();

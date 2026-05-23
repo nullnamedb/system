@@ -1,15 +1,10 @@
 // NullName DB - Query Tracking System
 // No brand. No name. No payment.
 // Version: 1.0.0
-// Lines: 550+
 
 const fs = require('fs-extra');
 const path = require('path');
 const crypto = require('crypto');
-
-// ============================================
-// TRACKING SYSTEM CLASS
-// ============================================
 
 class TrackSystem {
     constructor() {
@@ -17,10 +12,9 @@ class TrackSystem {
         this.analyticsFile = path.join(__dirname, '..', 'database', 'analytics.json');
         this.trackCache = [];
         this.maxCacheSize = 5000;
-        this.flushInterval = 60000; // Flush every minute
+        this.flushInterval = 60000;
         this.flushTimer = null;
         
-        // Analytics aggregates
         this.analytics = {
             totalQueries: 0,
             successfulQueries: 0,
@@ -139,10 +133,6 @@ class TrackSystem {
         await this.saveAnalytics();
     }
 
-    // ============================================
-    // LOG QUERY
-    // ============================================
-
     async log(query, result, ip, user, isError = false, duration = 0) {
         const queryType = this.detectQueryType(query);
         const hour = new Date().getHours();
@@ -164,18 +154,13 @@ class TrackSystem {
             durationMs: duration.toFixed(2)
         };
         
-        // Add to cache
         this.trackCache.unshift(entry);
-        
-        // Update analytics
         this.updateAnalytics(entry);
         
-        // Keep cache size limited
         if (this.trackCache.length > this.maxCacheSize) {
             this.trackCache = this.trackCache.slice(0, this.maxCacheSize);
         }
         
-        // Flush periodically
         if (this.trackCache.length % 100 === 0) {
             await this.flush();
         }
@@ -207,7 +192,6 @@ class TrackSystem {
     }
 
     updateAnalytics(entry) {
-        // Update counts
         this.analytics.totalQueries++;
         if (entry.success) {
             this.analytics.successfulQueries++;
@@ -215,7 +199,6 @@ class TrackSystem {
             this.analytics.failedQueries++;
         }
         
-        // Update unique IPs and users
         if (entry.ip && entry.ip !== 'unknown') {
             this.analytics.uniqueIps.add(entry.ip);
         }
@@ -223,38 +206,29 @@ class TrackSystem {
             this.analytics.uniqueUsers.add(entry.user);
         }
         
-        // Update query type stats
         if (!this.analytics.queriesByType[entry.queryType]) {
             this.analytics.queriesByType[entry.queryType] = 0;
         }
         this.analytics.queriesByType[entry.queryType]++;
         
-        // Update hour stats
         const hour = new Date(entry.timestamp).getHours();
         this.analytics.queriesByHour[hour]++;
         
-        // Update day stats
         const day = entry.timestampISO.split('T')[0];
         if (!this.analytics.queriesByDay[day]) {
             this.analytics.queriesByDay[day] = 0;
         }
         this.analytics.queriesByDay[day]++;
         
-        // Update response time
         this.analytics.totalResponseTime += entry.duration;
         this.analytics.averageResponseTime = this.analytics.totalResponseTime / this.analytics.totalQueries;
         
         this.analytics.lastUpdated = new Date().toISOString();
     }
 
-    // ============================================
-    // GET TRACKS
-    // ============================================
-
     async getTracks(filter = {}) {
         let tracks = [...this.trackCache];
         
-        // Apply filters
         if (filter.type === 'success') {
             tracks = tracks.filter(t => t.success === true);
         } else if (filter.type === 'error') {
@@ -318,10 +292,6 @@ class TrackSystem {
         };
     }
 
-    // ============================================
-    // ANALYTICS
-    // ============================================
-
     async getStats() {
         const totalQueries = this.analytics.totalQueries;
         const successfulQueries = this.analytics.successfulQueries;
@@ -331,19 +301,16 @@ class TrackSystem {
             ? ((successfulQueries / totalQueries) * 100).toFixed(2) 
             : 0;
         
-        // Get top query types
         const topQueryTypes = Object.entries(this.analytics.queriesByType)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 5)
             .map(([type, count]) => ({ type, count }));
         
-        // Get busiest hours
         const busiestHours = this.analytics.queriesByHour
             .map((count, hour) => ({ hour, count }))
             .sort((a, b) => b.count - a.count)
             .slice(0, 5);
         
-        // Get recent days
         const recentDays = Object.entries(this.analytics.queriesByDay)
             .sort((a, b) => b[0].localeCompare(a[0]))
             .slice(0, 7)
@@ -436,7 +403,6 @@ class TrackSystem {
             }
         }
         
-        // Convert to array and sort
         const userArray = Object.entries(userStats).map(([user, stats]) => ({
             user: user,
             ...stats
@@ -479,7 +445,6 @@ class TrackSystem {
             }
         }
         
-        // Convert to array and sort
         const ipArray = Object.entries(ipStats).map(([ip, stats]) => ({
             ip: ip,
             ...stats,
@@ -489,12 +454,8 @@ class TrackSystem {
         
         ipArray.sort((a, b) => b.queries - a.queries);
         
-        return ipArray.slice(0, 100); // Top 100 IPs
+        return ipArray.slice(0, 100);
     }
-
-    // ============================================
-    // MAINTENANCE
-    // ============================================
 
     async clearOldTracks(daysToKeep = 30) {
         const cutoff = Date.now() - (daysToKeep * 86400000);
@@ -521,92 +482,6 @@ class TrackSystem {
             deleted: deletedCount,
             message: 'All tracking data cleared'
         };
-    }
-
-    async exportTracks(format = 'json', filter = {}) {
-        const { tracks } = await this.getTracks(filter);
-        
-        if (format === 'csv') {
-            const headers = ['id', 'timestamp', 'query', 'queryType', 'success', 'error', 'ip', 'user', 'duration'];
-            const csvRows = [headers.join(',')];
-            
-            for (const track of tracks) {
-                const row = headers.map(header => {
-                    let value = track[header] || '';
-                    if (typeof value === 'string' && value.includes(',')) {
-                        value = `"${value.replace(/"/g, '""')}"`;
-                    }
-                    return value;
-                });
-                csvRows.push(row.join(','));
-            }
-            
-            return csvRows.join('\n');
-        }
-        
-        // Default JSON
-        return {
-            exportedAt: new Date().toISOString(),
-            count: tracks.length,
-            tracks: tracks
-        };
-    }
-
-    async getPerformanceReport() {
-        const stats = await this.getStats();
-        const hourly = await this.getHourlyStats();
-        const daily = await this.getDailyStats(7);
-        const topUsers = await this.getUserStats();
-        
-        // Calculate trends
-        const recentDays = daily.days.slice(0, 7);
-        const previousDays = daily.days.slice(7, 14);
-        
-        const recentAvg = recentDays.reduce((sum, d) => sum + d.count, 0) / (recentDays.length || 1);
-        const previousAvg = previousDays.reduce((sum, d) => sum + d.count, 0) / (previousDays.length || 1);
-        
-        const trend = previousAvg > 0 
-            ? (((recentAvg - previousAvg) / previousAvg) * 100).toFixed(1)
-            : 0;
-        
-        return {
-            period: {
-                start: daily.days[daily.days.length - 1]?.day || 'N/A',
-                end: daily.days[0]?.day || 'N/A'
-            },
-            summary: stats,
-            trends: {
-                weeklyChange: trend + '%',
-                direction: trend > 0 ? 'increasing' : trend < 0 ? 'decreasing' : 'stable'
-            },
-            peakHours: stats.busiestHours,
-            topUsers: topUsers.slice(0, 5),
-            recommendations: this.generateRecommendations(stats)
-        };
-    }
-
-    generateRecommendations(stats) {
-        const recommendations = [];
-        
-        if (parseFloat(stats.performance.averageResponseTime) > 100) {
-            recommendations.push('High average response time detected. Consider optimizing queries or adding indexes.');
-        }
-        
-        const successRate = parseFloat(stats.total.successRate);
-        if (successRate < 95) {
-            recommendations.push(`Low success rate (${successRate}%). Check for errors in queries.`);
-        }
-        
-        const busiestHour = stats.busiestHours[0];
-        if (busiestHour && busiestHour.count > 1000) {
-            recommendations.push(`High traffic at ${busiestHour.hour}:00. Consider scaling during peak hours.`);
-        }
-        
-        if (recommendations.length === 0) {
-            recommendations.push('System is performing well. No immediate recommendations.');
-        }
-        
-        return recommendations;
     }
 
     async getRealTimeStats() {
@@ -642,9 +517,5 @@ class TrackSystem {
         console.log('Tracking system shutdown');
     }
 }
-
-// ============================================
-// EXPORT
-// ============================================
 
 module.exports = new TrackSystem();
