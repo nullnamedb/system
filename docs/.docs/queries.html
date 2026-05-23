@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NullName DB - Complete Query Reference</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/ui/base.css">
+    <style>
+        /* Query Documentation Styles */
+        .queries-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .queries-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .queries-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .queries-header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .query-search {
+            max-width: 500px;
+            margin: 1rem auto;
+        }
+
+        .query-search input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-lg);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .query-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+        }
+
+        /* Sidebar */
+        .query-sidebar {
+            position: sticky;
+            top: 2rem;
+            height: fit-content;
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+        }
+
+        .query-sidebar h3 {
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-primary);
+        }
+
+        .query-sidebar ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .query-sidebar li {
+            margin-bottom: 0.25rem;
+        }
+
+        .query-sidebar a {
+            display: block;
+            padding: 0.4rem 0.75rem;
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .query-sidebar a:hover {
+            background: var(--bg-hover);
+            color: var(--accent-primary);
+        }
+
+        /* Main Content */
+        .query-content {
+            min-width: 0;
+        }
+
+        .query-category {
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-lg);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .category-header {
+            padding: 1rem 1.5rem;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .category-header i {
+            font-size: 1.25rem;
+            color: var(--accent-primary);
+        }
+
+        .category-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
+        .query-card {
+            border-bottom: 1px solid var(--border-secondary);
+            padding: 1.25rem 1.5rem;
+            transition: background 0.2s;
+        }
+
+        .query-card:last-child {
+            border-bottom: none;
+        }
+
+        .query-card:hover {
+            background: var(--bg-hover);
+        }
+
+        .query-title {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .query-syntax {
+            font-family: monospace;
+            font-size: 0.95rem;
+            color: var(--accent-primary);
+            background: var(--bg-tertiary);
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-md);
+            word-break: break-all;
+        }
+
+        .query-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+
+        .badge-read { background: #00d2ff; color: #000; }
+        .badge-write { background: #00ff88; color: #000; }
+        .badge-admin { background: #ff007f; color: #fff; }
+        .badge-public { background: var(--text-muted); color: #000; }
+
+        .query-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .query-example {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: 0.75rem 1rem;
+            margin-top: 0.5rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        .query-params {
+            margin-top: 0.75rem;
+            padding-left: 1rem;
+            border-left: 2px solid var(--border-primary);
+        }
+
+        .query-params p {
+            margin: 0.25rem 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .query-note {
+            background: rgba(0, 210, 255, 0.1);
+            border-radius: var(--radius-md);
+            padding: 0.5rem 0.75rem;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border-primary);
+            margin: 1rem 0;
+        }
+
+        .index-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+        }
+
+        .index-table th, .index-table td {
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-secondary);
+        }
+
+        .index-table th {
+            background: var(--bg-tertiary);
+            color: var(--accent-primary);
+        }
+
+        @media (max-width: 900px) {
+            .query-grid {
+                grid-template-columns: 1fr;
+            }
+            .query-sidebar {
+                position: static;
+                margin-bottom: 1rem;
+            }
+            .query-title {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="queries-container">
+        <div class="queries-header">
+            <h1><i class="fa fa-terminal"></i> Complete Query Reference</h1>
+            <p>All database queries, commands, and syntax — Everything you need to know</p>
+            <div class="query-search">
+                <input type="text" id="searchInput" placeholder="🔍 Search queries... (e.g., 'add', 'get', 'commit')">
+            </div>
+        </div>
+
+        <div class="query-grid">
+            <!-- Sidebar Navigation -->
+            <aside class="query-sidebar" id="sidebar">
+                <h3><i class="fa fa-bars"></i> Query Categories</h3>
+                <ul>
+                    <li><a href="#basics" data-category="basics">Basics</a></li>
+                    <li><a href="#data-types" data-category="data-types">Data Types</a></li>
+                    <li><a href="#simple-operations" data-category="simple">Simple Operations</a></li>
+                    <li><a href="#database-operations" data-category="database">Database Operations</a></li>
+                    <li><a href="#table-operations" data-category="table">Table Operations</a></li>
+                    <li><a href="#crud-operations" data-category="crud">CRUD Operations</a></li>
+                    <li><a href="#query-operations" data-category="query">Query Operations</a></li>
+                    <li><a href="#file-operations" data-category="file">File Operations</a></li>
+                    <li><a href="#version-control" data-category="version">Version Control</a></li>
+                    <li><a href="#user-auth" data-category="user">User & Authentication</a></li>
+                    <li><a href="#backup" data-category="backup">Backup & Restore</a></li>
+                    <li><a href="#system" data-category="system">System Commands</a></li>
+                    <li><a href="#advanced" data-category="advanced">Advanced Features</a></li>
+                    <li><a href="#shortcuts" data-category="shortcuts">Shortcuts & Aliases</a></li>
+                    <li><a href="#response-formats" data-category="format">Response Formats</a></li>
+                </ul>
+                <hr>
+                <div style="font-size: 0.7rem; color: var(--text-muted); text-align: center;">
+                    <i class="fa fa-database"></i> NullName DB v1.0
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="query-content" id="mainContent">
+
+                <!-- BASICS -->
+                <div id="basics" class="query-category" data-category="basics">
+                    <div class="category-header">
+                        <i class="fa fa-flag-checkered"></i>
+                        <h2>Basics</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">https://yourdb.com/q?q=command</span>
+                            <span class="query-badge badge-public">Public</span>
+                        </div>
+                        <div class="query-desc">The main entry point for all database operations. All queries are sent via the <code>q=</code> parameter.</div>
+                        <div class="query-example"># Example
+curl https://yourdb.com/q?q=score=100</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">/dashboard</span>
+                            <span class="query-badge badge-public">Public</span>
+                        </div>
+                        <div class="query-desc">Web-based database administration interface.</div>
+                        <div class="query-example">https://yourdb.com/dashboard</div>
+                    </div>
+                </div>
+
+                <!-- DATA TYPES -->
+                <div id="data-types" class="query-category" data-category="data-types">
+                    <div class="category-header">
+                        <i class="fa fa-tag"></i>
+                        <h2>Data Types</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">String</span>
+                        </div>
+                        <div class="query-desc">Text values enclosed in quotes or plain text.</div>
+                        <div class="query-example">q=name=John
+q=message=Hello%20World</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">Number</span>
+                        </div>
+                        <div class="query-desc">Integer or floating point numbers.</div>
+                        <div class="query-example">q=score=100
+q=price=19.99</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">Boolean</span>
+                        </div>
+                        <div class="query-desc">True or false values.</div>
+                        <div class="query-example">q=active=true
+q=verified=false</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">Array</span>
+                        </div>
+                        <div class="query-desc">Comma-separated values or JSON array format.</div>
+                        <div class="query-example">q=names=John,Mary,Tom
+q=scores=[100,200,300]</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">Object / JSON</span>
+                        </div>
+                        <div class="query-desc">JSON object for complex data structures.</div>
+                        <div class="query-example">q=user={"name":"John","age":25}</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">Null</span>
+                        </div>
+                        <div class="query-desc">Empty or null value.</div>
+                        <div class="query-example">q=data=null</div>
+                    </div>
+                </div>
+
+                <!-- SIMPLE OPERATIONS -->
+                <div id="simple-operations" class="query-category" data-category="simple">
+                    <div class="category-header">
+                        <i class="fa fa-plug"></i>
+                        <h2>Simple Operations (Key-Value)</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">key=value</span>
+                            <span class="query-badge badge-write">Write</span>
+                        </div>
+                        <div class="query-desc">Store a simple key-value pair.</div>
+                        <div class="query-example"># Store score
+/q?q=score=100
+
+# Store name
+/q?q=name=John</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">key</span>
+                            <span class="query-badge badge-read">Read</span>
+                        </div>
+                        <div class="query-desc">Retrieve a value by key.</div>
+                        <div class="query-example"># Get score
+/q?q=score
+# Returns: 100</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">key=</span>
+                            <span class="query-badge badge-write">Delete</span>
+                        </div>
+                        <div class="query-desc">Delete a key-value pair.</div>
+                        <div class="query-example"># Delete score
+/q?q=score=</div>
+                    </div>
+                </div>
+
+                <!-- DATABASE OPERATIONS -->
+                <div id="database-operations" class="query-category" data-category="database">
+                    <div class="category-header">
+                        <i class="fa fa-database"></i>
+                        <h2>Database Operations</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">create.databasename</span>
+                            <span class="query-badge badge-write">Write</span>
+                        </div>
+                        <div class="query-desc">Create a new database.</div>
+                        <div class="query-example"># Create database 'shop'
+/q?q=create.shop
+
+# Create database 'users'
+/q?q=create.users</div>
+                        <div class="query-params">
+                            <p><strong>Rules:</strong> Letters, numbers, underscores only. Max 50 characters.</p>
+                        </div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">get.</span>
+                            <span class="query-badge badge-read">Read</span>
+                        </div>
+                        <div class="query-desc">List all databases.</div>
+                        <div class="query-example"># List all databases
+/q?q=get.</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">get.databasename</span>
+                            <span class="query-badge badge-read">Read</span>
+                        </div>
+                        <div class="query-desc">Get all tables and data from a database.</div>
+                        <div class="query-example"># Get all data from 'shop'
+/q?q=get.shop</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">delete.databasename</span>
+                            <span class="query-badge badge-write">Delete</span>
+                        </div>
+                        <div class="query-desc">Delete an entire database (irreversible).</div>
+                        <div class="query-example"># Delete 'shop' database
+/q?q=delete.shop</div>
+                        <div class="query-note">
+                            <i class="fa fa-exclamation-triangle"></i> Warning: This action cannot be undone. All data in the database will be permanently deleted.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABLE OPERATIONS -->
+                <div id="table-operations" class="query-category" data-category="table">
+                    <div class="category-header">
+                        <i class="fa fa-table"></i>
+                        <h2>Table Operations</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">create.databasename.tablename</span>
+                            <span class="query-badge badge-write">Write</span>
+                        </div>
+                        <div class="query-desc">Create a new table in a database.</div>
+                        <div class="query-example"># Create 'products' table in 'shop' database
+/q?q=create.shop.products</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">create.databasename.tablename.col1,col2,col3</span>
+                            <span class="query-badge badge-write">Write</span>
+                        </div>
+                        <div class="query-desc">Create a table with predefined columns.</div>
+                        <div class="query-example"># Create 'users' table with columns
+/q?q=create.mydb.users.name,email,age</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">get.databasename.tablename</span>
+                            <span class="query-badge badge-read">Read</span>
+                        </div>
+                        <div class="query-desc">Get all records from a table.</div>
+                        <div class="query-example"># Get all users
+/q?q=get.mydb.users</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">get.databasename.tablename.column</span>
+                            <span class="query-badge badge-read">Read</span>
+                        </div>
+                        <div class="query-desc">Get a specific column from a table.</div>
+                        <div class="query-example"># Get all names from users table
+/q?q=get.mydb.users.name</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">delete.databasename.tablename</span>
+                            <span class="query-badge badge-write">Delete</span>
+                        </div>
+                        <div class="query-desc">Delete a table (irreversible).</div>
+                        <div class="query-example"># Delete users table
+/q?q=delete.mydb.users</div>
+                    </div>
+                </div>
+
+                <!-- CRUD OPERATIONS -->
+                <div id="crud-operations" class="query-category" data-category="crud">
+                    <div class="category-header">
+                        <i class="fa fa-edit"></i>
+                        <h2>CRUD Operations (Create, Read, Update, Delete)</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">add.databasename.tablename.column.value</span>
+                            <span class="query-badge badge-write">Create</span>
+                        </div>
+                        <div class="query-desc">Add a new record to a table.</div>
+                        <div class="query-example"># Add a user
+/q?q=add.mydb.users.name.John
+
+# Add with ID auto-increment
+/q?q=add.mydb.users.name.John&age.25</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">add.databasename.tablename.column.value1,value2,value3</span>
+                            <span class="query-badge badge-write">Create Multiple</span>
+                        </div>
+                        <div class="query-desc">Add multiple records at once.</div>
+                        <div class="query-example"># Add multiple users
+/q?q=add.mydb.users.name.John,Mary,Tom
+/q?q=add.mydb.users.age.25,30,35</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">get.databasename.tablename.id</span>
+                            <span class="query-badge badge-read">Read by ID</span>
+                        </div>
+                        <div class="query-desc">Get a specific record by its auto-increment ID.</div>
+                        <div class="query-example"># Get user with ID 1
+/q?q=get.mydb.users.1</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">update.databasename.tablename.id.column=value</span>
+                            <span class="query-badge badge-write">Update</span>
+                        </div>
+                        <div class="query-desc">Update a specific record.</div>
+                        <div class="query-example"># Update user name
+/q?q=update.mydb.users.1.name=Johnny
+
+# Update multiple columns
+/q?q=update.mydb.users.1.name=Johnny&age=26</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">delete.databasename.tablename.id</span>
+                            <span class="query-badge badge-write">Delete by ID</span>
+                        </div>
+                        <div class="query-desc">Delete a specific record by ID.</div>
+                        <div class="query-example"># Delete user with ID 1
+/q?q=delete.mydb.users.1</div>
+                    </div>
+                </div>
+
+                <!-- QUERY OPERATIONS (Filter, Search) -->
+                <div id="query-operations" class="query-category" data-category="query">
+                    <div class="category-header">
+                        <i class="fa fa-search"></i>
+                        <h2>Query Operations (Filter & Search)</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">databasename.tablename[column=value]</span>
+                            <span class="query-badge badge-read">Filter</span>
+                        </div>
+                        <div class="query-desc">Filter records by column value.</div>
+                        <div class="query-example"># Find users with age 25
+/q?q=mydb.users[age=25]
+
+# Get name of user with age 25
+/q?q=mydb.users[age=25].name</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">[column>value]</span>
+                            <span class="query-badge badge-read">Greater Than</span>
+                        </div>
+                        <div class="query-desc">Filter records where column is greater than value.</div>
+                        <div class="query-example"># Users older than 18
+/q?q=mydb.users[age>18]</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">[column&lt;value]</span>
+                            <span class="query-badge badge-read">Less Than</span>
+                        </div>
+                        <div class="query-desc">Filter records where column is less than value.</div>
+                        <div class="query-example"># Users younger than 30
+/q?q=mydb.users[age&lt;30]</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">[column~keyword]</span>
+                            <span class="query-badge badge-read">Contains / Like</span>
+                        </div>
+                        <div class="query-desc">Filter records where column contains keyword.</div>
+                        <div class="query-example"># Users with 'Jo' in name
+/q?q=mydb.users[name~Jo]</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">[column=value1,value2]</span>
+                            <span class="query-badge badge-read">In Array</span>
+                        </div>
+                        <div class="query-desc">Filter records where column matches any value in list.</div>
+                        <div class="query-example"># Users with age 25 or 30
+/q?q=mydb.users[age=25,30]</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">search.keyword</span>
+                            <span class="query-badge badge-read">Global Search</span>
+                        </div>
+                        <div class="query-desc">Search across all databases and tables.</div>
+                        <div class="query-example"># Search for 'John' everywhere
+/q?q=search.John</div>
+                    </div>
+                </div>
+
+                <!-- FILE OPERATIONS -->
+                <div id="file-operations" class="query-category" data-category="file">
+                    <div class="category-header">
+                        <i class="fa fa-file"></i>
+                        <h2>File Operations</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">add.db.table.column=URL.upload</span>
+                            <span class="query-badge badge-write">Upload File</span>
+                        </div>
+                        <div class="query-desc">Download a file from URL and store it locally.</div>
+                        <div class="query-example"># Upload image from URL
+/q?q=add.mydb.users.avatar=https://example.com/photo.jpg.upload</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">files.list</span>
+                            <span class="query-badge badge-read">List Files</span>
+                        </div>
+                        <div class="query-desc">List all uploaded files.</div>
+                        <div class="query-example"># List all files
+/q?q=files.list</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">files.info.filename</span>
+                            <span class="query-badge badge-read">File Info</span>
+                        </div>
+                        <div class="query-desc">Get information about a specific file.</div>
+                        <div class="query-example"># Get file info
+/q?q=files.info.photo.jpg</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">files.delete.filename</span>
+                            <span class="query-badge badge-write">Delete File</span>
+                        </div>
+                        <div class="query-desc">Delete a file from storage.</div>
+                        <div class="query-example"># Delete file
+/q?q=files.delete.photo.jpg</div>
+                    </div>
+                </div>
+
+                <!-- VERSION CONTROL -->
+                <div id="version-control" class="query-category" data-category="version">
+                    <div class="category-header">
+                        <i class="fa fa-code-fork"></i>
+                        <h2>Version Control (Git-like)</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">commit "message"</span>
+                            <span class="query-badge badge-write">Commit</span>
+                        </div>
+                        <div class="query-desc">Create a commit snapshot of current state.</div>
+                        <div class="query-example"># Create commit
+/q?q=commit "first version"
+/q?q=commit "added users table"</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">commits</span>
+                            <span class="query-badge badge-read">View History</span>
+                        </div>
+                        <div class="query-desc">View commit history.</div>
+                        <div class="query-example"># List all commits
+/q?q=commits</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">checkout.commit_id</span>
+                            <span class="query-badge badge-read">Checkout</span>
+                        </div>
+                        <div class="query-desc">Restore state to a specific commit.</div>
+                        <div class="query-example"># Restore to commit_123
+/q?q=checkout.commit_123</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">branch.name</span>
+                            <span class="query-badge badge-write">Create Branch</span>
+                        </div>
+                        <div class="query-desc">Create a new branch.</div>
+                        <div class="query-example"># Create feature branch
+/q?q=branch.feature-login
+
+# List branches
+/q?q=branches</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">switch.branch</span>
+                            <span class="query-badge badge-write">Switch Branch</span>
+                        </div>
+                        <div class="query-desc">Switch to a different branch.</div>
+                        <div class="query-example"># Switch to feature branch
+/q?q=switch.feature-login</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">merge.source.into.target</span>
+                            <span class="query-badge badge-write">Merge</span>
+                        </div>
+                        <div class="query-desc">Merge a branch into another.</div>
+                        <div class="query-example"># Merge feature into main
+/q?q=merge.feature-login.into.main</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">undo</span>
+                            <span class="query-badge badge-write">Undo</span>
+                        </div>
+                        <div class="query-desc">Undo the last operation.</div>
+                        <div class="query-example"># Undo last change
+/q?q=undo
+
+# Undo 3 steps
+/q?q=undo.3</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">redo</span>
+                            <span class="query-badge badge-write">Redo</span>
+                        </div>
+                        <div class="query-desc">Redo the last undone operation.</div>
+                        <div class="query-example"># Redo last undone
+/q?q=redo</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">diff.source.target</span>
+                            <span class="query-badge badge-read">Compare</span>
+                        </div>
+                        <div class="query-desc">Compare two commits or branches.</div>
+                        <div class="query-example"># Compare commits
+/q?q=diff.commit_123.commit_456
+
+# Compare branches
+/q?q=diff.main.feature-login</div>
+                    </div>
+                </div>
+
+                <!-- USER & AUTHENTICATION -->
+                <div id="user-auth" class="query-category" data-category="user">
+                    <div class="category-header">
+                        <i class="fa fa-user-circle"></i>
+                        <h2>User & Authentication</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">signup.username.password</span>
+                            <span class="query-badge badge-write">Sign Up</span>
+                        </div>
+                        <div class="query-desc">Create a new user account.</div>
+                        <div class="query-example"># Create user 'john'
+/q?q=signup.john.doe123</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">login.username.password</span>
+                            <span class="query-badge badge-read">Login</span>
+                        </div>
+                        <div class="query-desc">Authenticate and receive session key.</div>
+                        <div class="query-example"># Login
+/q?q=login.john.doe123
+# Returns: {"success":true,"session":"abc123..."}</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">logout&ses=session_key</span>
+                            <span class="query-badge badge-write">Logout</span>
+                        </div>
+                        <div class="query-desc">Invalidate current session.</div>
+                        <div class="query-example"># Logout
+/q?q=logout&ses=abc123</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">user.changepass.old.new</span>
+                            <span class="query-badge badge-write">Change Password</span>
+                        </div>
+                        <div class="query-desc">Change your own password.</div>
+                        <div class="query-example"># Change password
+/q?q=user.changepass.oldpass.newpass&ses=session</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">user.list</span>
+                            <span class="query-badge badge-admin">Admin Only</span>
+                        </div>
+                        <div class="query-desc">List all users (admin only).</div>
+                        <div class="query-example"># List users
+/q?q=user.list&ses=admin_session</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">user.role.username.newrole</span>
+                            <span class="query-badge badge-admin">Admin Only</span>
+                        </div>
+                        <div class="query-desc">Change user role (admin only).</div>
+                        <div class="query-example"># Make John an editor
+/q?q=user.role.john.editor&ses=admin_session</div>
+                        <div class="query-params">
+                            <p><strong>Available roles:</strong> root, admin, editor, user, viewer</p>
+                        </div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">user.delete.username</span>
+                            <span class="query-badge badge-admin">Admin Only</span>
+                        </div>
+                        <div class="query-desc">Delete a user (admin only).</div>
+                        <div class="query-example"># Delete user John
+/q?q=user.delete.john&ses=admin_session</div>
+                    </div>
+                </div>
+
+                <!-- BACKUP & RESTORE -->
+                <div id="backup" class="query-category" data-category="backup">
+                    <div class="category-header">
+                        <i class="fa fa-archive"></i>
+                        <h2>Backup & Restore</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">backup</span>
+                            <span class="query-badge badge-write">Backup</span>
+                        </div>
+                        <div class="query-desc">Create a backup of the entire database.</div>
+                        <div class="query-example"># Create backup
+/q?q=backup&ses=admin_session
+
+# Named backup
+/q?q=backup.my_backup_name&ses=admin_session</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">backups</span>
+                            <span class="query-badge badge-read">List Backups</span>
+                        </div>
+                        <div class="query-desc">List all available backups.</div>
+                        <div class="query-example"># List backups
+/q?q=backups&ses=admin_session</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">restore.name</span>
+                            <span class="query-badge badge-write">Restore</span>
+                        </div>
+                        <div class="query-desc">Restore database from a backup.</div>
+                        <div class="query-example"># Restore from backup
+/q?q=restore.backup_20250101&ses=admin_session</div>
+                        <div class="query-note">
+                            <i class="fa fa-exclamation-triangle"></i> Warning: Restore will overwrite current data!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SYSTEM COMMANDS -->
+                <div id="system" class="query-category" data-category="system">
+                    <div class="category-header">
+                        <i class="fa fa-server"></i>
+                        <h2>System Commands</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">status</span>
+                            <span class="query-badge badge-read">Status</span>
+                        </div>
+                        <div class="query-desc">Get system status and information.</div>
+                        <div class="query-example"># Check status
+/q?q=status</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">stats</span>
+                            <span class="query-badge badge-read">Statistics</span>
+                        </div>
+                        <div class="query-desc">Get database statistics.</div>
+                        <div class="query-example"># Get stats
+/q?q=stats</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">track</span>
+                            <span class="query-badge badge-read">Tracking</span>
+                        </div>
+                        <div class="query-desc">View query history and tracking logs.</div>
+                        <div class="query-example"># View last 50 queries
+/q?q=track
+
+# View errors only
+/q?q=track.errors
+
+# View last 24 hours
+/q?q=track.24hr</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">help</span>
+                            <span class="query-badge badge-public">Help</span>
+                        </div>
+                        <div class="query-desc">Show help reference.</div>
+                        <div class="query-example"># Get help
+/q?q=help</div>
+                    </div>
+                </div>
+
+                <!-- ADVANCED FEATURES -->
+                <div id="advanced" class="query-category" data-category="advanced">
+                    <div class="category-header">
+                        <i class="fa fa-rocket"></i>
+                        <h2>Advanced Features</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">force.back.steps</span>
+                            <span class="query-badge badge-admin">Force Recovery</span>
+                        </div>
+                        <div class="query-desc">Emergency force back N commits.</div>
+                        <div class="query-example"># Force back 1 commit
+/q?q=force.back.1&ses=admin_session
+
+# Force back 3 commits
+/q?q=force.back.3&ses=admin_session</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">f1, f2, f3</span>
+                            <span class="query-badge badge-admin">Shortcut Force</span>
+                        </div>
+                        <div class="query-desc">Emergency force back shortcuts.</div>
+                        <div class="query-example"># Force back 1 commit
+/f1?ses=admin_session
+
+# Force back 2 commits
+/f2?ses=admin_session
+
+# Force back 3 commits
+/f3?ses=admin_session</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">auto.1-9</span>
+                            <span class="query-badge badge-write">Auto IDs</span>
+                        </div>
+                        <div class="query-desc">Auto-generate sequential IDs.</div>
+                        <div class="query-example"># Auto IDs 1-9
+/q?q=auto.1-9
+
+# With prefix
+/q?q=auto.255.0001-9999</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">auto.sortby.name</span>
+                            <span class="query-badge badge-write">Sorted IDs</span>
+                        </div>
+                        <div class="query-desc">Generate IDs sorted by data.</div>
+                        <div class="query-example"># Sort by name
+/q?q=auto.1-9.sortby.name.az
+
+# Sort by age
+/q?q=auto.1-9.sortby.age.asc</div>
+                    </div>
+                </div>
+
+                <!-- SHORTCUTS & ALIASES -->
+                <div id="shortcuts" class="query-category" data-category="shortcuts">
+                    <div class="category-header">
+                        <i class="fa fa-bolt"></i>
+                        <h2>Shortcuts & Aliases</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">a = add</span>
+                            <span class="query-badge badge-write">Alias</span>
+                        </div>
+                        <div class="query-desc">Shortcut for add command.</div>
+                        <div class="query-example"># Same as add.mydb.users.name.John
+/q?q=a.mydb.users.name.John</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">g = get</span>
+                            <span class="query-badge badge-read">Alias</span>
+                        </div>
+                        <div class="query-desc">Shortcut for get command.</div>
+                        <div class="query-example"># Same as get.mydb.users
+/q?q=g.mydb.users</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">u = update</span>
+                            <span class="query-badge badge-write">Alias</span>
+                        </div>
+                        <div class="query-desc">Shortcut for update command.</div>
+                        <div class="query-example"># Same as update.mydb.users.1.name=Johnny
+/q?q=u.mydb.users.1.name=Johnny</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">d = delete</span>
+                            <span class="query-badge badge-write">Alias</span>
+                        </div>
+                        <div class="query-desc">Shortcut for delete command.</div>
+                        <div class="query-example"># Same as delete.mydb.users.1
+/q?q=d.mydb.users.1</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">c = create, cm = commit, co = checkout</span>
+                            <span class="query-badge badge-write">Aliases</span>
+                        </div>
+                        <div class="query-desc">Shortcuts for create, commit, checkout.</div>
+                        <div class="query-example">/q?q=c.mydb
+/q?q=cm "message"
+/q?q=co.commit_123</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">un = undo, re = redo</span>
+                            <span class="query-badge badge-write">Aliases</span>
+                        </div>
+                        <div class="query-desc">Shortcuts for undo and redo.</div>
+                        <div class="query-example">/q?q=un
+/q?q=re</div>
+                    </div>
+                </div>
+
+                <!-- RESPONSE FORMATS -->
+                <div id="response-formats" class="query-category" data-category="format">
+                    <div class="category-header">
+                        <i class="fa fa-file-code-o"></i>
+                        <h2>Response Formats</h2>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">&format=json</span>
+                        </div>
+                        <div class="query-desc">JSON format (default).</div>
+                        <div class="query-example">/q?q=get.users&format=json</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">&format=text</span>
+                        </div>
+                        <div class="query-desc">Plain text format for terminals.</div>
+                        <div class="query-example">/q?q=get.users&format=text</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">&format=table</span>
+                        </div>
+                        <div class="query-desc">ASCII table format.</div>
+                        <div class="query-example">/q?q=get.users&format=table</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">&format=csv</span>
+                        </div>
+                        <div class="query-desc">CSV format for Excel.</div>
+                        <div class="query-example">/q?q=get.users&format=csv</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">&pretty=true</span>
+                        </div>
+                        <div class="query-desc">Pretty print JSON.</div>
+                        <div class="query-example">/q?q=get.users&pretty=true</div>
+                    </div>
+                    <div class="query-card">
+                        <div class="query-title">
+                            <span class="query-syntax">&raw=true</span>
+                        </div>
+                        <div class="query-desc">Raw output without metadata.</div>
+                        <div class="query-example">/q?q=get.users&format=text&raw=true</div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const categories = document.querySelectorAll('.query-category');
+        const queryCards = document.querySelectorAll('.query-card');
+        const sidebarLinks = document.querySelectorAll('.query-sidebar a');
+
+        function filterQueries() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            
+            if (searchTerm === '') {
+                // Show all categories and cards
+                categories.forEach(category => {
+                    category.style.display = 'block';
+                });
+                queryCards.forEach(card => {
+                    card.style.display = 'block';
+                });
+                return;
+            }
+            
+            // Filter cards
+            let hasVisibleCards = false;
+            categories.forEach(category => {
+                const cards = category.querySelectorAll('.query-card');
+                let categoryHasVisible = false;
+                
+                cards.forEach(card => {
+                    const cardText = card.textContent.toLowerCase();
+                    const isVisible = cardText.includes(searchTerm);
+                    card.style.display = isVisible ? 'block' : 'none';
+                    if (isVisible) categoryHasVisible = true;
+                });
+                
+                category.style.display = categoryHasVisible ? 'block' : 'none';
+                if (categoryHasVisible) hasVisibleCards = true;
+            });
+        }
+
+        function highlightCategory(categoryId) {
+            // Remove active class from all sidebar links
+            sidebarLinks.forEach(link => {
+                link.style.background = '';
+                link.style.color = '';
+            });
+            
+            // Add active class to matching link
+            const activeLink = document.querySelector(`.query-sidebar a[href="#${categoryId}"]`);
+            if (activeLink) {
+                activeLink.style.background = 'var(--bg-hover)';
+                activeLink.style.color = 'var(--accent-primary)';
+            }
+        }
+
+        // Intersection Observer for category highlighting
+        const observerOptions = {
+            rootMargin: '-100px 0px -300px 0px',
+            threshold: 0.3
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const categoryId = entry.target.id;
+                    highlightCategory(categoryId);
+                }
+            });
+        }, observerOptions);
+
+        categories.forEach(category => {
+            observer.observe(category);
+        });
+
+        // Smooth scroll for sidebar links
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Search input listener
+        searchInput.addEventListener('input', filterQueries);
+    </script>
+</body>
+</html>
