@@ -522,25 +522,26 @@ class QueryProcessor {
     }
 
     // ============================================
-    // USER MANAGEMENT
+    // USER MANAGEMENT - FIXED LOGIN
     // ============================================
 
     async login(parsed, user) {
         const username = parsed.args[0];
         const password = parsed.args[1];
+        const ip = 'unknown';
         
         if (!username || !password) {
             return { error: 'Username and password required. Usage: login.username.password' };
         }
         
-        const result = await auth.login(username, password);
+        const result = await auth.validateUser(username, password, ip);
         
         if (result.success) {
-            const session = auth.createSession(result.user);
+            const session = auth.createSession({ username: result.username, role: result.role });
             return {
                 success: true,
                 session: session,
-                user: result.user,
+                user: { username: result.username, role: result.role },
                 message: 'Welcome back, ' + username + '!'
             };
         }
@@ -606,7 +607,6 @@ class QueryProcessor {
         return { error: 'Unknown user action. Available: list, delete, role' };
     }
 
- 
     // ============================================
     // SYSTEM OPERATIONS
     // ============================================
