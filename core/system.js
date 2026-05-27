@@ -1,6 +1,6 @@
 // NullName DB - Core System Management
 // No brand. No name. No payment.
-// Version: 1.0.0
+// Version: 2.0.0
 
 const fs = require('fs-extra');
 const path = require('path');
@@ -11,7 +11,7 @@ class CoreSystem {
     constructor() {
         this.initialized = false;
         this.systemStartTime = Date.now();
-        this.version = '1.0.0';
+        this.version = '2.0.0';
         this.name = 'NullName DB';
         this.tagline = 'No brand. No name. No payment.';
         
@@ -33,6 +33,7 @@ class CoreSystem {
         
         this.eventListeners = new Map();
         this.healthInterval = null;
+        this.metricsInterval = null;
     }
 
     async initialize() {
@@ -66,7 +67,8 @@ class CoreSystem {
             await this.trackEvent('system_start', {
                 version: this.version,
                 node_version: process.version,
-                platform: process.platform
+                platform: process.platform,
+                arch: process.arch
             });
             
         } catch (error) {
@@ -78,16 +80,21 @@ class CoreSystem {
     async ensureDirectories() {
         const dirs = [
             path.join(__dirname, '..', 'database'),
-            path.join(__dirname, '..', 'database', 'path'),
+            path.join(__dirname, '..', 'database', 'sql'),
+            path.join(__dirname, '..', 'database', 'nosql'),
+            path.join(__dirname, '..', 'database', 'filebase'),
             path.join(__dirname, '..', 'database', 'files'),
             path.join(__dirname, '..', 'database', 'commits'),
             path.join(__dirname, '..', 'database', 'branches'),
             path.join(__dirname, '..', 'database', 'backups'),
+            path.join(__dirname, '..', 'database', 'timeline'),
             path.join(__dirname, '..', 'database', 'temp'),
-            path.join(__dirname, '..', 'database', 'users'),
+            path.join(__dirname, '..', 'database', 'cache'),
             path.join(__dirname, '..', 'database', 'logs'),
             path.join(__dirname, '..', 'database', 'track'),
             path.join(__dirname, '..', 'logs'),
+            path.join(__dirname, '..', 'studio'),
+            path.join(__dirname, '..', 'cli'),
             path.join(__dirname, '..', 'ui'),
             path.join(__dirname, '..', 'docs')
         ];
@@ -122,7 +129,11 @@ class CoreSystem {
                     fileUploads: true,
                     userManagement: true,
                     backupSystem: true,
-                    publicRead: false
+                    realtime: true,
+                    sql: true,
+                    nosql: true,
+                    filebase: true,
+                    timeback: true
                 }
             };
             
@@ -144,16 +155,18 @@ class CoreSystem {
                     sessionTimeout: parseInt(process.env.SESSION_TIMEOUT) || 86400000,
                     maxLoginAttempts: 5,
                     lockoutTime: 900000,
-                    bcryptRounds: 10
+                    bcryptRounds: 10,
+                    rateLimitMax: 1000,
+                    rateLimitWindow: 900000
                 },
                 storage: {
-                    maxSizeMB: parseInt(process.env.MAX_STORAGE_MB) || 1024,
+                    maxSizeMB: parseInt(process.env.MAX_STORAGE_MB) || 10240,
                     autoCleanupDays: parseInt(process.env.AUTO_CLEANUP_DAYS) || 30,
                     maxFileSizeMB: parseInt(process.env.MAX_FILE_SIZE_MB) || 50,
                     tempCleanupMs: parseInt(process.env.TEMP_FILE_CLEANUP_MS) || 3600000
                 },
                 backup: {
-                    autoBackup: true,
+                    autoBackup: process.env.AUTO_BACKUP !== 'false',
                     intervalHours: parseInt(process.env.BACKUP_INTERVAL_HOURS) || 24,
                     maxBackups: parseInt(process.env.MAX_BACKUPS_KEEP) || 10,
                     compression: true
@@ -162,14 +175,19 @@ class CoreSystem {
                     level: process.env.LOG_LEVEL || 'info',
                     enableRequestLog: true,
                     enableQueryTracking: true,
-                    maxHistory: 10000
+                    maxHistory: 10000,
+                    slowQueryMs: parseInt(process.env.SLOW_QUERY_MS) || 1000
                 },
                 features: {
                     enableSignup: process.env.ENABLE_SIGNUP !== 'false',
                     enablePublicRead: process.env.ENABLE_PUBLIC_READ === 'true',
                     enableFileUploads: process.env.ENABLE_FILE_UPLOADS !== 'false',
                     enableVersionControl: process.env.ENABLE_VERSION_CONTROL !== 'false',
-                    enableBackupSystem: process.env.ENABLE_BACKUP_SYSTEM !== 'false'
+                    enableBackupSystem: process.env.ENABLE_BACKUP_SYSTEM !== 'false',
+                    enableRealtime: process.env.ENABLE_REALTIME !== 'false',
+                    enableSQL: process.env.ENABLE_SQL !== 'false',
+                    enableNoSQL: process.env.ENABLE_NOSQL !== 'false',
+                    enableFileBase: process.env.ENABLE_FILEBASE !== 'false'
                 },
                 updatedAt: new Date().toISOString()
             };
@@ -213,7 +231,8 @@ class CoreSystem {
         await fs.writeJson(this.lockFile, {
             pid: process.pid,
             timestamp: Date.now(),
-            startTime: this.systemStartTime
+            startTime: this.systemStartTime,
+            hostname: os.hostname()
         });
     }
 
@@ -234,6 +253,18 @@ class CoreSystem {
         console.log('✓ Health monitoring started (interval: 60s)');
     }
 
+    startMetricsCollection() {
+        if (this.metricsInterval) {
+            clearInterval(this.metricsInterval);
+        }
+        
+        this.metricsInterval = setInterval(async () => {
+            await this.collectMetrics();
+        }, 300000);
+        
+        console.log('✓ Metrics collection started (interval: 5min)');
+    }
+
     async getHealthStatus() {
         const memoryUsage = process.memoryUsage();
         const cpuUsage = process.cpuUsage();
@@ -246,12 +277,31 @@ class CoreSystem {
         
         if (memoryPercent > 90) {
             status = 'warning';
-            warnings.push('Memory usage above 90%');
+            warnings.push(`Memory usage above 90% (${memoryPercent.toFixed(1)}%)`);
         }
         
-        if (this.metrics.storage.total > this.config.storage.maxSizeMB * 1024 * 1024 * 0.9) {
-            status = 'warning';
-            warnings.push('Storage usage above 90%');
+        const dbPath = path.join(__dirname, '..', 'database', 'sql');
+        let dbSize = 0;
+        if (await fs.pathExists(dbPath)) {
+            const files = await fs.readdir(dbPath);
+            for (const file of files) {
+                const filePath = path.join(dbPath, file);
+                const stat = await fs.stat(filePath);
+                if (stat.isDirectory()) {
+                    const subFiles = await fs.readdir(filePath);
+                    for (const sub of subFiles) {
+                        const subPath = path.join(filePath, sub);
+                        const subStat = await fs.stat(subPath);
+                        dbSize += subStat.size;
+                    }
+                }
+            }
+        }
+        
+        const maxSizeBytes = this.config.storage.maxSizeMB * 1024 * 1024;
+        if (dbSize > maxSizeBytes * 0.9) {
+            status = status === 'healthy' ? 'warning' : status;
+            warnings.push(`Storage usage above 90% (${(dbSize / maxSizeBytes * 100).toFixed(1)}%)`);
         }
         
         return {
@@ -261,8 +311,8 @@ class CoreSystem {
             memory: {
                 heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024) + ' MB',
                 heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + ' MB',
-                percent: memoryPercent.toFixed(2) + '%',
-                rss: Math.round(memoryUsage.rss / 1024 / 1024) + ' MB'
+                rss: Math.round(memoryUsage.rss / 1024 / 1024) + ' MB',
+                percent: memoryPercent.toFixed(2) + '%'
             },
             cpu: {
                 user: (cpuUsage.user / 1000).toFixed(2) + 'ms',
@@ -279,17 +329,9 @@ class CoreSystem {
         };
     }
 
-    startMetricsCollection() {
-        setInterval(async () => {
-            await this.collectMetrics();
-        }, 300000);
-        
-        console.log('✓ Metrics collection started (interval: 5min)');
-    }
-
     async collectMetrics() {
         try {
-            const dbPath = path.join(__dirname, '..', 'database', 'path');
+            const dbPath = path.join(__dirname, '..', 'database', 'sql');
             let databases = 0;
             let tables = 0;
             let records = 0;
@@ -297,23 +339,24 @@ class CoreSystem {
             
             if (await fs.pathExists(dbPath)) {
                 const dbDirs = await fs.readdir(dbPath);
-                databases = dbDirs.length;
+                databases = dbDirs.filter(d => !d.startsWith('_')).length;
                 
                 for (const db of dbDirs) {
+                    if (db.startsWith('_')) continue;
                     const dbFullPath = path.join(dbPath, db);
                     const stat = await fs.stat(dbFullPath);
                     if (stat.isDirectory()) {
                         const tableFiles = await fs.readdir(dbFullPath);
-                        tables += tableFiles.length;
+                        tables += tableFiles.filter(f => f.endsWith('.json') && !f.startsWith('_')).length;
                         
                         for (const table of tableFiles) {
-                            const tablePath = path.join(dbFullPath, table);
-                            const tableStat = await fs.stat(tablePath);
-                            totalSize += tableStat.size;
-                            
-                            if (table.endsWith('.json')) {
+                            if (table.endsWith('.json') && !table.startsWith('_')) {
+                                const tablePath = path.join(dbFullPath, table);
+                                const tableStat = await fs.stat(tablePath);
+                                totalSize += tableStat.size;
+                                
                                 const data = await fs.readJson(tablePath);
-                                records += Object.keys(data).filter(k => !isNaN(k)).length;
+                                records += Object.keys(data).filter(k => !isNaN(k) && k !== '_nextId' && k !== '_schema').length;
                             }
                         }
                     }
@@ -334,22 +377,41 @@ class CoreSystem {
                 }
             }
             
+            const memoryUsage = process.memoryUsage();
+            const cpuUsage = process.cpuUsage();
+            
             this.metrics.storage = {
                 databases: databases,
                 tables: tables,
                 records: records,
                 files: fileCount,
                 totalBytes: totalSize + fileSize,
+                totalKB: ((totalSize + fileSize) / 1024).toFixed(2),
                 totalMB: ((totalSize + fileSize) / (1024 * 1024)).toFixed(2),
+                totalGB: ((totalSize + fileSize) / (1024 * 1024 * 1024)).toFixed(2),
+                dataBytes: totalSize,
+                dataMB: (totalSize / (1024 * 1024)).toFixed(2),
                 fileBytes: fileSize,
                 fileMB: (fileSize / (1024 * 1024)).toFixed(2)
             };
             
             this.metrics.uptime = this.getUptime();
-            this.metrics.memory = process.memoryUsage();
-            this.metrics.cpu = process.cpuUsage();
+            this.metrics.memory = {
+                rss: memoryUsage.rss,
+                heapTotal: memoryUsage.heapTotal,
+                heapUsed: memoryUsage.heapUsed,
+                external: memoryUsage.external
+            };
+            this.metrics.cpu = {
+                user: cpuUsage.user,
+                system: cpuUsage.system
+            };
             this.metrics.nodeVersion = process.version;
             this.metrics.platform = process.platform;
+            this.metrics.arch = process.arch;
+            this.metrics.cpuCores = os.cpus().length;
+            this.metrics.totalMemory = os.totalmem();
+            this.metrics.freeMemory = os.freemem();
             
             await this.saveMetrics();
             
@@ -415,6 +477,13 @@ class CoreSystem {
         this.eventListeners.get(eventName).push(callback);
     }
 
+    off(eventName, callback) {
+        if (!this.eventListeners.has(eventName)) return;
+        const listeners = this.eventListeners.get(eventName);
+        const index = listeners.indexOf(callback);
+        if (index !== -1) listeners.splice(index, 1);
+    }
+
     async getEvents(limit = 100, filter = null) {
         if (!await fs.pathExists(this.eventsFile)) {
             return [];
@@ -477,10 +546,14 @@ class CoreSystem {
         return {
             queries: this.metrics.queries,
             storage: this.metrics.storage,
-            memory: this.metrics.memory,
-            cpu: this.metrics.cpu,
+            memory: {
+                rss: Math.round(this.metrics.memory?.rss / 1024 / 1024) + ' MB',
+                heapTotal: Math.round(this.metrics.memory?.heapTotal / 1024 / 1024) + ' MB',
+                heapUsed: Math.round(this.metrics.memory?.heapUsed / 1024 / 1024) + ' MB'
+            },
             nodeVersion: this.metrics.nodeVersion,
             platform: this.metrics.platform,
+            arch: this.metrics.arch,
             uptime: this.getUptimeHuman()
         };
     }
@@ -512,9 +585,7 @@ class CoreSystem {
         
         await this.trackEvent('config_updated', {
             changes: Object.keys(updates),
-            by: user?.username || 'system',
-            old: oldConfig,
-            new: this.config
+            by: user?.username || 'system'
         });
         
         return { success: true, config: this.config };
@@ -541,11 +612,10 @@ class CoreSystem {
         const results = {
             tempFiles: 0,
             oldEvents: 0,
-            oldBackups: 0,
             freedSpaceMB: 0
         };
         
-              const tempPath = path.join(__dirname, '..', 'database', 'temp');
+        const tempPath = path.join(__dirname, '..', 'database', 'temp');
         if (await fs.pathExists(tempPath)) {
             const temps = await fs.readdir(tempPath);
             for (const temp of temps) {
@@ -554,6 +624,7 @@ class CoreSystem {
                 if (Date.now() - stat.mtimeMs > this.config.storage.tempCleanupMs) {
                     await fs.remove(tempFile);
                     results.tempFiles++;
+                    results.freedSpaceMB += stat.size / (1024 * 1024);
                 }
             }
         }
@@ -568,7 +639,7 @@ class CoreSystem {
             await fs.writeJson(this.eventsFile, events, { spaces: 2 });
         }
         
-        results.freedSpaceMB = ((results.tempFiles * 0.001) + (results.oldEvents * 0.0001)).toFixed(2);
+        results.freedSpaceMB = results.freedSpaceMB.toFixed(2);
         
         this.state.lastCleanup = new Date().toISOString();
         await fs.writeJson(this.stateFile, this.state, { spaces: 2 });
@@ -586,7 +657,7 @@ class CoreSystem {
     formatBytes(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
@@ -607,6 +678,29 @@ class CoreSystem {
         }
         
         return true;
+    }
+
+    async getDiagnostics() {
+        const health = await this.getHealthStatus();
+        const stats = await this.getSystemStats();
+        const events = await this.getEvents(10);
+        
+        return {
+            status: health.status,
+            uptime: this.getUptimeHuman(),
+            version: this.version,
+            nodeVersion: process.version,
+            platform: process.platform,
+            memory: stats.memory,
+            storage: stats.storage,
+            queries: stats.queries,
+            recentEvents: events,
+            config: {
+                port: this.config.server.port,
+                features: this.config.features
+            },
+            timestamp: new Date().toISOString()
+        };
     }
 }
 
