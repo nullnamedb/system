@@ -1,6 +1,6 @@
 // NullName DB - Core Database Engine
 // No brand. No name. No payment.
-// Version: 1.0.0
+// Version: 2.0.0
 
 const fs = require('fs-extra');
 const path = require('path');
@@ -8,22 +8,30 @@ const crypto = require('crypto');
 
 class DatabaseEngine {
     constructor() {
-        this.dataPath = path.join(__dirname, '..', 'database', 'path');
-        this.usersPath = path.join(__dirname, '..', 'database', 'users');
+        this.dataPath = path.join(__dirname, '..', 'database', 'sql');
+        this.kvPath = path.join(__dirname, '..', 'database', 'keyvalue.json');
         this.cache = new Map();
         this.locks = new Map();
         this.cacheTimeout = 60000;
         this.writeQueue = [];
         this.isWriting = false;
+        this.indexes = new Map();
         
         this.init();
     }
 
     async init() {
         await fs.ensureDir(this.dataPath);
-        await fs.ensureDir(this.usersPath);
-        console.log('Database engine initialized');
+        await this.ensureKeyValueFile();
+        await this.loadIndexes();
         this.startCacheCleanup();
+        console.log('Database engine initialized');
+    }
+
+    async ensureKeyValueFile() {
+        if (!await fs.pathExists(this.kvPath)) {
+            await fs.writeJson(this.kvPath, {}, { spaces: 2 });
+        }
     }
 
     startCacheCleanup() {
@@ -37,6 +45,19 @@ class DatabaseEngine {
         }, 300000);
     }
 
+    async loadIndexes() {
+        const indexPath = path.join(this.dataPath, '_indexes.json');
+        if (await fs.pathExists(indexPath)) {
+            this.indexes = new Map(Object.entries(await fs.readJson(indexPath)));
+        }
+    }
+
+    async saveIndexes() {
+        const indexPath = path.join(this.dataPath, '_indexes.json');
+        const indexObj = Object.fromEntries(this.indexes);
+        await fs.writeJson(indexPath, indexObj, { spaces: 2 });
+    }
+
     getCacheKey(dbName, tableName = null, id = null) {
         if (id !== null) return `${dbName}:${tableName}:${id}`;
         if (tableName) return `${dbName}:${tableName}`;
@@ -45,7 +66,7 @@ class DatabaseEngine {
 
     setCache(key, data) {
         this.cache.set(key, {
-            data: data,
+            data: JSON.parse(JSON.stringify(data)),
             timestamp: Date.now()
         });
     }
@@ -53,9 +74,17 @@ class DatabaseEngine {
     getCache(key) {
         const cached = this.cache.get(key);
         if (cached && (Date.now() - cached.timestamp) < this.cacheTimeout) {
-            return cached.data;
+            return JSON.parse(JSON.stringify(cached.data));
         }
         return null;
+    }
+
+    clearCache(key = null) {
+        if (key) {
+            this.cache.delete(key);
+        } else {
+            this.cache.clear();
+        }
     }
 
     getDbPath(dbName) {
@@ -128,6 +157,30 @@ class DatabaseEngine {
         this.locks.delete(resource);
     }
 
+    parseValue(value) {
+        if (value === null || value === 'null') return null;
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        
+        if (!isNaN(value) && value !== '') {
+            const num = Number(value);
+            if (Number.isInteger(num)) return num;
+            return num;
+        }
+        
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
+                (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+                try {
+                    return JSON.parse(trimmed);
+                } catch (e) {}
+            }
+        }
+        
+        return value;
+    }
+
     // ============================================
     // DATABASE OPERATIONS
     // ============================================
@@ -139,7 +192,7 @@ class DatabaseEngine {
         for (const item of items) {
             const itemPath = path.join(this.dataPath, item);
             const stat = await fs.stat(itemPath);
-            if (stat.isDirectory()) {
+            if (stat.isDirectory() && !item.startsWith('_')) {
                 databases.push(item);
             }
         }
@@ -162,7 +215,7 @@ class DatabaseEngine {
         const files = await fs.readdir(dbPath);
         
         for (const file of files) {
-            if (file.endsWith('.json')) {
+            if (file.endsWith('.json') && !file.startsWith('_')) {
                 const tableName = file.replace('.json', '');
                 const tableData = await this.readJson(path.join(dbPath, file));
                 tables[tableName] = tableData;
@@ -192,7 +245,15 @@ class DatabaseEngine {
         
         await this.ensureDbDir(dbName);
         
-        this.cache.delete(this.getCacheKey(dbName));
+        const schemaFile = path.join(dbPath, '_schema.json');
+        await fs.writeJson(schemaFile, {
+            name: dbName,
+            created: new Date().toISOString(),
+            createdBy: user?.username || 'system',
+            tables: []
+        }, { spaces: 2 });
+        
+        this.clearCache(this.getCacheKey(dbName));
         
         return {
             success: true,
@@ -219,13 +280,14 @@ class DatabaseEngine {
         
         await fs.remove(dbPath);
         
-        this.cache.delete(this.getCacheKey(dbName));
+        this.clearCache(this.getCacheKey(dbName));
         
         return {
             success: true,
             database: dbName,
             deleted: true,
             sizeBytes: size,
+            sizeMB: (size / (1024 * 1024)).toFixed(2),
             by: user?.username || 'system'
         };
     }
@@ -248,7 +310,14 @@ class DatabaseEngine {
         const data = await this.readJson(tablePath);
         this.setCache(cacheKey, data);
         
-        return data;
+        const records = [];
+        for (const [id, row] of Object.entries(data)) {
+            if (id !== '_nextId' && id !== '_schema' && !id.startsWith('_')) {
+                records.push({ id: parseInt(id), ...row });
+            }
+        }
+        
+        return { table: tableName, records: records, count: records.length };
     }
 
     async createTable(dbName, tableName, columns = [], user = null) {
@@ -268,11 +337,24 @@ class DatabaseEngine {
             return { error: `Table '${tableName}' already exists in database '${dbName}'` };
         }
         
-        const initialData = { _nextId: 1 };
+        const schema = {
+            _nextId: 1,
+            _schema: {
+                name: tableName,
+                created: new Date().toISOString(),
+                createdBy: user?.username || 'system',
+                columns: columns.map(col => ({ name: col, type: 'TEXT' }))
+            }
+        };
         
-        await this.writeJson(tablePath, initialData);
+        await this.writeJson(tablePath, schema);
         
-        this.cache.delete(this.getCacheKey(dbName, tableName));
+        const schemaFile = path.join(dbPath, '_schema.json');
+        const dbSchema = await this.readJson(schemaFile);
+        dbSchema.tables.push(tableName);
+        await fs.writeJson(schemaFile, dbSchema, { spaces: 2 });
+        
+        this.clearCache(this.getCacheKey(dbName, tableName));
         
         return {
             success: true,
@@ -294,7 +376,12 @@ class DatabaseEngine {
         const stat = await fs.stat(tablePath);
         await fs.remove(tablePath);
         
-        this.cache.delete(this.getCacheKey(dbName, tableName));
+        const schemaFile = path.join(this.getDbPath(dbName), '_schema.json');
+        const dbSchema = await this.readJson(schemaFile);
+        dbSchema.tables = dbSchema.tables.filter(t => t !== tableName);
+        await fs.writeJson(schemaFile, dbSchema, { spaces: 2 });
+        
+        this.clearCache(this.getCacheKey(dbName, tableName));
         
         return {
             success: true,
@@ -302,6 +389,38 @@ class DatabaseEngine {
             table: tableName,
             deleted: true,
             sizeBytes: stat.size,
+            by: user?.username || 'system'
+        };
+    }
+
+    async deleteColumn(dbName, tableName, columnName, user = null) {
+        const tablePath = this.getTablePath(dbName, tableName);
+        
+        if (!await fs.pathExists(tablePath)) {
+            return { error: `Table '${tableName}' not found` };
+        }
+        
+        const data = await this.readJson(tablePath);
+        
+        for (const [id, row] of Object.entries(data)) {
+            if (id !== '_nextId' && id !== '_schema' && row[columnName] !== undefined) {
+                delete row[columnName];
+            }
+        }
+        
+        if (data._schema && data._schema.columns) {
+            data._schema.columns = data._schema.columns.filter(c => c.name !== columnName);
+        }
+        
+        await this.writeJson(tablePath, data);
+        this.clearCache(this.getCacheKey(dbName, tableName));
+        
+        return {
+            success: true,
+            database: dbName,
+            table: tableName,
+            column: columnName,
+            deleted: true,
             by: user?.username || 'system'
         };
     }
@@ -317,11 +436,19 @@ class DatabaseEngine {
         let data = await this.readJson(tablePath);
         
         if (Object.keys(data).length === 0) {
-            data = { _nextId: 1 };
+            data = { _nextId: 1, _schema: { columns: [] } };
         }
         
         if (!data._nextId) {
             data._nextId = 1;
+        }
+        
+        if (!data._schema) {
+            data._schema = { columns: [] };
+        }
+        
+        if (!data._schema.columns.find(c => c.name === columnName)) {
+            data._schema.columns.push({ name: columnName, type: typeof value });
         }
         
         if (typeof value === 'string' && value.includes(',') && !value.startsWith('[')) {
@@ -333,10 +460,12 @@ class DatabaseEngine {
                 if (!data[id]) data[id] = {};
                 data[id][columnName] = v;
                 ids.push(id);
+                
+                await this.updateIndex(dbName, tableName, columnName, v, id);
             }
             
             await this.writeJson(tablePath, data);
-            this.cache.delete(this.getCacheKey(dbName, tableName));
+            this.clearCache(this.getCacheKey(dbName, tableName));
             
             return {
                 success: true,
@@ -351,17 +480,20 @@ class DatabaseEngine {
         
         const id = data._nextId++;
         if (!data[id]) data[id] = {};
-        data[id][columnName] = this.parseValue(value);
+        const parsedValue = this.parseValue(value);
+        data[id][columnName] = parsedValue;
+        
+        await this.updateIndex(dbName, tableName, columnName, parsedValue, id);
         
         await this.writeJson(tablePath, data);
-        this.cache.delete(this.getCacheKey(dbName, tableName));
+        this.clearCache(this.getCacheKey(dbName, tableName));
         
         return {
             success: true,
             database: dbName,
             table: tableName,
             column: columnName,
-            value: this.parseValue(value),
+            value: parsedValue,
             id: id,
             by: user?.username || 'system'
         };
@@ -378,12 +510,12 @@ class DatabaseEngine {
         const result = {};
         
         for (const [id, row] of Object.entries(data)) {
-            if (id !== '_nextId' && row[columnName] !== undefined) {
+            if (id !== '_nextId' && id !== '_schema' && row[columnName] !== undefined) {
                 result[id] = row[columnName];
             }
         }
         
-        return result;
+        return { column: columnName, values: result, count: Object.keys(result).length };
     }
 
     async getById(dbName, tableName, id, columnName = null, user = null) {
@@ -421,10 +553,13 @@ class DatabaseEngine {
         }
         
         const oldValue = data[id][columnName];
-        data[id][columnName] = this.parseValue(value);
+        const newValue = this.parseValue(value);
+        data[id][columnName] = newValue;
+        
+        await this.updateIndex(dbName, tableName, columnName, newValue, id, oldValue);
         
         await this.writeJson(tablePath, data);
-        this.cache.delete(this.getCacheKey(dbName, tableName));
+        this.clearCache(this.getCacheKey(dbName, tableName));
         
         return {
             success: true,
@@ -433,7 +568,7 @@ class DatabaseEngine {
             id: id,
             column: columnName,
             oldValue: oldValue,
-            newValue: this.parseValue(value),
+            newValue: newValue,
             by: user?.username || 'system'
         };
     }
@@ -454,8 +589,10 @@ class DatabaseEngine {
         const deletedRow = { ...data[id] };
         delete data[id];
         
+        await this.removeFromIndexes(dbName, tableName, id);
+        
         await this.writeJson(tablePath, data);
-        this.cache.delete(this.getCacheKey(dbName, tableName));
+        this.clearCache(this.getCacheKey(dbName, tableName));
         
         return {
             success: true,
@@ -468,30 +605,130 @@ class DatabaseEngine {
     }
 
     // ============================================
-    // SIMPLE KEY-VALUE OPERATIONS
+    // INDEX MANAGEMENT
+    // ============================================
+
+    async createIndex(dbName, tableName, columnName, user = null) {
+        const key = `${dbName}:${tableName}:${columnName}`;
+        
+        if (this.indexes.has(key)) {
+            return { error: `Index already exists on ${dbName}.${tableName}.${columnName}` };
+        }
+        
+        const tablePath = this.getTablePath(dbName, tableName);
+        if (!await fs.pathExists(tablePath)) {
+            return { error: `Table '${tableName}' not found` };
+        }
+        
+        const data = await this.readJson(tablePath);
+        const index = new Map();
+        
+        for (const [id, row] of Object.entries(data)) {
+            if (id !== '_nextId' && id !== '_schema' && row[columnName] !== undefined) {
+                const value = row[columnName];
+                const valueKey = JSON.stringify(value);
+                if (!index.has(valueKey)) {
+                    index.set(valueKey, []);
+                }
+                index.get(valueKey).push(parseInt(id));
+            }
+        }
+        
+        this.indexes.set(key, index);
+        await this.saveIndexes();
+        
+        return {
+            success: true,
+            index: `${dbName}.${tableName}.${columnName}`,
+            entries: index.size,
+            by: user?.username || 'system'
+        };
+    }
+
+    async updateIndex(dbName, tableName, columnName, value, id, oldValue = null) {
+        const key = `${dbName}:${tableName}:${columnName}`;
+        
+        if (this.indexes.has(key)) {
+            const index = this.indexes.get(key);
+            
+            if (oldValue !== null) {
+                const oldKey = JSON.stringify(oldValue);
+                if (index.has(oldKey)) {
+                    const ids = index.get(oldKey).filter(i => i !== id);
+                    if (ids.length === 0) {
+                        index.delete(oldKey);
+                    } else {
+                        index.set(oldKey, ids);
+                    }
+                }
+            }
+            
+            const newKey = JSON.stringify(value);
+            if (!index.has(newKey)) {
+                index.set(newKey, []);
+            }
+            if (!index.get(newKey).includes(id)) {
+                index.get(newKey).push(id);
+            }
+            
+            this.indexes.set(key, index);
+            await this.saveIndexes();
+        }
+    }
+
+    async removeFromIndexes(dbName, tableName, id) {
+        for (const [key, index] of this.indexes.entries()) {
+            if (key.startsWith(`${dbName}:${tableName}:`)) {
+                for (const [valueKey, ids] of index.entries()) {
+                    const newIds = ids.filter(i => i !== id);
+                    if (newIds.length === 0) {
+                        index.delete(valueKey);
+                    } else {
+                        index.set(valueKey, newIds);
+                    }
+                }
+                this.indexes.set(key, index);
+            }
+        }
+        await this.saveIndexes();
+    }
+
+    async findUsingIndex(dbName, tableName, columnName, value) {
+        const key = `${dbName}:${tableName}:${columnName}`;
+        
+        if (!this.indexes.has(key)) {
+            return null;
+        }
+        
+        const index = this.indexes.get(key);
+        const valueKey = JSON.stringify(value);
+        
+        return index.get(valueKey) || [];
+    }
+
+    // ============================================
+    // KEY-VALUE OPERATIONS
     // ============================================
 
     async set(key, value, user = null) {
-        const kvPath = path.join(this.dataPath, '_keyvalue.json');
-        let data = await this.readJson(kvPath);
+        let data = await this.readJson(this.kvPath);
         
         const oldValue = data[key];
-        data[key] = value;
+        data[key] = this.parseValue(value);
         
-        await this.writeJson(kvPath, data);
+        await this.writeJson(this.kvPath, data);
         
         return {
             success: true,
             key: key,
             oldValue: oldValue,
-            newValue: value,
+            newValue: data[key],
             by: user?.username || 'system'
         };
     }
 
     async get(key, user = null) {
-        const kvPath = path.join(this.dataPath, '_keyvalue.json');
-        const data = await this.readJson(kvPath);
+        const data = await this.readJson(this.kvPath);
         
         if (data[key] === undefined) {
             return { error: `Key '${key}' not found` };
@@ -501,8 +738,7 @@ class DatabaseEngine {
     }
 
     async delete(key, user = null) {
-        const kvPath = path.join(this.dataPath, '_keyvalue.json');
-        let data = await this.readJson(kvPath);
+        let data = await this.readJson(this.kvPath);
         
         if (data[key] === undefined) {
             return { error: `Key '${key}' not found` };
@@ -511,7 +747,7 @@ class DatabaseEngine {
         const deletedValue = data[key];
         delete data[key];
         
-        await this.writeJson(kvPath, data);
+        await this.writeJson(this.kvPath, data);
         
         return {
             success: true,
@@ -521,33 +757,65 @@ class DatabaseEngine {
         };
     }
 
+    async getAllKeys() {
+        const data = await this.readJson(this.kvPath);
+        return Object.keys(data);
+    }
+
     // ============================================
-    // UTILITY METHODS
+    // SEARCH OPERATIONS
     // ============================================
 
-    parseValue(value) {
-        if (value === null || value === 'null') return null;
-        if (value === 'true') return true;
-        if (value === 'false') return false;
+    async searchAll(keyword, user = null) {
+        const results = [];
+        const databases = await this.getAllDatabases(user);
         
-        if (!isNaN(value) && value !== '') {
-            const num = Number(value);
-            if (Number.isInteger(num)) return num;
-            return num;
-        }
-        
-        if (typeof value === 'string') {
-            const trimmed = value.trim();
-            if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
-                (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-                try {
-                    return JSON.parse(trimmed);
-                } catch (e) {}
+        for (const dbName of databases.databases) {
+            const dbPath = this.getDbPath(dbName);
+            const tables = await fs.readdir(dbPath);
+            
+            for (const tableFile of tables) {
+                if (tableFile.endsWith('.json') && !tableFile.startsWith('_')) {
+                    const tableName = tableFile.replace('.json', '');
+                    const data = await this.readJson(path.join(dbPath, tableFile));
+                    
+                    for (const [id, row] of Object.entries(data)) {
+                        if (id !== '_nextId' && id !== '_schema') {
+                            for (const [col, val] of Object.entries(row)) {
+                                if (String(val).toLowerCase().includes(keyword.toLowerCase())) {
+                                    results.push({
+                                        database: dbName,
+                                        table: tableName,
+                                        id: id,
+                                        column: col,
+                                        value: val
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         
-        return value;
+        const kvData = await this.readJson(this.kvPath);
+        for (const [key, value] of Object.entries(kvData)) {
+            if (String(key).toLowerCase().includes(keyword.toLowerCase()) ||
+                String(value).toLowerCase().includes(keyword.toLowerCase())) {
+                results.push({
+                    type: 'keyvalue',
+                    key: key,
+                    value: value
+                });
+            }
+        }
+        
+        return results;
     }
+
+    // ============================================
+    // UTILITY METHODS
+    // ============================================
 
     async getStats() {
         let databases = 0;
@@ -556,42 +824,178 @@ class DatabaseEngine {
         let totalSize = 0;
         
         const dbDirs = await fs.readdir(this.dataPath);
-        databases = dbDirs.length;
+        databases = dbDirs.filter(d => !d.startsWith('_')).length;
         
         for (const db of dbDirs) {
+            if (db.startsWith('_')) continue;
             const dbPath = path.join(this.dataPath, db);
             const stat = await fs.stat(dbPath);
             
             if (stat.isDirectory()) {
                 const tableFiles = await fs.readdir(dbPath);
-                tables += tableFiles.length;
+                const tableCount = tableFiles.filter(f => f.endsWith('.json') && !f.startsWith('_')).length;
+                tables += tableCount;
                 
                 for (const table of tableFiles) {
-                    const tablePath = path.join(dbPath, table);
-                    const tableStat = await fs.stat(tablePath);
-                    totalSize += tableStat.size;
-                    
-                    if (table.endsWith('.json')) {
+                    if (table.endsWith('.json') && !table.startsWith('_')) {
+                        const tablePath = path.join(dbPath, table);
+                        const tableStat = await fs.stat(tablePath);
+                        totalSize += tableStat.size;
+                        
                         const data = await this.readJson(tablePath);
-                        records += Object.keys(data).filter(k => !isNaN(k)).length;
+                        records += Object.keys(data).filter(k => !isNaN(k) && k !== '_nextId' && k !== '_schema').length;
                     }
                 }
             }
         }
+        
+        const kvStat = await fs.stat(this.kvPath);
+        totalSize += kvStat.size;
         
         return {
             databases: databases,
             tables: tables,
             records: records,
             totalSizeBytes: totalSize,
-            totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2)
+            totalSizeKB: (totalSize / 1024).toFixed(2),
+            totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
+            indexes: this.indexes.size
         };
     }
 
-    async clearCache() {
-        const size = this.cache.size;
-        this.cache.clear();
-        return { cleared: size };
+    async backupDatabase(dbName, backupPath = null) {
+        const dbPath = this.getDbPath(dbName);
+        
+        if (!await fs.pathExists(dbPath)) {
+            return { error: `Database '${dbName}' not found` };
+        }
+        
+        const targetPath = backupPath || path.join(__dirname, '..', 'database', 'backups', `${dbName}_${Date.now()}`);
+        await fs.copy(dbPath, targetPath);
+        
+        return {
+            success: true,
+            database: dbName,
+            backupPath: targetPath,
+            timestamp: new Date().toISOString()
+        };
+    }
+
+    async restoreDatabase(dbName, backupPath) {
+        const dbPath = this.getDbPath(dbName);
+        
+        if (!await fs.pathExists(backupPath)) {
+            return { error: `Backup '${backupPath}' not found` };
+        }
+        
+        if (await fs.pathExists(dbPath)) {
+            await fs.remove(dbPath);
+        }
+        
+        await fs.copy(backupPath, dbPath);
+        this.clearCache(this.getCacheKey(dbName));
+        
+        return {
+            success: true,
+            database: dbName,
+            restored: true,
+            from: backupPath,
+            timestamp: new Date().toISOString()
+        };
+    }
+
+    async exportData(data, format = 'json') {
+        switch(format) {
+            case 'csv':
+                return this.convertToCSV(data);
+            case 'json':
+                return JSON.stringify(data, null, 2);
+            case 'sql':
+                return this.convertToSQL(data);
+            default:
+                return data;
+        }
+    }
+
+    convertToCSV(data) {
+        if (!data) return '';
+        
+        let rows = [];
+        let columns = [];
+        
+        if (Array.isArray(data)) {
+            rows = data;
+            if (rows.length > 0) {
+                columns = Object.keys(rows[0]);
+            }
+        } else if (typeof data === 'object') {
+            rows = Object.entries(data).map(([key, value]) => {
+                if (typeof value === 'object' && value !== null) {
+                    return { id: key, ...value };
+                }
+                return { id: key, value: value };
+            });
+            if (rows.length > 0) {
+                columns = Object.keys(rows[0]);
+            }
+        }
+        
+        if (columns.length === 0) return '';
+        
+        const csvLines = [columns.map(c => `"${c}"`).join(',')];
+        
+        for (const row of rows) {
+            const line = columns.map(c => {
+                let val = row[c];
+                if (val === undefined || val === null) return '""';
+                if (typeof val === 'object') val = JSON.stringify(val);
+                return `"${String(val).replace(/"/g, '""')}"`;
+            }).join(',');
+            csvLines.push(line);
+        }
+        
+        return csvLines.join('\n');
+    }
+
+    convertToSQL(data, tableName = 'export') {
+        if (!data) return '';
+        
+        let rows = [];
+        let columns = [];
+        
+        if (Array.isArray(data)) {
+            rows = data;
+            if (rows.length > 0) {
+                columns = Object.keys(rows[0]);
+            }
+        } else if (typeof data === 'object') {
+            rows = Object.entries(data).map(([key, value]) => {
+                if (typeof value === 'object' && value !== null) {
+                    return { id: key, ...value };
+                }
+                return { id: key, value: value };
+            });
+            if (rows.length > 0) {
+                columns = Object.keys(rows[0]);
+            }
+        }
+        
+        if (columns.length === 0) return '';
+        
+        const sqlLines = [`CREATE TABLE IF NOT EXISTS ${tableName} (${columns.map(c => `${c} TEXT`).join(', ')});`];
+        
+        for (const row of rows) {
+            const values = columns.map(c => {
+                let val = row[c];
+                if (val === undefined || val === null) return 'NULL';
+                if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+                if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+                return val;
+            }).join(', ');
+            sqlLines.push(`INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${values});`);
+        }
+        
+        return sqlLines.join('\n');
     }
 }
 
