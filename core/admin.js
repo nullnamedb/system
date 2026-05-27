@@ -1,15 +1,16 @@
 // NullName DB - Admin Management System
 // No brand. No name. No payment.
-// Version: 1.0.0
+// Version: 2.0.0
 
 const fs = require('fs-extra');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 
 class AdminSystem {
     constructor() {
         this.adminLogs = [];
-        this.maxLogs = 1000;
+        this.maxLogs = 5000;
         this.adminActions = [];
         this.systemHealth = {
             status: 'healthy',
@@ -21,6 +22,7 @@ class AdminSystem {
         this.adminLogFile = path.join(this.logsPath, 'admin.json');
         this.auditFile = path.join(this.logsPath, 'audit.json');
         this.metricsFile = path.join(__dirname, '..', 'database', 'system_metrics.json');
+        this.alertsFile = path.join(__dirname, '..', 'database', 'alerts.json');
         
         this.init();
     }
@@ -29,6 +31,7 @@ class AdminSystem {
         await fs.ensureDir(this.logsPath);
         await this.loadLogs();
         await this.loadAudit();
+        await this.loadAlerts();
         console.log('Admin system initialized');
     }
 
@@ -73,9 +76,20 @@ class AdminSystem {
         }
     }
 
+    async loadAlerts() {
+        try {
+            if (!await fs.pathExists(this.alertsFile)) {
+                await fs.writeJson(this.alertsFile, { alerts: [], settings: {} });
+            }
+        } catch (error) {
+            console.error('Failed to load alerts:', error);
+        }
+    }
+
     async getStats() {
-        const dbPath = path.join(__dirname, '..', 'database', 'path');
+        const dbPath = path.join(__dirname, '..', 'database', 'sql');
         const filesPath = path.join(__dirname, '..', 'database', 'files');
+        const commitsPath = path.join(__dirname, '..', 'database', 'commits');
         
         let databaseCount = 0;
         let tableCount = 0;
@@ -84,23 +98,24 @@ class AdminSystem {
         
         if (await fs.pathExists(dbPath)) {
             const databases = await fs.readdir(dbPath);
-            databaseCount = databases.length;
+            databaseCount = databases.filter(d => !d.startsWith('_')).length;
             
             for (const db of databases) {
+                if (db.startsWith('_')) continue;
                 const dbFullPath = path.join(dbPath, db);
                 const stat = await fs.stat(dbFullPath);
                 if (stat.isDirectory()) {
                     const tables = await fs.readdir(dbFullPath);
-                    tableCount += tables.length;
+                    tableCount += tables.filter(t => t.endsWith('.json') && !t.startsWith('_')).length;
                     
                     for (const table of tables) {
-                        const tablePath = path.join(dbFullPath, table);
-                        const tableStat = await fs.stat(tablePath);
-                        totalSize += tableStat.size;
-                        
-                        if (table.endsWith('.json')) {
+                        if (table.endsWith('.json') && !table.startsWith('_')) {
+                            const tablePath = path.join(dbFullPath, table);
+                            const tableStat = await fs.stat(tablePath);
+                            totalSize += tableStat.size;
+                            
                             const data = await fs.readJson(tablePath);
-                            recordCount += Object.keys(data).filter(k => !isNaN(k)).length;
+                            recordCount += Object.keys(data).filter(k => !isNaN(k) && k !== '_nextId' && k !== '_schema').length;
                         }
                     }
                 }
@@ -119,9 +134,16 @@ class AdminSystem {
             }
         }
         
+        let commitCount = 0;
+        if (await fs.pathExists(commitsPath)) {
+            const commits = await fs.readdir(commitsPath);
+            commitCount = commits.filter(c => c.endsWith('.json')).length;
+        }
+        
         const memoryUsage = process.memoryUsage();
         const cpuUsage = process.cpuUsage();
         const uptime = process.uptime();
+        const cpus = os.cpus();
         
         return {
             databases: {
@@ -129,16 +151,23 @@ class AdminSystem {
                 tables: tableCount,
                 records: recordCount,
                 dataSizeBytes: totalSize,
+                dataSizeKB: (totalSize / 1024).toFixed(2),
                 dataSizeMB: (totalSize / (1024 * 1024)).toFixed(2)
             },
             files: {
                 count: fileCount,
                 sizeBytes: fileSize,
+                sizeKB: (fileSize / 1024).toFixed(2),
                 sizeMB: (fileSize / (1024 * 1024)).toFixed(2)
+            },
+            version: {
+                commits: commitCount
             },
             total: {
                 sizeBytes: totalSize + fileSize,
-                sizeMB: ((totalSize + fileSize) / (1024 * 1024)).toFixed(2)
+                sizeKB: ((totalSize + fileSize) / 1024).toFixed(2),
+                sizeMB: ((totalSize + fileSize) / (1024 * 1024)).toFixed(2),
+                sizeGB: ((totalSize + fileSize) / (1024 * 1024 * 1024)).toFixed(2)
             },
             system: {
                 memory: {
@@ -149,7 +178,9 @@ class AdminSystem {
                 },
                 cpu: {
                     user: (cpuUsage.user / 1000).toFixed(2) + ' ms',
-                    system: (cpuUsage.system / 1000).toFixed(2) + ' ms'
+                    system: (cpuUsage.system / 1000).toFixed(2) + ' ms',
+                    cores: cpus.length,
+                    model: cpus[0]?.model || 'unknown'
                 },
                 uptime: {
                     seconds: Math.floor(uptime),
@@ -157,9 +188,10 @@ class AdminSystem {
                 },
                 platform: os.platform(),
                 arch: os.arch(),
-                cpus: os.cpus().length,
+                hostname: os.hostname(),
                 totalMemory: Math.round(os.totalmem() / 1024 / 1024) + ' MB',
-                freeMemory: Math.round(os.freemem() / 1024 / 1024) + ' MB'
+                freeMemory: Math.round(os.freemem() / 1024 / 1024) + ' MB',
+                loadAverage: os.loadavg()
             },
             timestamp: new Date().toISOString()
         };
@@ -186,7 +218,7 @@ class AdminSystem {
         const errors = [];
         let status = 'healthy';
         
-        const maxStorageMB = parseInt(process.env.MAX_STORAGE_MB) || 1024;
+        const maxStorageMB = parseInt(process.env.MAX_STORAGE_MB) || 10240;
         const currentStorageMB = parseFloat(stats.total.sizeMB);
         
         if (currentStorageMB > maxStorageMB) {
@@ -213,10 +245,15 @@ class AdminSystem {
             warnings.push('System recently started');
         }
         
-        const dbPath = path.join(__dirname, '..', 'database', 'path');
+        const dbPath = path.join(__dirname, '..', 'database', 'sql');
         if (!await fs.pathExists(dbPath)) {
             status = 'critical';
             errors.push('Database directory missing');
+        }
+        
+        const envFile = path.join(__dirname, '..', '.env');
+        if (!await fs.pathExists(envFile)) {
+            warnings.push('Configuration file missing');
         }
         
         this.systemHealth = {
@@ -266,15 +303,16 @@ class AdminSystem {
             for (const backup of backups) {
                 const backupPath = path.join(backupsPath, backup);
                 const stat = await fs.stat(backupPath);
-                backupStats.push({ name: backup, mtime: stat.mtimeMs, size: stat.size });
+                backupStats.push({ name: backup, mtime: stat.mtimeMs, size: stat.size, isDir: stat.isDirectory() });
             }
             
             backupStats.sort((a, b) => b.mtime - a.mtime);
             
             for (let i = keepCount; i < backupStats.length; i++) {
+                const backupPath = path.join(backupsPath, backupStats[i].name);
                 results.deletedBackups.push(backupStats[i].name);
                 results.freedSpaceMB += backupStats[i].size / (1024 * 1024);
-                await fs.remove(path.join(backupsPath, backupStats[i].name));
+                await fs.remove(backupPath);
             }
         }
         
@@ -294,6 +332,19 @@ class AdminSystem {
             }
         }
         
+        const trackFile = path.join(__dirname, '..', 'database', 'tracking.json');
+        const trackMaxAge = options.trackMaxAge || 30 * 86400000;
+        
+        if (await fs.pathExists(trackFile)) {
+            const trackData = await fs.readJson(trackFile);
+            const cutoff = Date.now() - trackMaxAge;
+            const filtered = trackData.filter(t => t.timestamp > cutoff);
+            if (filtered.length < trackData.length) {
+                await fs.writeJson(trackFile, filtered, { spaces: 2 });
+                results.deletedLogs.push(`tracking: ${trackData.length - filtered.length} records`);
+            }
+        }
+        
         results.freedSpaceMB = results.freedSpaceMB.toFixed(2);
         
         await this.logAdminAction('cleanup', results);
@@ -303,11 +354,13 @@ class AdminSystem {
 
     async logAdminAction(action, details, adminUser = null) {
         const logEntry = {
-            id: Date.now(),
-            timestamp: new Date().toISOString(),
+            id: crypto.randomBytes(8).toString('hex'),
+            timestamp: Date.now(),
+            timestampISO: new Date().toISOString(),
             action: action,
             details: details,
             admin: adminUser?.username || 'system',
+            role: adminUser?.role || 'system',
             ip: details.ip || null
         };
         
@@ -324,8 +377,8 @@ class AdminSystem {
     async addAuditTrail(entry) {
         this.adminActions.unshift(entry);
         
-        if (this.adminActions.length > 5000) {
-            this.adminActions = this.adminActions.slice(0, 5000);
+        if (this.adminActions.length > 10000) {
+            this.adminActions = this.adminActions.slice(0, 10000);
         }
         
         await this.saveAudit();
@@ -342,12 +395,12 @@ class AdminSystem {
                 logs = logs.filter(l => l.admin === filter.admin);
             }
             if (filter.fromDate) {
-                const fromDate = new Date(filter.fromDate);
-                logs = logs.filter(l => new Date(l.timestamp) >= fromDate);
+                const fromDate = new Date(filter.fromDate).getTime();
+                logs = logs.filter(l => l.timestamp >= fromDate);
             }
             if (filter.toDate) {
-                const toDate = new Date(filter.toDate);
-                logs = logs.filter(l => new Date(l.timestamp) <= toDate);
+                const toDate = new Date(filter.toDate).getTime();
+                logs = logs.filter(l => l.timestamp <= toDate);
             }
         }
         
@@ -399,7 +452,9 @@ class AdminSystem {
             totalQueries: 0,
             successRate: 0,
             avgMemoryUsage: 0,
-            peakMemoryUsage: 0
+            peakMemoryUsage: 0,
+            avgCpuUsage: 0,
+            peakCpuUsage: 0
         };
         
         if (filtered.length > 0) {
@@ -408,6 +463,8 @@ class AdminSystem {
             let totalSuccess = 0;
             let totalMemory = 0;
             let peakMemory = 0;
+            let totalCpu = 0;
+            let peakCpu = 0;
             
             for (const m of filtered) {
                 if (m.queryTime) totalQueryTime += m.queryTime;
@@ -417,6 +474,10 @@ class AdminSystem {
                     totalMemory += m.memoryUsed;
                     if (m.memoryUsed > peakMemory) peakMemory = m.memoryUsed;
                 }
+                if (m.cpuUsage) {
+                    totalCpu += m.cpuUsage;
+                    if (m.cpuUsage > peakCpu) peakCpu = m.cpuUsage;
+                }
             }
             
             aggregates.avgQueryTime = filtered.length > 0 ? totalQueryTime / filtered.length : 0;
@@ -424,6 +485,8 @@ class AdminSystem {
             aggregates.successRate = totalQueries > 0 ? (totalSuccess / totalQueries) * 100 : 0;
             aggregates.avgMemoryUsage = filtered.length > 0 ? totalMemory / filtered.length : 0;
             aggregates.peakMemoryUsage = peakMemory;
+            aggregates.avgCpuUsage = filtered.length > 0 ? totalCpu / filtered.length : 0;
+            aggregates.peakCpuUsage = peakCpu;
         }
         
         return {
@@ -457,6 +520,49 @@ class AdminSystem {
         await fs.writeJson(this.metricsFile, metrics, { spaces: 2 });
     }
 
+    async addAlert(alert) {
+        const alerts = await fs.readJson(this.alertsFile);
+        alerts.alerts.unshift({
+            id: crypto.randomBytes(8).toString('hex'),
+            ...alert,
+            timestamp: Date.now(),
+            timestampISO: new Date().toISOString(),
+            acknowledged: false
+        });
+        
+        if (alerts.alerts.length > 1000) {
+            alerts.alerts = alerts.alerts.slice(0, 1000);
+        }
+        
+        await fs.writeJson(this.alertsFile, alerts, { spaces: 2 });
+        return alerts.alerts[0];
+    }
+
+    async getAlerts(limit = 50, acknowledged = null) {
+        const alerts = await fs.readJson(this.alertsFile);
+        let filtered = alerts.alerts;
+        
+        if (acknowledged !== null) {
+            filtered = filtered.filter(a => a.acknowledged === acknowledged);
+        }
+        
+        return filtered.slice(0, limit);
+    }
+
+    async acknowledgeAlert(alertId) {
+        const alerts = await fs.readJson(this.alertsFile);
+        const alert = alerts.alerts.find(a => a.id === alertId);
+        
+        if (alert) {
+            alert.acknowledged = true;
+            alert.acknowledgedAt = Date.now();
+            await fs.writeJson(this.alertsFile, alerts, { spaces: 2 });
+            return { success: true };
+        }
+        
+        return { success: false, error: 'Alert not found' };
+    }
+
     async restartSystem(adminUser) {
         await this.logAdminAction('system_restart', {}, adminUser);
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -476,43 +582,20 @@ class AdminSystem {
         return result;
     }
 
-    async createSystemBackup(adminUser, name = null) {
-        const backup = require('./backup');
-        const backupName = name || `admin_backup_${Date.now()}`;
-        const result = await backup.createBackup(backupName, adminUser);
-        await this.logAdminAction('create_backup', { name: backupName, result }, adminUser);
-        return result;
-    }
-
-    async restoreSystemBackup(backupName, adminUser) {
-        const backup = require('./backup');
-        const result = await backup.restoreBackup(backupName, adminUser);
-        await this.logAdminAction('restore_backup', { name: backupName, result }, adminUser);
-        return result;
-    }
-
-    async getSystemConfig(adminUser) {
-        const coreSystem = require('./system');
-        return await coreSystem.getConfig();
-    }
-
-    async updateSystemConfig(updates, adminUser) {
-        const coreSystem = require('./system');
-        const result = await coreSystem.updateConfig(updates, adminUser);
-        await this.logAdminAction('update_config', { updates, result }, adminUser);
-        return result;
-    }
-
     async getSystemInfo(adminUser) {
-        const coreSystem = require('./system');
-        const systemInfo = await coreSystem.getSystemInfo();
         const stats = await this.getStats();
+        const health = await this.getSystemHealth();
         
         return {
-            system: systemInfo,
+            system: {
+                name: 'NullName DB',
+                version: '2.0.0',
+                nodeVersion: process.version,
+                platform: process.platform
+            },
             stats: stats,
-            health: await this.getSystemHealth(),
-            logs: await this.getAdminLogs(10)
+            health: health,
+            timestamp: new Date().toISOString()
         };
     }
 
