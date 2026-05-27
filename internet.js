@@ -1,6 +1,6 @@
 // NullName DB - Internet/Network Request Handler
 // No brand. No name. No payment.
-// Version: 1.0.0
+// Version: 2.0.0
 
 const fs = require('fs-extra');
 const path = require('path');
@@ -8,22 +8,31 @@ const https = require('https');
 const http = require('http');
 const url = require('url');
 const crypto = require('crypto');
+const zlib = require('zlib');
 
 class InternetHandler {
     constructor() {
         this.downloadQueue = [];
         this.isDownloading = false;
         this.activeDownloads = 0;
-        this.maxConcurrentDownloads = 3;
+        this.maxConcurrentDownloads = 5;
         this.downloadTimeout = 30000;
-        this.maxFileSize = 50 * 1024 * 1024;
+        this.maxFileSize = 100 * 1024 * 1024;
         this.tempDir = path.join(__dirname, 'database', 'temp');
         this.filesDir = path.join(__dirname, 'database', 'files');
         
-        fs.ensureDirSync(this.tempDir);
-        fs.ensureDirSync(this.filesDir);
+        this.userAgent = 'NullName-DB/2.0 (https://nullname.com)';
         
-        this.processQueue();
+        this.init();
+    }
+
+    async init() {
+        await fs.ensureDir(this.tempDir);
+        await fs.ensureDir(this.filesDir);
+        
+        setInterval(() => this.cleanupTempFiles(), 3600000);
+        
+        console.log('Internet handler initialized');
     }
 
     isValidUrl(urlString) {
@@ -33,7 +42,7 @@ class InternetHandler {
         
         try {
             const parsed = new URL(urlString);
-            const validProtocols = ['http:', 'https:'];
+            const validProtocols = ['http:', 'https:', 'ftp:', 'ftps:'];
             return validProtocols.includes(parsed.protocol);
         } catch (error) {
             return false;
@@ -58,6 +67,53 @@ class InternetHandler {
         }
     }
 
+    getFileExtensionFromUrl(urlString) {
+        const parsed = this.parseUrl(urlString);
+        if (!parsed) return '';
+        
+        const pathname = parsed.pathname;
+        const ext = path.extname(pathname);
+        return ext.toLowerCase();
+    }
+
+    getMimeTypeFromExtension(ext) {
+        const mimeTypes = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.svg': 'image/svg+xml',
+            '.bmp': 'image/bmp',
+            '.pdf': 'application/pdf',
+            '.doc': 'application/msword',
+            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            '.xls': 'application/vnd.ms-excel',
+            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            '.ppt': 'application/vnd.ms-powerpoint',
+            '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            '.txt': 'text/plain',
+            '.html': 'text/html',
+            '.htm': 'text/html',
+            '.css': 'text/css',
+            '.js': 'application/javascript',
+            '.json': 'application/json',
+            '.xml': 'application/xml',
+            '.zip': 'application/zip',
+            '.tar': 'application/x-tar',
+            '.gz': 'application/gzip',
+            '.mp4': 'video/mp4',
+            '.webm': 'video/webm',
+            '.mp3': 'audio/mpeg',
+            '.wav': 'audio/wav',
+            '.ogg': 'audio/ogg',
+            '.csv': 'text/csv',
+            '.md': 'text/markdown'
+        };
+        
+        return mimeTypes[ext] || 'application/octet-stream';
+    }
+
     async downloadFile(urlString, options = {}) {
         return new Promise((resolve, reject) => {
             if (!this.isValidUrl(urlString)) {
@@ -68,6 +124,7 @@ class InternetHandler {
             const parsedUrl = this.parseUrl(urlString);
             const protocol = parsedUrl.protocol === 'https:' ? https : http;
             const timeout = options.timeout || this.downloadTimeout;
+            const maxSize = options.maxSize || this.maxFileSize;
             
             const requestOptions = {
                 hostname: parsedUrl.hostname,
@@ -75,9 +132,9 @@ class InternetHandler {
                 path: parsedUrl.pathname + parsedUrl.search,
                 method: 'GET',
                 headers: {
-                    'User-Agent': 'NullName-DB/1.0',
+                    'User-Agent': options.userAgent || this.userAgent,
                     'Accept': '*/*',
-                    'Accept-Encoding': 'gzip, deflate',
+                    'Accept-Encoding': 'gzip, deflate, br',
                     'Connection': 'keep-alive'
                 },
                 timeout: timeout
@@ -87,58 +144,93 @@ class InternetHandler {
                 Object.assign(requestOptions.headers, options.headers);
             }
             
+            if (options.range) {
+                requestOptions.headers.Range = `bytes=${options.range.start}-${options.range.end || ''}`;
+            }
+            
             const req = protocol.request(requestOptions, (res) => {
-                if (res.statusCode === 301 || res.statusCode === 302) {
+                if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) {
                     const redirectUrl = res.headers.location;
                     if (redirectUrl) {
-                        this.downloadFile(redirectUrl, options)
-                            .then(resolve)
-                            .catch(reject);
+                        const maxRedirects = options.maxRedirects || 5;
+                        if ((options.redirectCount || 0) >= maxRedirects) {
+                            reject(new Error(`Too many redirects (${maxRedirects})`));
+                            return;
+                        }
+                        this.downloadFile(redirectUrl, {
+                            ...options,
+                            redirectCount: (options.redirectCount || 0) + 1
+                        }).then(resolve).catch(reject);
                         return;
                     }
                 }
                 
-                if (res.statusCode !== 200) {
+                if (res.statusCode !== 200 && res.statusCode !== 206) {
                     reject(new Error(`HTTP ${res.statusCode}: Failed to fetch ${urlString}`));
                     return;
                 }
                 
                 const contentLength = parseInt(res.headers['content-length'], 10);
-                if (contentLength > this.maxFileSize) {
+                if (contentLength > maxSize && !options.range) {
                     req.destroy();
-                    reject(new Error(`File too large: ${contentLength} bytes (max ${this.maxFileSize} bytes)`));
+                    reject(new Error(`File too large: ${contentLength} bytes (max ${maxSize} bytes)`));
                     return;
                 }
                 
-                const chunks = [];
+                let chunks = [];
                 let downloadedSize = 0;
                 
-                res.on('data', (chunk) => {
+                const handleChunk = (chunk) => {
                     chunks.push(chunk);
                     downloadedSize += chunk.length;
                     
-                    if (downloadedSize > this.maxFileSize) {
+                    if (downloadedSize > maxSize) {
                         req.destroy();
-                        reject(new Error(`Download exceeded max size of ${this.maxFileSize} bytes`));
+                        reject(new Error(`Download exceeded max size of ${maxSize} bytes`));
                     }
-                });
+                    
+                    if (options.onProgress) {
+                        options.onProgress(downloadedSize, contentLength);
+                    }
+                };
                 
-                res.on('end', () => {
+                let stream = res;
+                
+                if (res.headers['content-encoding'] === 'gzip') {
+                    stream = res.pipe(zlib.createGunzip());
+                } else if (res.headers['content-encoding'] === 'deflate') {
+                    stream = res.pipe(zlib.createInflate());
+                } else if (res.headers['content-encoding'] === 'br') {
+                    stream = res.pipe(zlib.createBrotliDecompress());
+                }
+                
+                stream.on('data', handleChunk);
+                
+                stream.on('end', () => {
                     const buffer = Buffer.concat(chunks);
+                    
+                    let filename = options.filename || this.extractFilename(res, parsedUrl);
+                    const contentType = res.headers['content-type'];
+                    const extension = this.getExtensionFromContentType(contentType, filename);
+                    
+                    if (filename && !path.extname(filename)) {
+                        filename += extension;
+                    }
                     
                     resolve({
                         buffer: buffer,
                         size: buffer.length,
-                        contentType: res.headers['content-type'],
+                        contentType: contentType,
                         contentLength: contentLength,
-                        filename: this.extractFilename(res, parsedUrl),
+                        filename: filename,
                         headers: res.headers,
-                        url: urlString
+                        url: urlString,
+                        statusCode: res.statusCode
                     });
                 });
                 
-                res.on('error', (err) => {
-                    reject(new Error(`Response error: ${err.message}`));
+                stream.on('error', (err) => {
+                    reject(new Error(`Stream error: ${err.message}`));
                 });
             });
             
@@ -172,10 +264,12 @@ class InternetHandler {
         if (pathname && pathname !== '/') {
             const basename = path.basename(pathname);
             if (basename && basename.length > 0) {
-                const decoded = decodeURIComponent(basename);
-                if (decoded.includes('.')) {
-                    return this.sanitizeFilename(decoded);
-                }
+                try {
+                    const decoded = decodeURIComponent(basename);
+                    if (decoded && decoded !== '/') {
+                        return this.sanitizeFilename(decoded);
+                    }
+                } catch (e) {}
             }
         }
         
@@ -184,14 +278,21 @@ class InternetHandler {
     }
 
     sanitizeFilename(filename) {
+        if (!filename) return `file_${Date.now()}.bin`;
+        
         let clean = filename.replace(/\.\./g, '');
         clean = clean.replace(/[\\/]/g, '_');
+        clean = clean.replace(/[<>:"|?*]/g, '_');
         clean = clean.replace(/[^a-zA-Z0-9_.-]/g, '_');
         
         if (clean.length > 200) {
             const ext = path.extname(clean);
             const name = clean.slice(0, 200 - ext.length);
             clean = name + ext;
+        }
+        
+        if (clean === '' || clean === '.') {
+            clean = `file_${Date.now()}.bin`;
         }
         
         return clean;
@@ -215,19 +316,25 @@ class InternetHandler {
             'text/html': '.html',
             'text/css': '.css',
             'text/javascript': '.js',
+            'application/javascript': '.js',
             'application/json': '.json',
             'application/xml': '.xml',
+            'text/xml': '.xml',
             'application/zip': '.zip',
             'application/x-tar': '.tar',
+            'application/gzip': '.gz',
             'application/x-gzip': '.gz',
             'video/mp4': '.mp4',
             'video/webm': '.webm',
             'audio/mpeg': '.mp3',
             'audio/wav': '.wav',
-            'audio/ogg': '.ogg'
+            'audio/ogg': '.ogg',
+            'text/csv': '.csv',
+            'text/markdown': '.md',
+            'application/octet-stream': '.bin'
         };
         
-        const mainType = contentType ? contentType.split(';')[0] : '';
+        const mainType = contentType ? contentType.split(';')[0].toLowerCase() : '';
         return mimeMap[mainType] || '.bin';
     }
 
@@ -235,13 +342,14 @@ class InternetHandler {
         const targetDir = subdir ? path.join(this.filesDir, subdir) : this.filesDir;
         await fs.ensureDir(targetDir);
         
-        let finalFilename = filename;
+        let finalFilename = this.sanitizeFilename(filename);
         let filePath = path.join(targetDir, finalFilename);
         
         let counter = 1;
+        const ext = path.extname(finalFilename);
+        const name = finalFilename.slice(0, -ext.length);
+        
         while (await fs.pathExists(filePath)) {
-            const ext = path.extname(finalFilename);
-            const name = finalFilename.slice(0, -ext.length);
             finalFilename = `${name}_${counter}${ext}`;
             filePath = path.join(targetDir, finalFilename);
             counter++;
@@ -249,16 +357,21 @@ class InternetHandler {
         
         await fs.writeFile(filePath, buffer);
         
+        const stats = await fs.stat(filePath);
+        
         return {
             success: true,
             filename: finalFilename,
             path: filePath,
             size: buffer.length,
-            url: `/files/${subdir ? subdir + '/' : ''}${finalFilename}`
+            sizeMB: (buffer.length / (1024 * 1024)).toFixed(2),
+            url: `/files/${subdir ? subdir + '/' : ''}${finalFilename}`,
+            created: stats.birthtime,
+            modified: stats.mtime
         };
     }
 
-    async downloadAndSave(urlString, customFilename = null, subdir = '') {
+    async downloadAndSave(urlString, customFilename = null, subdir = '', options = {}) {
         try {
             if (!this.isValidUrl(urlString)) {
                 return {
@@ -267,7 +380,7 @@ class InternetHandler {
                 };
             }
             
-            const downloadResult = await this.downloadFile(urlString);
+            const downloadResult = await this.downloadFile(urlString, options);
             
             let filename = customFilename;
             if (!filename) {
@@ -289,9 +402,12 @@ class InternetHandler {
                 path: saveResult.path,
                 url: saveResult.url,
                 size: saveResult.size,
+                sizeMB: saveResult.sizeMB,
                 originalUrl: urlString,
+                originalFilename: downloadResult.filename,
                 contentType: downloadResult.contentType,
-                downloadedAt: new Date().toISOString()
+                downloadedAt: new Date().toISOString(),
+                duration: downloadResult.duration
             };
             
         } catch (error) {
@@ -304,84 +420,100 @@ class InternetHandler {
         }
     }
 
-    addToQueue(urlString, customFilename = null, subdir = '', callback = null) {
-        return new Promise((resolve, reject) => {
-            this.downloadQueue.push({
-                url: urlString,
-                filename: customFilename,
-                subdir: subdir,
-                resolve: resolve,
-                reject: reject,
-                callback: callback
-            });
-            
-            this.processQueue();
-        });
-    }
-
-    async processQueue() {
-        if (this.isDownloading) return;
-        if (this.downloadQueue.length === 0) return;
-        if (this.activeDownloads >= this.maxConcurrentDownloads) return;
-        
-        this.isDownloading = true;
-        
-        while (this.downloadQueue.length > 0 && this.activeDownloads < this.maxConcurrentDownloads) {
-            const item = this.downloadQueue.shift();
-            this.activeDownloads++;
-            
-            this.downloadAndSave(item.url, item.filename, item.subdir)
-                .then((result) => {
-                    item.resolve(result);
-                    if (item.callback) item.callback(null, result);
-                })
-                .catch((error) => {
-                    item.reject(error);
-                    if (item.callback) item.callback(error, null);
-                })
-                .finally(() => {
-                    this.activeDownloads--;
-                    this.processQueue();
-                });
-        }
-        
-        this.isDownloading = false;
-    }
-
     async downloadMultiple(urls, options = {}) {
         const results = [];
         const concurrency = options.concurrency || 3;
-        const onProgress = options.onProgress || null;
-        
-        let completed = 0;
-        const total = urls.length;
         
         const downloadOne = async (url, index) => {
-            const result = await this.downloadAndSave(url);
-            completed++;
-            
-            if (onProgress) {
-                onProgress(completed, total, url, result);
-            }
-            
+            const result = await this.downloadAndSave(url, null, options.subdir || '', options);
             results[index] = result;
+            return result;
         };
         
-        const batches = [];
         for (let i = 0; i < urls.length; i += concurrency) {
-            batches.push(urls.slice(i, i + concurrency));
+            const batch = urls.slice(i, i + concurrency);
+            await Promise.all(batch.map((url, idx) => downloadOne(url, i + idx)));
         }
         
-        for (const batch of batches) {
-            await Promise.all(batch.map((url, idx) => downloadOne(url, urls.indexOf(url))));
-        }
+        const successful = results.filter(r => r.success).length;
+        const failed = results.filter(r => !r.success).length;
         
         return {
             success: true,
-            total: total,
-            completed: completed,
+            total: urls.length,
+            successful: successful,
+            failed: failed,
             results: results
         };
+    }
+
+    async downloadStream(urlString, writeStream, options = {}) {
+        return new Promise((resolve, reject) => {
+            if (!this.isValidUrl(urlString)) {
+                reject(new Error('Invalid URL: ' + urlString));
+                return;
+            }
+
+            const parsedUrl = this.parseUrl(urlString);
+            const protocol = parsedUrl.protocol === 'https:' ? https : http;
+            
+            const requestOptions = {
+                hostname: parsedUrl.hostname,
+                port: parsedUrl.port,
+                path: parsedUrl.pathname + parsedUrl.search,
+                method: 'GET',
+                headers: {
+                    'User-Agent': this.userAgent,
+                    'Accept': '*/*'
+                },
+                timeout: options.timeout || this.downloadTimeout
+            };
+            
+            const req = protocol.request(requestOptions, (res) => {
+                if (res.statusCode === 301 || res.statusCode === 302) {
+                    const redirectUrl = res.headers.location;
+                    if (redirectUrl) {
+                        this.downloadStream(redirectUrl, writeStream, options)
+                            .then(resolve)
+                            .catch(reject);
+                        return;
+                    }
+                }
+                
+                if (res.statusCode !== 200) {
+                    reject(new Error(`HTTP ${res.statusCode}`));
+                    return;
+                }
+                
+                let stream = res;
+                if (res.headers['content-encoding'] === 'gzip') {
+                    stream = res.pipe(zlib.createGunzip());
+                } else if (res.headers['content-encoding'] === 'deflate') {
+                    stream = res.pipe(zlib.createInflate());
+                }
+                
+                stream.pipe(writeStream);
+                
+                writeStream.on('finish', () => {
+                    resolve({
+                        success: true,
+                        url: urlString,
+                        size: res.headers['content-length']
+                    });
+                });
+                
+                writeStream.on('error', reject);
+                stream.on('error', reject);
+            });
+            
+            req.on('error', reject);
+            req.on('timeout', () => {
+                req.destroy();
+                reject(new Error('Request timeout'));
+            });
+            
+            req.end();
+        });
     }
 
     async getFileInfo(filename, subdir = '') {
@@ -392,14 +524,19 @@ class InternetHandler {
         }
         
         const stat = await fs.stat(filePath);
+        const ext = path.extname(filename);
         
         return {
+            success: true,
             filename: filename,
             path: filePath,
             size: stat.size,
+            sizeMB: (stat.size / (1024 * 1024)).toFixed(2),
             created: stat.birthtime,
             modified: stat.mtime,
-            url: `/files/${subdir ? subdir + '/' : ''}${filename}`
+            url: `/files/${subdir ? subdir + '/' : ''}${filename}`,
+            extension: ext,
+            mimeType: this.getMimeTypeFromExtension(ext)
         };
     }
 
@@ -410,9 +547,16 @@ class InternetHandler {
             return { success: false, error: 'File not found' };
         }
         
+        const stats = await fs.stat(filePath);
         await fs.remove(filePath);
         
-        return { success: true, filename: filename, deleted: true };
+        return {
+            success: true,
+            filename: filename,
+            size: stats.size,
+            deleted: true,
+            deletedAt: new Date().toISOString()
+        };
     }
 
     async listFiles(subdir = '') {
@@ -430,11 +574,16 @@ class InternetHandler {
             const stat = await fs.stat(filePath);
             
             if (stat.isFile()) {
+                const ext = path.extname(file);
                 results.push({
                     filename: file,
                     size: stat.size,
+                    sizeMB: (stat.size / (1024 * 1024)).toFixed(2),
+                    created: stat.birthtime,
                     modified: stat.mtime,
-                    url: `/files/${subdir ? subdir + '/' : ''}${file}`
+                    url: `/files/${subdir ? subdir + '/' : ''}${file}`,
+                    extension: ext,
+                    mimeType: this.getMimeTypeFromExtension(ext)
                 });
             }
         }
@@ -461,7 +610,37 @@ class InternetHandler {
             }
         }
         
-        return { deleted: deleted };
+        return { deleted: deleted, timestamp: new Date().toISOString() };
+    }
+
+    async getRemoteFileSize(urlString) {
+        return new Promise((resolve, reject) => {
+            if (!this.isValidUrl(urlString)) {
+                reject(new Error('Invalid URL'));
+                return;
+            }
+            
+            const parsedUrl = this.parseUrl(urlString);
+            const protocol = parsedUrl.protocol === 'https:' ? https : http;
+            
+            const options = {
+                hostname: parsedUrl.hostname,
+                port: parsedUrl.port,
+                path: parsedUrl.pathname + parsedUrl.search,
+                method: 'HEAD',
+                headers: {
+                    'User-Agent': this.userAgent
+                }
+            };
+            
+            const req = protocol.request(options, (res) => {
+                const size = parseInt(res.headers['content-length'], 10);
+                resolve(isNaN(size) ? null : size);
+            });
+            
+            req.on('error', reject);
+            req.end();
+        });
     }
 
     async httpGet(urlString, options = {}) {
@@ -479,7 +658,10 @@ class InternetHandler {
                 port: parsedUrl.port,
                 path: parsedUrl.pathname + parsedUrl.search,
                 method: 'GET',
-                headers: options.headers || {},
+                headers: {
+                    'User-Agent': this.userAgent,
+                    ...options.headers
+                },
                 timeout: options.timeout || 10000
             };
             
@@ -492,6 +674,7 @@ class InternetHandler {
                 
                 res.on('end', () => {
                     resolve({
+                        success: true,
                         statusCode: res.statusCode,
                         headers: res.headers,
                         data: data,
@@ -521,6 +704,7 @@ class InternetHandler {
             const protocol = parsedUrl.protocol === 'https:' ? https : http;
             
             const dataString = typeof postData === 'string' ? postData : JSON.stringify(postData);
+            const isJson = typeof postData === 'object';
             
             const requestOptions = {
                 hostname: parsedUrl.hostname,
@@ -528,11 +712,12 @@ class InternetHandler {
                 path: parsedUrl.pathname + parsedUrl.search,
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'User-Agent': this.userAgent,
+                    'Content-Type': isJson ? 'application/json' : 'text/plain',
                     'Content-Length': Buffer.byteLength(dataString),
                     ...options.headers
                 },
-                timeout: options.timeout || 10000
+                timeout: options.timeout || 30000
             };
             
             const req = protocol.request(requestOptions, (res) => {
@@ -543,10 +728,18 @@ class InternetHandler {
                 });
                 
                 res.on('end', () => {
+                    let parsedData = data;
+                    if (isJson && data) {
+                        try {
+                            parsedData = JSON.parse(data);
+                        } catch(e) {}
+                    }
+                    
                     resolve({
+                        success: true,
                         statusCode: res.statusCode,
                         headers: res.headers,
-                        data: data,
+                        data: parsedData,
                         url: urlString
                     });
                 });
@@ -563,21 +756,33 @@ class InternetHandler {
         });
     }
 
-    getFileSizeDisplay(bytes) {
+    formatBytes(bytes) {
         if (bytes === 0) return '0 B';
         const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
     generateUniqueFilename(originalName) {
         const timestamp = Date.now();
-        const random = crypto.randomBytes(4).toString('hex');
+        const random = crypto.randomBytes(8).toString('hex');
         const ext = path.extname(originalName);
         const name = path.basename(originalName, ext);
         const cleanName = this.sanitizeFilename(name);
         return `${cleanName}_${timestamp}_${random}${ext}`;
+    }
+
+    getStats() {
+        return {
+            tempDir: this.tempDir,
+            filesDir: this.filesDir,
+            maxConcurrentDownloads: this.maxConcurrentDownloads,
+            downloadTimeout: this.downloadTimeout,
+            maxFileSize: this.formatBytes(this.maxFileSize),
+            activeDownloads: this.activeDownloads,
+            queueLength: this.downloadQueue.length
+        };
     }
 }
 
