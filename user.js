@@ -1,6 +1,6 @@
 // NullName DB - User Management System
 // No brand. No name. No payment.
-// Version: 1.0.0
+// Version: 2.0.0
 
 const fs = require('fs-extra');
 const path = require('path');
@@ -14,6 +14,7 @@ class UserManager {
         this.activityFile = path.join(__dirname, 'database', 'user_activity.json');
         this.settingsFile = path.join(__dirname, 'database', 'user_settings.json');
         this.tokensFile = path.join(__dirname, 'database', 'user_tokens.json');
+        this.sessionsFile = path.join(__dirname, 'database', 'sessions.json');
         
         this.userCache = new Map();
         this.cacheTimeout = 60000;
@@ -38,7 +39,7 @@ class UserManager {
         
         for (const file of files) {
             if (!await fs.pathExists(file)) {
-                await fs.writeJson(file, {});
+                await fs.writeJson(file, {}, { spaces: 2 });
             }
         }
     }
@@ -49,7 +50,8 @@ class UserManager {
         
         if (!users[adminUsername]) {
             const saltRounds = 10;
-            const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASS || 'nullname2025', saltRounds);
+            const adminPass = process.env.ADMIN_PASS || 'nullname2025';
+            const hashedPassword = await bcrypt.hash(adminPass, saltRounds);
             
             users[adminUsername] = {
                 username: adminUsername,
@@ -60,7 +62,13 @@ class UserManager {
                 createdBy: 'system',
                 lastLogin: null,
                 lastIp: null,
-                loginCount: 0
+                lastUserAgent: null,
+                loginCount: 0,
+                preferences: {
+                    theme: 'dark',
+                    defaultFormat: 'json',
+                    notifications: true
+                }
             };
             
             await this.writeUsers(users);
@@ -128,6 +136,16 @@ class UserManager {
         return user ? { ...user } : null;
     }
 
+    async getUserByEmail(email) {
+        const users = await this.readUsers();
+        for (const [username, data] of Object.entries(users)) {
+            if (data.email === email) {
+                return { username, ...data };
+            }
+        }
+        return null;
+    }
+
     async getAllUsers(options = {}) {
         const users = await this.readUsers();
         const userList = [];
@@ -144,7 +162,9 @@ class UserManager {
                 createdBy: data.createdBy,
                 lastLogin: data.lastLogin,
                 lastIp: data.lastIp,
-                loginCount: data.loginCount
+                lastUserAgent: data.lastUserAgent,
+                loginCount: data.loginCount || 0,
+                preferences: data.preferences || {}
             });
         }
         
@@ -190,10 +210,19 @@ class UserManager {
             status: options.status || 'active',
             created: new Date().toISOString(),
             createdBy: options.createdBy || 'system',
+            email: options.email || null,
+            firstName: options.firstName || null,
+            lastName: options.lastName || null,
             lastLogin: null,
             lastIp: null,
             lastUserAgent: null,
-            loginCount: 0
+            loginCount: 0,
+            preferences: {
+                theme: options.theme || 'dark',
+                defaultFormat: options.defaultFormat || 'json',
+                notifications: options.notifications !== false,
+                language: options.language || 'en'
+            }
         };
         
         users[username] = newUser;
@@ -206,6 +235,38 @@ class UserManager {
             username: username,
             role: newUser.role,
             message: 'User created successfully'
+        };
+    }
+
+    async updateUser(username, updates, updatedBy = null) {
+        const users = await this.readUsers();
+        
+        if (!users[username]) {
+            return { success: false, error: 'User not found' };
+        }
+        
+        const allowedUpdates = ['email', 'firstName', 'lastName', 'status', 'preferences'];
+        
+        for (const key of allowedUpdates) {
+            if (updates[key] !== undefined) {
+                if (key === 'preferences' && typeof updates[key] === 'object') {
+                    users[username][key] = { ...users[username][key], ...updates[key] };
+                } else {
+                    users[username][key] = updates[key];
+                }
+            }
+        }
+        
+        users[username].updatedAt = new Date().toISOString();
+        users[username].updatedBy = updatedBy;
+        
+        await this.writeUsers(users);
+        
+        await this.logActivity(username, 'user_updated', { updates: Object.keys(updates), by: updatedBy });
+        
+        return {
+            success: true,
+            message: 'User updated successfully'
         };
     }
 
@@ -239,6 +300,14 @@ class UserManager {
         
         delete users[username];
         await this.writeUsers(users);
+        
+        const sessions = await this.readSessions();
+        for (const [key, session] of Object.entries(sessions)) {
+            if (session.user && session.user.username === username) {
+                delete sessions[key];
+            }
+        }
+        await this.writeSessions(sessions);
         
         return {
             success: true,
@@ -284,35 +353,41 @@ class UserManager {
         return {
             success: true,
             username: username,
-            role: user.role
+            role: user.role,
+            preferences: user.preferences || {}
         };
     }
 
-    async updateUser(username, updates) {
-        const users = await this.readUsers();
+    async changePassword(username, oldPassword, newPassword) {
+        const user = await this.getUser(username);
         
-        if (!users[username]) {
+        if (!user) {
             return { success: false, error: 'User not found' };
         }
         
-        const allowedUpdates = ['role', 'status', 'lastLogin', 'lastIp', 'lastUserAgent', 'loginCount'];
-        
-        for (const key of allowedUpdates) {
-            if (updates[key] !== undefined) {
-                users[username][key] = updates[key];
-            }
+        const passwordMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!passwordMatch) {
+            return { success: false, error: 'Current password is incorrect' };
         }
         
-        users[username].updated = new Date().toISOString();
-        users[username].updatedBy = updates.updatedBy || null;
+        if (!newPassword || newPassword.length < 4) {
+            return { success: false, error: 'New password must be at least 4 characters' };
+        }
+        
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+        
+        const users = await this.readUsers();
+        users[username].password = hashedPassword;
+        users[username].passwordUpdated = new Date().toISOString();
         
         await this.writeUsers(users);
         
-        await this.logActivity(username, 'user_updated', { updates: Object.keys(updates), by: updates.updatedBy });
+        await this.logActivity(username, 'password_changed', {});
         
         return {
             success: true,
-            message: 'User updated successfully'
+            message: 'Password changed successfully'
         };
     }
 
@@ -345,7 +420,53 @@ class UserManager {
             }
         }
         
-        return await this.updateUser(username, { role: newRole, updatedBy: changedBy });
+        const users = await this.readUsers();
+        users[username].role = newRole;
+        users[username].roleUpdated = new Date().toISOString();
+        users[username].roleUpdatedBy = changedBy;
+        
+        await this.writeUsers(users);
+        
+        await this.logActivity(username, 'role_changed', { newRole: newRole, by: changedBy });
+        
+        return {
+            success: true,
+            message: `User role updated to ${newRole}`
+        };
+    }
+
+    async getUserPreferences(username) {
+        const user = await this.getUser(username);
+        if (!user) {
+            return null;
+        }
+        return user.preferences || {
+            theme: 'dark',
+            defaultFormat: 'json',
+            notifications: true,
+            language: 'en'
+        };
+    }
+
+    async updateUserPreferences(username, preferences) {
+        const user = await this.getUser(username);
+        if (!user) {
+            return { success: false, error: 'User not found' };
+        }
+        
+        const updatedPreferences = { ...user.preferences, ...preferences };
+        
+        const users = await this.readUsers();
+        users[username].preferences = updatedPreferences;
+        
+        await this.writeUsers(users);
+        
+        await this.logActivity(username, 'preferences_updated', { preferences: Object.keys(preferences) });
+        
+        return {
+            success: true,
+            preferences: updatedPreferences
+        };
     }
 
     async logActivity(username, action, details = {}) {
@@ -356,11 +477,18 @@ class UserManager {
         }
         
         activity[username].push({
+            id: crypto.randomBytes(8).toString('hex'),
             action: action,
             details: details,
             timestamp: new Date().toISOString(),
-            ip: details.ip || null
+            timestampMs: Date.now(),
+            ip: details.ip || null,
+            userAgent: details.userAgent || null
         });
+        
+        if (activity[username].length > 1000) {
+            activity[username] = activity[username].slice(-1000);
+        }
         
         await this.writeActivity(activity);
     }
@@ -374,18 +502,42 @@ class UserManager {
     }
 
     async writeActivity(activity) {
-        for (const username in activity) {
-            if (activity[username] && activity[username].length > 1000) {
-                activity[username] = activity[username].slice(-1000);
-            }
-        }
         await fs.writeJson(this.activityFile, activity, { spaces: 2 });
     }
 
-    async getUserActivity(username, limit = 50) {
+    async getUserActivity(username, limit = 50, offset = 0) {
         const activity = await this.readActivity();
         const userActivity = activity[username] || [];
-        return userActivity.slice(-limit).reverse();
+        return {
+            total: userActivity.length,
+            activities: userActivity.slice(-limit - offset, -offset || undefined).reverse()
+        };
+    }
+
+    async getAllActivity(limit = 100, filter = null) {
+        const activity = await this.readActivity();
+        const allActivities = [];
+        
+        for (const [username, activities] of Object.entries(activity)) {
+            for (const act of activities) {
+                allActivities.push({
+                    username: username,
+                    ...act
+                });
+            }
+        }
+        
+        allActivities.sort((a, b) => b.timestampMs - a.timestampMs);
+        
+        let filtered = allActivities;
+        if (filter && filter.action) {
+            filtered = filtered.filter(a => a.action === filter.action);
+        }
+        if (filter && filter.username) {
+            filtered = filtered.filter(a => a.username === filter.username);
+        }
+        
+        return filtered.slice(0, limit);
     }
 
     async logFailedAttempt(username, ip, type = 'login') {
@@ -400,7 +552,8 @@ class UserManager {
             username: username,
             type: type,
             ip: ip,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            timestampMs: Date.now()
         });
         
         if (activity[key].length > 1000) {
@@ -432,6 +585,19 @@ class UserManager {
         return attempts.slice(-limit).reverse();
     }
 
+    async readSessions() {
+        try {
+            if (await fs.pathExists(this.sessionsFile)) {
+                return await fs.readJson(this.sessionsFile);
+            }
+        } catch (error) {}
+        return {};
+    }
+
+    async writeSessions(sessions) {
+        await fs.writeJson(this.sessionsFile, sessions, { spaces: 2 });
+    }
+
     async getUserStats() {
         const users = await this.readUsers();
         
@@ -444,7 +610,7 @@ class UserManager {
         
         const today = new Date().toDateString();
         
-        for (const [_, userData] of Object.entries(users)) {
+        for (const [username, userData] of Object.entries(users)) {
             total++;
             if (userData.status === 'active') active++;
             if (userData.role === 'admin') admin++;
@@ -456,12 +622,17 @@ class UserManager {
             }
         }
         
+        const activity = await this.getAllActivity(1000);
+        const last24h = activity.filter(a => a.timestampMs > Date.now() - 86400000).length;
+        
         return {
             total: total,
             active: active,
             inactive: total - active,
             roles: { admin, user, viewer },
-            todayLogins: todayLogins
+            todayLogins: todayLogins,
+            last24hActivity: last24h,
+            timestamp: new Date().toISOString()
         };
     }
 
@@ -476,14 +647,120 @@ class UserManager {
                     username: username,
                     role: userData.role,
                     status: userData.status,
-                    lastLogin: userData.lastLogin
+                    lastLogin: userData.lastLogin,
+                    email: userData.email,
+                    firstName: userData.firstName,
+                    lastName: userData.lastName
+                });
+            } else if (userData.email && userData.email.toLowerCase().includes(searchLower)) {
+                results.push({
+                    username: username,
+                    role: userData.role,
+                    status: userData.status,
+                    lastLogin: userData.lastLogin,
+                    email: userData.email
                 });
             }
             
             if (results.length >= (options.limit || 100)) break;
         }
         
-        return results;
+        return {
+            query: query,
+            count: results.length,
+            users: results
+        };
+    }
+
+    async generateResetToken(username) {
+        const user = await this.getUser(username);
+        if (!user) {
+            return { success: false, error: 'User not found' };
+        }
+        
+        const token = crypto.randomBytes(32).toString('hex');
+        const expires = Date.now() + 3600000;
+        
+        const tokens = await this.readTokens();
+        tokens[token] = {
+            username: username,
+            expires: expires,
+            created: Date.now()
+        };
+        
+        await this.writeTokens(tokens);
+        
+        return {
+            success: true,
+            token: token,
+            expires: new Date(expires).toISOString()
+        };
+    }
+
+    async validateResetToken(token) {
+        const tokens = await this.readTokens();
+        const tokenData = tokens[token];
+        
+        if (!tokenData) {
+            return { success: false, error: 'Invalid token' };
+        }
+        
+        if (tokenData.expires < Date.now()) {
+            delete tokens[token];
+            await this.writeTokens(tokens);
+            return { success: false, error: 'Token expired' };
+        }
+        
+        return {
+            success: true,
+            username: tokenData.username
+        };
+    }
+
+    async resetPassword(token, newPassword) {
+        const validation = await this.validateResetToken(token);
+        if (!validation.success) {
+            return validation;
+        }
+        
+        const username = validation.username;
+        
+        if (!newPassword || newPassword.length < 4) {
+            return { success: false, error: 'Password must be at least 4 characters' };
+        }
+        
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+        
+        const users = await this.readUsers();
+        users[username].password = hashedPassword;
+        users[username].passwordReset = new Date().toISOString();
+        
+        await this.writeUsers(users);
+        
+        const tokens = await this.readTokens();
+        delete tokens[token];
+        await this.writeTokens(tokens);
+        
+        await this.logActivity(username, 'password_reset', {});
+        
+        return {
+            success: true,
+            message: 'Password reset successfully'
+        };
+    }
+
+    async readTokens() {
+        try {
+            if (await fs.pathExists(this.tokensFile)) {
+                return await fs.readJson(this.tokensFile);
+            }
+        } catch (error) {}
+        return {};
+    }
+
+    async writeTokens(tokens) {
+        await fs.writeJson(this.tokensFile, tokens, { spaces: 2 });
     }
 }
 
