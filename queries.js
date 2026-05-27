@@ -1,6 +1,6 @@
 // NullName DB - Query Parser & Executor
 // No brand. No name. No payment.
-// Version: 1.0.0
+// Version: 2.0.0
 
 const database = require('./core/database');
 const internet = require('./internet');
@@ -9,6 +9,11 @@ const track = require('./core/track');
 const backup = require('./core/backup');
 const auth = require('./auth');
 const userManager = require('./user');
+const nosql = require('./core/nosql');
+const filebase = require('./core/filebase');
+const timeback = require('./core/timeback');
+const realtime = require('./core/realtime');
+const sqlParser = require('./core/sql');
 
 class QueryProcessor {
     constructor() {
@@ -45,7 +50,20 @@ class QueryProcessor {
             'help': this.help.bind(this),
             'status': this.status.bind(this),
             'stats': this.stats.bind(this),
-            'clear': this.clear.bind(this)
+            'clear': this.clear.bind(this),
+            'format': this.setFormat.bind(this),
+            'search': this.search.bind(this),
+            'explain': this.explain.bind(this),
+            'export': this.exportData.bind(this),
+            'import': this.importData.bind(this),
+            'sync': this.sync.bind(this),
+            'watch': this.watch.bind(this),
+            'unwatch': this.unwatch.bind(this),
+            'travel': this.timeTravel.bind(this),
+            'restore': this.restorePoint.bind(this),
+            'sql': this.executeSQL.bind(this),
+            'nosql': this.executeNoSQL.bind(this),
+            'filebase': this.executeFileBase.bind(this)
         };
         
         this.aliases = {
@@ -54,8 +72,13 @@ class QueryProcessor {
             'br': 'branch', 'mg': 'merge', 'un': 'undo',
             're': 'redo', 'tr': 'track', 'bk': 'backup',
             'rs': 'restore', 'fc': 'force', 'lg': 'login',
-            'sg': 'signup', 'lo': 'logout', 'st': 'status', 'h': 'help'
+            'sg': 'signup', 'lo': 'logout', 'st': 'status',
+            'h': 'help', 'fmt': 'format', 'exp': 'export',
+            'imp': 'import', 'tv': 'travel', 'rst': 'restore'
         };
+        
+        this.currentFormat = 'json';
+        this.userFormats = new Map();
     }
 
     async execute(query, user, sessionKey) {
@@ -66,6 +89,11 @@ class QueryProcessor {
         query = query.trim();
         if (query.length === 0) {
             return { error: 'Empty query' };
+        }
+        
+        const userFormat = this.userFormats.get(user?.username);
+        if (userFormat) {
+            this.currentFormat = userFormat;
         }
         
         if (query.includes('=') && !query.startsWith('=') && !this.hasCommandPrefix(query)) {
@@ -82,6 +110,16 @@ class QueryProcessor {
         
         if (!query.includes(' ') && !query.includes('.') && !query.includes('=') && !this.hasCommandPrefix(query)) {
             return await database.get(query, user);
+        }
+        
+        if (query.trim().toUpperCase().startsWith('SELECT') ||
+            query.trim().toUpperCase().startsWith('INSERT') ||
+            query.trim().toUpperCase().startsWith('UPDATE') ||
+            query.trim().toUpperCase().startsWith('DELETE') ||
+            query.trim().toUpperCase().startsWith('CREATE') ||
+            query.trim().toUpperCase().startsWith('ALTER') ||
+            query.trim().toUpperCase().startsWith('DROP')) {
+            return await this.executeSQL(query, user);
         }
         
         const parsed = this.parseCommand(query);
@@ -345,6 +383,9 @@ class QueryProcessor {
         }
         
         if (tableName) {
+            if (id === 'column' && args[3]) {
+                return await database.deleteColumn(dbName, tableName, args[3], user);
+            }
             return await database.deleteTable(dbName, tableName, user);
         }
         
@@ -469,6 +510,145 @@ class QueryProcessor {
     }
 
     // ============================================
+    // TIME TRAVEL
+    // ============================================
+
+    async timeTravel(parsed, user) {
+        const args = parsed.args;
+        
+        if (args.length < 2) {
+            return { error: 'Invalid travel syntax. Usage: travel.db.name.to.date or travel.table...' };
+        }
+        
+        const target = args[0];
+        const point = args[1];
+        const action = args[2];
+        
+        if (target === 'db') {
+            const dbName = args[1];
+            const date = args[3];
+            if (!date) return { error: 'Date required. Usage: travel.db.name.to.date' };
+            return await timeback.travelDatabase(dbName, date, user);
+        }
+        
+        if (target === 'table') {
+            const dbName = args[1];
+            const tableName = args[2];
+            const date = args[4];
+            if (!date) return { error: 'Date required. Usage: travel.db.name.table.name.to.date' };
+            return await timeback.travelTable(dbName, tableName, date, user);
+        }
+        
+        if (target === 'row') {
+            const dbName = args[1];
+            const tableName = args[2];
+            const rowId = args[3];
+            const date = args[5];
+            return await timeback.travelRow(dbName, tableName, rowId, date, user);
+        }
+        
+        if (target === 'cell') {
+            const dbName = args[1];
+            const tableName = args[2];
+            const rowId = args[3];
+            const columnName = args[4];
+            const date = args[6];
+            return await timeback.travelCell(dbName, tableName, rowId, columnName, date, user);
+        }
+        
+        return { error: 'Invalid travel target. Use: db, table, row, or cell' };
+    }
+
+    async restorePoint(parsed, user) {
+        const args = parsed.args;
+        
+        if (args.length < 2) {
+            return { error: 'Invalid restore syntax. Usage: restore.db.name.to.date' };
+        }
+        
+        const dbName = args[0];
+        const date = args[2];
+        
+        return await timeback.restoreDatabase(dbName, date, user);
+    }
+
+    // ============================================
+    // SQL EXECUTION
+    // ============================================
+
+    async executeSQL(query, user) {
+        try {
+            const result = await sqlParser.execute(query, user);
+            return result;
+        } catch (error) {
+            return { error: error.message };
+        }
+    }
+
+    // ============================================
+    // NOSQL EXECUTION
+    // ============================================
+
+    async executeNoSQL(parsed, user) {
+        const args = parsed.args;
+        
+        if (args.length < 2) {
+            return { error: 'Invalid nosql syntax' };
+        }
+        
+        const action = args[0];
+        const collection = args[1];
+        const query = args[2] ? JSON.parse(args[2]) : {};
+        const update = args[3] ? JSON.parse(args[3]) : null;
+        
+        switch(action) {
+            case 'find':
+                return await nosql.find(collection, query, user);
+            case 'findOne':
+                return await nosql.findOne(collection, query, user);
+            case 'insert':
+                return await nosql.insert(collection, query, user);
+            case 'update':
+                return await nosql.update(collection, query, update, user);
+            case 'delete':
+                return await nosql.delete(collection, query, user);
+            case 'count':
+                return await nosql.count(collection, query, user);
+            default:
+                return { error: 'Unknown nosql action: ' + action };
+        }
+    }
+
+    // ============================================
+    // FILEBASE EXECUTION
+    // ============================================
+
+    async executeFileBase(parsed, user) {
+        const args = parsed.args;
+        
+        if (args.length < 1) {
+            return { error: 'Invalid filebase syntax' };
+        }
+        
+        const action = args[0];
+        
+        switch(action) {
+            case 'list':
+                return await filebase.listFiles(user);
+            case 'info':
+                return await filebase.getFileInfo(args[1], user);
+            case 'delete':
+                return await filebase.deleteFile(args[1], user);
+            case 'search':
+                return await filebase.searchFiles(args[1], user);
+            case 'stats':
+                return await filebase.getStats(user);
+            default:
+                return { error: 'Unknown filebase action: ' + action };
+        }
+    }
+
+    // ============================================
     // TRACKING & BACKUP
     // ============================================
 
@@ -509,6 +689,10 @@ class QueryProcessor {
     // ============================================
 
     async force(parsed, user) {
+        if (!user || (user.role !== 'admin' && user.role !== 'root')) {
+            return { error: 'Admin access required' };
+        }
+        
         const action = parsed.args[0];
         const steps = parseInt(parsed.args[1]) || 1;
         
@@ -522,7 +706,7 @@ class QueryProcessor {
     }
 
     // ============================================
-    // USER MANAGEMENT - FIXED LOGIN
+    // USER MANAGEMENT
     // ============================================
 
     async login(parsed, user) {
@@ -558,7 +742,7 @@ class QueryProcessor {
             return { error: 'Username and password required. Usage: signup.username.password' };
         }
         
-        const result = await userManager.createUser(username, password, role);
+        const result = await auth.createUser(username, password, role);
         
         if (result.success) {
             const session = auth.createSession({ username: username, role: result.role });
@@ -581,30 +765,153 @@ class QueryProcessor {
     }
 
     async userManagement(parsed, user) {
-        const action = parsed.args[0];
-        const username = parsed.args[1];
-        const newRole = parsed.args[2];
-        
         if (!user || (user.role !== 'admin' && user.role !== 'root')) {
             return { error: 'Admin access required for user management' };
         }
         
+        const action = parsed.args[0];
+        const username = parsed.args[1];
+        const newRole = parsed.args[2];
+        
         if (action === 'list') {
-            const users = await userManager.getAllUsers();
+            const users = await auth.getAllUsers();
             return { users: users };
         }
         
         if (action === 'delete') {
             if (!username) return { error: 'Username required' };
-            return await userManager.deleteUser(username);
+            return await auth.deleteUser(username);
         }
         
         if (action === 'role') {
             if (!username || !newRole) return { error: 'Username and role required' };
-            return await userManager.setRole(username, newRole);
+            return await auth.updateUserRole(username, newRole);
         }
         
-        return { error: 'Unknown user action. Available: list, delete, role' };
+        if (action === 'changepass') {
+            const oldPass = parsed.args[1];
+            const newPass = parsed.args[2];
+            if (!oldPass || !newPass) return { error: 'Old and new password required' };
+            return await auth.updateUserPassword(user.username, oldPass, newPass);
+        }
+        
+        if (action === 'token') {
+            const subAction = parsed.args[1];
+            if (subAction === 'create') {
+                const description = parsed.args[2];
+                return await auth.createApiToken(username, description);
+            }
+            if (subAction === 'list') {
+                const tokens = await auth.listApiTokens(username);
+                return { tokens: tokens };
+            }
+            if (subAction === 'revoke') {
+                const tokenId = parsed.args[2];
+                return await auth.revokeApiToken(username, tokenId);
+            }
+        }
+        
+        return { error: 'Unknown user action. Available: list, delete, role, changepass, token' };
+    }
+
+    // ============================================
+    // FORMAT & SEARCH
+    // ============================================
+
+    async setFormat(parsed, user) {
+        const format = parsed.args[0];
+        const validFormats = ['json', 'csv', 'table', 'markdown', 'yaml', 'xml', 'text', 'vertical', 'compact', 'grid', 'ai'];
+        
+        if (!format) {
+            return { current_format: this.currentFormat, available: validFormats };
+        }
+        
+        if (validFormats.includes(format)) {
+            this.currentFormat = format;
+            if (user && user.username) {
+                this.userFormats.set(user.username, format);
+            }
+            return { success: true, format: format, message: `Output format set to ${format}` };
+        }
+        
+        return { error: `Invalid format. Available: ${validFormats.join(', ')}` };
+    }
+
+    async search(parsed, user) {
+        const keyword = parsed.args[0];
+        if (!keyword) {
+            return { error: 'Search keyword required' };
+        }
+        
+        const results = await database.searchAll(keyword, user);
+        return { keyword: keyword, results: results, count: results.length };
+    }
+
+    async explain(parsed, user) {
+        const query = parsed.raw;
+        if (!query) {
+            return { error: 'Query to explain required' };
+        }
+        
+        const explanation = await database.explainQuery(query, user);
+        return explanation;
+    }
+
+    async exportData(parsed, user) {
+        const format = parsed.args[0] || 'json';
+        const dbName = parsed.args[1];
+        
+        if (!dbName) {
+            return { error: 'Database name required' };
+        }
+        
+        const data = await database.getDatabase(dbName, user);
+        const exportResult = await database.exportData(data, format);
+        return exportResult;
+    }
+
+    async importData(parsed, user) {
+        const file = parsed.args[0];
+        const dbName = parsed.args[1];
+        
+        if (!file || !dbName) {
+            return { error: 'File and database name required' };
+        }
+        
+        const result = await database.importData(file, dbName, user);
+        return result;
+    }
+
+    async sync(parsed, user) {
+        const source = parsed.args[0];
+        const target = parsed.args[1];
+        
+        if (!source || !target) {
+            return { error: 'Source and target required' };
+        }
+        
+        const result = await database.syncDatabases(source, target, user);
+        return result;
+    }
+
+    async watch(parsed, user) {
+        const query = parsed.raw;
+        if (!query) {
+            return { error: 'Query to watch required' };
+        }
+        
+        const subscription = await realtime.subscribe(query, user);
+        return { success: true, subscription_id: subscription.id, message: 'Watching ' + query };
+    }
+
+    async unwatch(parsed, user) {
+        const subscriptionId = parsed.args[0];
+        if (!subscriptionId) {
+            return { error: 'Subscription ID required' };
+        }
+        
+        const result = await realtime.unsubscribe(subscriptionId, user);
+        return result;
     }
 
     // ============================================
@@ -613,25 +920,31 @@ class QueryProcessor {
 
     async help(parsed, user) {
         return {
-            message: 'NullName DB - Query Reference',
+            message: 'NullName DB - Query Reference (v2.0)',
             commands: {
                 data: ['add.db.table.col.value', 'get.db.table', 'update.db.table.id.col=value', 'delete.db.table.id'],
                 simple: ['name=value', 'name', 'db.table.column'],
                 version: ['commit "message"', 'commits', 'checkout.id', 'branch.name', 'merge.source.into.target'],
                 recovery: ['undo', 'redo', 'force.back.1', 'f1', 'f2', 'f3'],
-                files: ['add.db.table.col=https://url.jpg.upload'],
-                user: ['login.username.password', 'signup.username.password', 'logout'],
-                system: ['backup', 'restore.name', 'track', 'status', 'stats']
+                files: ['add.db.table.col=https://url.jpg.upload', 'filebase.list', 'filebase.delete'],
+                time: ['travel.db.name.to.date', 'travel.table.db.table.to.date', 'restore.db.name.to.date'],
+                user: ['login.username.password', 'signup.username.password', 'logout', 'user.list', 'user.role.username.role'],
+                sql: ['SELECT * FROM table', 'INSERT INTO table VALUES', 'UPDATE table SET col=value'],
+                nosql: ['nosql.find.collection {}', 'nosql.insert.collection {}'],
+                system: ['backup', 'restore.name', 'track', 'status', 'stats', 'format', 'search', 'explain'],
+                formats: ['&format=json', '&format=csv', '&format=table', '&format=markdown', '&format=yaml', '&format=xml', '&format=ai']
             },
-            formats: ['&format=json', '&format=csv', '&format=text', '&format=table'],
             examples: [
-                '/q?q=score=100',
-                '/q?q=add.mydb.users.name.John',
-                '/q?q=get.mydb.users&format=text',
-                '/q?q=commit "first version"',
-                '/q?q=undo',
-                '/q?q=f1'
-            ]
+                '/q=score=100',
+                '/q=add.mydb.users.name.John',
+                '/q=get.mydb.users&format=markdown',
+                '/q=commit "first version"',
+                '/q=undo',
+                '/q=f1',
+                '/q=travel.db.mydb.to.2026-05-20',
+                '/q=sql SELECT * FROM users'
+            ],
+            version: '2.0.0'
         };
     }
 
@@ -639,10 +952,11 @@ class QueryProcessor {
         const uptime = process.uptime();
         const memory = process.memoryUsage();
         const stats = await database.getStats();
+        const authStats = await auth.getStats();
         
         return {
             status: 'online',
-            version: '1.0.0',
+            version: '2.0.0',
             uptime: {
                 seconds: Math.floor(uptime),
                 human: Math.floor(uptime / 86400) + 'd ' + Math.floor((uptime % 86400) / 3600) + 'h ' + Math.floor((uptime % 3600) / 60) + 'm'
@@ -652,13 +966,16 @@ class QueryProcessor {
                 heapTotal: Math.round(memory.heapTotal / 1024 / 1024) + ' MB',
                 heapUsed: Math.round(memory.heapUsed / 1024 / 1024) + ' MB'
             },
-            stats: stats
+            database: stats,
+            auth: authStats,
+            timestamp: new Date().toISOString()
         };
     }
 
     async stats(parsed, user) {
         const trackStats = await track.getStats();
         const backupStats = await backup.listBackups();
+        const filebaseStats = await filebase.getStats();
         
         return {
             queries: trackStats,
@@ -666,7 +983,9 @@ class QueryProcessor {
                 count: backupStats.length,
                 latest: backupStats[0] || null
             },
-            database: await database.getStats()
+            database: await database.getStats(),
+            filebase: filebaseStats,
+            timestamp: new Date().toISOString()
         };
     }
 
@@ -687,7 +1006,12 @@ class QueryProcessor {
             return { success: true, cleared: 'tracking logs' };
         }
         
-        return { error: 'Invalid clear target. Available: history, tracks' };
+        if (target === 'cache') {
+            await database.clearCache();
+            return { success: true, cleared: 'database cache' };
+        }
+        
+        return { error: 'Invalid clear target. Available: history, tracks, cache' };
     }
 }
 
