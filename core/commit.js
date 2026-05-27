@@ -1,6 +1,6 @@
 // NullName DB - Git-like Version Control System
 // No brand. No name. No payment.
-// Version: 1.0.0
+// Version: 2.0.0
 
 const fs = require('fs-extra');
 const path = require('path');
@@ -11,6 +11,7 @@ class CommitSystem {
         this.commitsPath = path.join(__dirname, '..', 'database', 'commits');
         this.branchesPath = path.join(__dirname, '..', 'database', 'branches');
         this.statePath = path.join(__dirname, '..', 'database', 'git_state.json');
+        this.tagsPath = path.join(__dirname, '..', 'database', 'tags.json');
         
         this.currentBranch = 'main';
         this.commitHistory = [];
@@ -27,6 +28,7 @@ class CommitSystem {
         await fs.ensureDir(this.branchesPath);
         await this.loadState();
         await this.loadBranches();
+        await this.loadTags();
         console.log('Version control system initialized');
     }
 
@@ -91,18 +93,43 @@ class CommitSystem {
         }
     }
 
+    async loadTags() {
+        try {
+            if (await fs.pathExists(this.tagsPath)) {
+                const tagsObj = await fs.readJson(this.tagsPath);
+                this.tags = new Map(Object.entries(tagsObj));
+            }
+        } catch (error) {
+            console.error('Failed to load tags:', error);
+        }
+    }
+
+    async saveTags() {
+        try {
+            const tagsObj = Object.fromEntries(this.tags);
+            await fs.writeJson(this.tagsPath, tagsObj, { spaces: 2 });
+        } catch (error) {
+            console.error('Failed to save tags:', error);
+        }
+    }
+
     async takeSnapshot() {
-        const dbPath = path.join(__dirname, '..', 'database', 'path');
+        const dbPath = path.join(__dirname, '..', 'database', 'sql');
+        const kvPath = path.join(__dirname, '..', 'database', 'keyvalue.json');
+        
         const snapshot = {
             databases: {},
+            keyvalue: {},
             timestamp: Date.now(),
-            branch: this.currentBranch
+            branch: this.currentBranch,
+            id: this.generateCommitId()
         };
         
         if (await fs.pathExists(dbPath)) {
             const databases = await fs.readdir(dbPath);
             
             for (const db of databases) {
+                if (db.startsWith('_')) continue;
                 const dbFullPath = path.join(dbPath, db);
                 const stat = await fs.stat(dbFullPath);
                 
@@ -111,7 +138,7 @@ class CommitSystem {
                     const tables = await fs.readdir(dbFullPath);
                     
                     for (const table of tables) {
-                        if (table.endsWith('.json')) {
+                        if (table.endsWith('.json') && !table.startsWith('_')) {
                             const tablePath = path.join(dbFullPath, table);
                             const tableName = table.replace('.json', '');
                             snapshot.databases[db][tableName] = await fs.readJson(tablePath);
@@ -121,7 +148,6 @@ class CommitSystem {
             }
         }
         
-        const kvPath = path.join(dbPath, '_keyvalue.json');
         if (await fs.pathExists(kvPath)) {
             snapshot.keyvalue = await fs.readJson(kvPath);
         }
@@ -130,11 +156,13 @@ class CommitSystem {
     }
 
     async restoreSnapshot(snapshot) {
-        const dbPath = path.join(__dirname, '..', 'database', 'path');
+        const dbPath = path.join(__dirname, '..', 'database', 'sql');
+        const kvPath = path.join(__dirname, '..', 'database', 'keyvalue.json');
         
         if (await fs.pathExists(dbPath)) {
             const databases = await fs.readdir(dbPath);
             for (const db of databases) {
+                if (db.startsWith('_')) continue;
                 const dbFullPath = path.join(dbPath, db);
                 const stat = await fs.stat(dbFullPath);
                 if (stat.isDirectory()) {
@@ -155,9 +183,69 @@ class CommitSystem {
         }
         
         if (snapshot.keyvalue) {
-            const kvPath = path.join(dbPath, '_keyvalue.json');
             await fs.writeJson(kvPath, snapshot.keyvalue, { spaces: 2 });
         }
+    }
+
+    generateCommitId() {
+        const timestamp = Date.now();
+        const random = crypto.randomBytes(8).toString('hex');
+        return `${timestamp}_${random}`;
+    }
+
+    getCurrentHead() {
+        const branch = this.branches.get(this.currentBranch);
+        return branch?.head || null;
+    }
+
+    async getChanges(oldSnapshot, newSnapshot) {
+        let added = 0;
+        let modified = 0;
+        let deleted = 0;
+        
+        const oldKeys = new Set();
+        const newKeys = new Set();
+        
+        for (const [db, tables] of Object.entries(oldSnapshot.databases || {})) {
+            for (const table of Object.keys(tables)) {
+                oldKeys.add(`${db}.${table}`);
+            }
+        }
+        
+        for (const [db, tables] of Object.entries(newSnapshot.databases || {})) {
+            for (const table of Object.keys(tables)) {
+                newKeys.add(`${db}.${table}`);
+            }
+        }
+        
+        for (const key of newKeys) {
+            if (!oldKeys.has(key)) added++;
+            else modified++;
+        }
+        
+        for (const key of oldKeys) {
+            if (!newKeys.has(key)) deleted++;
+        }
+        
+        return { added, modified, deleted };
+    }
+
+    countTables(snapshot) {
+        let count = 0;
+        for (const tables of Object.values(snapshot.databases || {})) {
+            count += Object.keys(tables).length;
+        }
+        return count;
+    }
+
+    async countRecords(snapshot) {
+        let count = 0;
+        for (const tables of Object.values(snapshot.databases || {})) {
+            for (const data of Object.values(tables)) {
+                count += Object.keys(data).filter(k => !isNaN(k) && k !== '_nextId' && k !== '_schema').length;
+            }
+        }
+        return count;
     }
 
     async create(message, user = null, options = {}) {
@@ -166,6 +254,11 @@ class CommitSystem {
         
         const snapshot = await this.takeSnapshot();
         const parentCommit = this.getCurrentHead();
+        
+        const changes = parentCommit ? await this.getChanges(
+            await this.getSnapshot(parentCommit),
+            snapshot
+        ) : { added: this.countTables(snapshot), modified: 0, deleted: 0 };
         
         const commit = {
             id: commitId,
@@ -177,7 +270,7 @@ class CommitSystem {
             branch: this.currentBranch,
             parent: parentCommit,
             snapshot: snapshot,
-            filesChanged: await this.getChanges(parentCommit, snapshot),
+            changes: changes,
             stats: {
                 databases: Object.keys(snapshot.databases).length,
                 tables: this.countTables(snapshot),
@@ -208,82 +301,18 @@ class CommitSystem {
                 message: message,
                 author: commit.author,
                 timestamp: commit.timestampISO,
-                branch: this.currentBranch
+                branch: this.currentBranch,
+                changes: changes
             }
         };
     }
 
-    generateCommitId() {
-        const timestamp = Date.now();
-        const random = crypto.randomBytes(6).toString('hex');
-        return `commit_${timestamp}_${random}`;
-    }
-
-    getCurrentHead() {
-        const branch = this.branches.get(this.currentBranch);
-        return branch?.head || null;
-    }
-
-    async getChanges(commitId, currentSnapshot) {
-        if (!commitId) {
-            return { added: 0, modified: 0, deleted: 0 };
-        }
-        
+    async getSnapshot(commitId) {
+        if (!commitId) return null;
         const commitPath = path.join(this.commitsPath, `${commitId}.json`);
-        if (!await fs.pathExists(commitPath)) {
-            return { added: 0, modified: 0, deleted: 0 };
-        }
-        
+        if (!await fs.pathExists(commitPath)) return null;
         const commit = await fs.readJson(commitPath);
-        const oldSnapshot = commit.snapshot;
-        
-        let added = 0;
-        let modified = 0;
-        let deleted = 0;
-        
-        const oldKeys = new Set();
-        const newKeys = new Set();
-        
-        for (const [db, tables] of Object.entries(oldSnapshot.databases || {})) {
-            for (const table of Object.keys(tables)) {
-                oldKeys.add(`${db}.${table}`);
-            }
-        }
-        
-        for (const [db, tables] of Object.entries(currentSnapshot.databases || {})) {
-            for (const table of Object.keys(tables)) {
-                newKeys.add(`${db}.${table}`);
-            }
-        }
-        
-        for (const key of newKeys) {
-            if (!oldKeys.has(key)) added++;
-            else modified++;
-        }
-        
-        for (const key of oldKeys) {
-            if (!newKeys.has(key)) deleted++;
-        }
-        
-        return { added, modified, deleted };
-    }
-
-    countTables(snapshot) {
-        let count = 0;
-        for (const tables of Object.values(snapshot.databases || {})) {
-            count += Object.keys(tables).length;
-        }
-        return count;
-    }
-
-    async countRecords(snapshot) {
-        let count = 0;
-        for (const tables of Object.values(snapshot.databases || {})) {
-            for (const data of Object.values(tables)) {
-                count += Object.keys(data).filter(k => !isNaN(k)).length;
-            }
-        }
-        return count;
+        return commit.snapshot;
     }
 
     async getCommit(commitId) {
@@ -428,7 +457,8 @@ class CommitSystem {
                 head: data.head,
                 commits: data.commits.length,
                 created: data.createdISO,
-                createdBy: data.createdBy
+                createdBy: data.createdBy,
+                source: data.source
             });
         }
         
@@ -629,32 +659,37 @@ class CommitSystem {
     }
 
     async diff(source, target, user = null) {
-        let sourceCommit, targetCommit;
+        let sourceSnapshot, targetSnapshot;
         
         if (this.branches.has(source)) {
             const branch = this.branches.get(source);
             if (branch.head) {
-                sourceCommit = await this.getFullCommit(branch.head);
+                const commit = await this.getFullCommit(branch.head);
+                sourceSnapshot = commit?.snapshot;
             }
         } else {
-            sourceCommit = await this.getFullCommit(source);
+            const commit = await this.getFullCommit(source);
+            sourceSnapshot = commit?.snapshot;
         }
         
         if (this.branches.has(target)) {
             const branch = this.branches.get(target);
             if (branch.head) {
-                targetCommit = await this.getFullCommit(branch.head);
+                const commit = await this.getFullCommit(branch.head);
+                targetSnapshot = commit?.snapshot;
             }
         } else {
-            targetCommit = await this.getFullCommit(target);
+            const commit = await this.getFullCommit(target);
+            targetSnapshot = commit?.snapshot;
         }
         
-        if (!sourceCommit && !targetCommit) {
+        if (!sourceSnapshot && !targetSnapshot) {
             return { error: 'No valid commits found for comparison' };
         }
         
-        const sourceSnapshot = sourceCommit?.snapshot || { databases: {}, keyvalue: {} };
-        const targetSnapshot = targetCommit?.snapshot || await this.takeSnapshot();
+        const currentSnapshot = await this.takeSnapshot();
+        const sourceData = sourceSnapshot || { databases: {}, keyvalue: {} };
+        const targetData = targetSnapshot || currentSnapshot;
         
         const changes = {
             added: [],
@@ -664,13 +699,13 @@ class CommitSystem {
         
         const allKeys = new Set();
         
-        for (const [db, tables] of Object.entries(sourceSnapshot.databases || {})) {
+        for (const [db, tables] of Object.entries(sourceData.databases || {})) {
             for (const table of Object.keys(tables)) {
                 allKeys.add(`${db}.${table}`);
             }
         }
         
-        for (const [db, tables] of Object.entries(targetSnapshot.databases || {})) {
+        for (const [db, tables] of Object.entries(targetData.databases || {})) {
             for (const table of Object.keys(tables)) {
                 allKeys.add(`${db}.${table}`);
             }
@@ -678,8 +713,8 @@ class CommitSystem {
         
         for (const key of allKeys) {
             const [db, table] = key.split('.');
-            const sourceTable = sourceSnapshot.databases?.[db]?.[table];
-            const targetTable = targetSnapshot.databases?.[db]?.[table];
+            const sourceTable = sourceData.databases?.[db]?.[table];
+            const targetTable = targetData.databases?.[db]?.[table];
             
             if (!sourceTable && targetTable) {
                 changes.added.push(key);
@@ -691,8 +726,8 @@ class CommitSystem {
         }
         
         return {
-            source: sourceCommit ? sourceCommit.id : 'current',
-            target: targetCommit ? targetCommit.id : 'current',
+            source: source || 'current',
+            target: target || 'current',
             changes: changes,
             summary: {
                 added: changes.added.length,
@@ -762,6 +797,65 @@ class CommitSystem {
         return tree;
     }
 
+    async createTag(tagName, commitId = null, user = null) {
+        if (this.tags.has(tagName)) {
+            return { error: `Tag '${tagName}' already exists` };
+        }
+        
+        const targetCommit = commitId || this.getCurrentHead();
+        if (!targetCommit) {
+            return { error: 'No commit to tag' };
+        }
+        
+        const commit = await this.getCommit(targetCommit);
+        if (!commit) {
+            return { error: `Commit '${targetCommit}' not found` };
+        }
+        
+        this.tags.set(tagName, {
+            name: tagName,
+            commit: targetCommit,
+            created: Date.now(),
+            createdISO: new Date().toISOString(),
+            createdBy: user?.username || 'system'
+        });
+        
+        await this.saveTags();
+        
+        return {
+            success: true,
+            tag: tagName,
+            commit: targetCommit
+        };
+    }
+
+    async listTags() {
+        const tags = [];
+        for (const [name, data] of this.tags.entries()) {
+            tags.push({
+                name: name,
+                commit: data.commit,
+                created: data.createdISO,
+                createdBy: data.createdBy
+            });
+        }
+        return tags.sort((a, b) => new Date(b.created) - new Date(a.created));
+    }
+
+    async deleteTag(tagName) {
+        if (!this.tags.has(tagName)) {
+            return { error: `Tag '${tagName}' not found` };
+        }
+        
+        this.tags.delete(tagName);
+        await this.saveTags();
+        
+        return {
+            success: true,
+            deleted: tagName
+        };
+    }
+
     async getStats() {
         const totalCommits = this.commitHistory.length;
         const totalBranches = this.branches.size;
@@ -804,82 +898,6 @@ class CommitSystem {
             canUndo: this.undoStack.length > 0,
             canRedo: this.redoStack.length > 0
         };
-    }
-
-    async createTag(tagName, commitId = null, user = null) {
-        if (this.tags.has(tagName)) {
-            return { error: `Tag '${tagName}' already exists` };
-        }
-        
-        const targetCommit = commitId || this.getCurrentHead();
-        if (!targetCommit) {
-            return { error: 'No commit to tag' };
-        }
-        
-        const commit = await this.getCommit(targetCommit);
-        if (!commit) {
-            return { error: `Commit '${targetCommit}' not found` };
-        }
-        
-        this.tags.set(tagName, {
-            name: tagName,
-            commit: targetCommit,
-            created: Date.now(),
-            createdISO: new Date().toISOString(),
-            createdBy: user?.username || 'system'
-        });
-        
-        const tagsPath = path.join(__dirname, '..', 'database', 'tags.json');
-        const tagsObj = Object.fromEntries(this.tags);
-        await fs.writeJson(tagsPath, tagsObj, { spaces: 2 });
-        
-        return {
-            success: true,
-            tag: tagName,
-            commit: targetCommit
-        };
-    }
-
-    async listTags() {
-        const tags = [];
-        for (const [name, data] of this.tags.entries()) {
-            tags.push({
-                name: name,
-                commit: data.commit,
-                created: data.createdISO,
-                createdBy: data.createdBy
-            });
-        }
-        return tags.sort((a, b) => new Date(b.created) - new Date(a.created));
-    }
-
-    async deleteTag(tagName) {
-        if (!this.tags.has(tagName)) {
-            return { error: `Tag '${tagName}' not found` };
-        }
-        
-        this.tags.delete(tagName);
-        
-        const tagsPath = path.join(__dirname, '..', 'database', 'tags.json');
-        const tagsObj = Object.fromEntries(this.tags);
-        await fs.writeJson(tagsPath, tagsObj, { spaces: 2 });
-        
-        return {
-            success: true,
-            deleted: tagName
-        };
-    }
-
-    async loadTags() {
-        try {
-            const tagsPath = path.join(__dirname, '..', 'database', 'tags.json');
-            if (await fs.pathExists(tagsPath)) {
-                const tagsObj = await fs.readJson(tagsPath);
-                this.tags = new Map(Object.entries(tagsObj));
-            }
-        } catch (error) {
-            console.error('Failed to load tags:', error);
-        }
     }
 }
 
