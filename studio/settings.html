@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NullName DB - Settings</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/ui/base.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e27;
+            color: #e0e0e0;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: rgba(10, 14, 39, 0.95);
+            border-right: 1px solid rgba(255,255,255,0.08);
+            padding: 1.5rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        .logo h1 {
+            font-size: 1.25rem;
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #aaa;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(0, 210, 255, 0.1);
+            color: #00d2ff;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 1.5rem;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: rgba(255,0,127,0.2);
+            border: 1px solid #ff007f;
+            color: #ff007f;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .settings-container {
+            max-width: 800px;
+        }
+
+        .settings-section {
+            background: rgba(20, 25, 50, 0.8);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title i {
+            color: #00d2ff;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .setting-description {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .setting-value {
+            color: #00d2ff;
+            font-family: monospace;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            border: none;
+            color: #0a0e27;
+            font-weight: 600;
+        }
+
+        .btn-danger {
+            background: rgba(255,0,127,0.2);
+            border-color: #ff007f;
+            color: #ff007f;
+        }
+
+        .btn-danger:hover {
+            background: #ff007f;
+            color: white;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #e0e0e0;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #00d2ff;
+        }
+
+        .api-key-display {
+            background: rgba(0,0,0,0.5);
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-family: monospace;
+            word-break: break-all;
+            margin-top: 0.5rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #0a0e27;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            padding: 1.5rem;
+        }
+
+        .modal-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .user-table th, .user-table td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .user-table th {
+            color: #00d2ff;
+            font-weight: 600;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .role-admin { background: rgba(255,0,127,0.2); color: #ff007f; }
+        .role-user { background: rgba(0,255,136,0.2); color: #00ff88; }
+        .role-viewer { background: rgba(0,210,255,0.2); color: #00d2ff; }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid #00d2ff;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 100;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .menu-toggle {
+                display: block;
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 101;
+                background: #00d2ff;
+                border: none;
+                padding: 0.5rem;
+                border-radius: 8px;
+                cursor: pointer;
+            }
+            .setting-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .menu-toggle {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
+
+    <div class="app-container">
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <h1><i class="fa fa-database"></i> NullName DB</h1>
+            </div>
+            <nav>
+                <div class="nav-item" data-page="dashboard"><i class="fa fa-tachometer"></i> Dashboard</div>
+                <div class="nav-item" data-page="databases"><i class="fa fa-database"></i> Databases</div>
+                <div class="nav-item" data-page="sql"><i class="fa fa-code"></i> SQL Runner</div>
+                <div class="nav-item" data-page="nosql"><i class="fa fa-file-code-o"></i> NoSQL</div>
+                <div class="nav-item" data-page="filebase"><i class="fa fa-file"></i> FileBase</div>
+                <div class="nav-item" data-page="backup"><i class="fa fa-archive"></i> Backups</div>
+                <div class="nav-item active" data-page="settings"><i class="fa fa-cog"></i> Settings</div>
+            </nav>
+        </div>
+
+        <div class="main-content">
+            <div class="top-bar">
+                <h2 class="page-title">Settings</h2>
+                <div class="user-info">
+                    <span id="username">Guest</span>
+                    <div class="user-avatar" id="userAvatar">G</div>
+                    <button class="logout-btn" id="logoutBtn"><i class="fa fa-sign-out"></i> Logout</button>
+                </div>
+            </div>
+
+            <div class="settings-container">
+                <!-- Profile Section -->
+                <div class="settings-section">
+                    <div class="section-title"><i class="fa fa-user-circle"></i> Profile</div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Username</div><div class="setting-description">Your unique identifier</div></div>
+                        <div class="setting-value" id="profileUsername">-</div>
+                    </div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Role</div><div class="setting-description">Your access level</div></div>
+                        <div class="setting-value" id="profileRole">-</div>
+                    </div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Member Since</div><div class="setting-description">Account creation date</div></div>
+                        <div class="setting-value" id="profileCreated">-</div>
+                    </div>
+                </div>
+
+                <!-- Security Section -->
+                <div class="settings-section">
+                    <div class="section-title"><i class="fa fa-lock"></i> Security</div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Change Password</div><div class="setting-description">Update your password</div></div>
+                        <button class="btn" id="changePasswordBtn">Change</button>
+                    </div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">API Tokens</div><div class="setting-description">Generate API keys for programmatic access</div></div>
+                        <button class="btn" id="generateTokenBtn">Generate Token</button>
+                    </div>
+                    <div id="tokensList" style="margin-top:1rem;"></div>
+                </div>
+
+                <!-- Interface Section -->
+                <div class="settings-section">
+                    <div class="section-title"><i class="fa fa-desktop"></i> Interface</div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Default Format</div><div class="setting-description">Response format for queries</div></div>
+                        <select id="defaultFormat" class="btn">
+                            <option value="json">JSON</option>
+                            <option value="table">Table</option>
+                            <option value="csv">CSV</option>
+                            <option value="markdown">Markdown</option>
+                            <option value="yaml">YAML</option>
+                            <option value="xml">XML</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Theme</div><div class="setting-description">Dark / Light mode</div></div>
+                        <select id="themeSelect" class="btn">
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Pretty Print JSON</div><div class="setting-description">Format JSON output with indentation</div></div>
+                        <input type="checkbox" id="prettyPrint">
+                    </div>
+                </div>
+
+                <!-- System Section (Admin Only) -->
+                <div id="adminSection" class="settings-section" style="display:none;">
+                    <div class="section-title"><i class="fa fa-server"></i> System</div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Storage Usage</div><div class="setting-description">Current database size</div></div>
+                        <div class="setting-value" id="storageUsage">-</div>
+                    </div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Query Statistics</div><div class="setting-description">Total queries, success rate</div></div>
+                        <div class="setting-value" id="queryStats">-</div>
+                    </div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Cleanup</div><div class="setting-description">Remove old temp files, logs, and backups</div></div>
+                        <button class="btn btn-primary" id="cleanupBtn">Run Cleanup</button>
+                    </div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Create Backup</div><div class="setting-description">Manual backup of all data</div></div>
+                        <button class="btn btn-primary" id="createBackupBtn">Create Backup</button>
+                    </div>
+                </div>
+
+                <!-- User Management Section (Admin Only) -->
+                <div id="userManagementSection" class="settings-section" style="display:none;">
+                    <div class="section-title"><i class="fa fa-users"></i> User Management</div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Create New User</div><div class="setting-description">Add a new user to the system</div></div>
+                        <button class="btn btn-primary" id="createUserBtn">Create User</button>
+                    </div>
+                    <div id="usersList"></div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="settings-section" style="border-color: rgba(255,0,127,0.3);">
+                    <div class="section-title"><i class="fa fa-exclamation-triangle" style="color:#ff007f;"></i> Danger Zone</div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Clear All Cache</div><div class="setting-description">Clear system cache (does not delete data)</div></div>
+                        <button class="btn" id="clearCacheBtn">Clear Cache</button>
+                    </div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Clear Query History</div><div class="setting-description">Delete all query history</div></div>
+                        <button class="btn" id="clearHistoryBtn">Clear History</button>
+                    </div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Delete Account</div><div class="setting-description">Permanently delete your account</div></div>
+                        <button class="btn btn-danger" id="deleteAccountBtn">Delete Account</button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="section-title"><i class="fa fa-info-circle"></i> About</div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Version</div></div>
+                        <div class="setting-value">NullName DB v2.0.0</div>
+                    </div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">License</div></div>
+                        <div class="setting-value">MIT - Free forever</div>
+                    </div>
+                    <div class="setting-row">
+                        <div><div class="setting-label">Website</div></div>
+                        <div class="setting-value"><a href="https://github.com/nullnamedb" target="_blank" style="color:#00d2ff;">github.com/nullnamedb</a></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Change Password</div>
+            <div class="form-group">
+                <label>Current Password</label>
+                <input type="password" id="currentPassword">
+            </div>
+            <div class="form-group">
+                <label>New Password</label>
+                <input type="password" id="newPassword">
+            </div>
+            <div class="form-group">
+                <label>Confirm Password</label>
+                <input type="password" id="confirmPassword">
+            </div>
+            <div id="passwordError" style="color:#ff007f; display:none;"></div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelPasswordBtn">Cancel</button>
+                <button class="btn btn-primary" id="confirmPasswordBtn">Change</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create User Modal -->
+    <div id="createUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Create New User</div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="newUsername" placeholder="Enter username (min 3 chars)">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="newUserPassword" placeholder="Enter password (min 4 chars)">
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <select id="newUserRole">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="viewer">Viewer</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelCreateUserBtn">Cancel</button>
+                <button class="btn btn-primary" id="confirmCreateUserBtn">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Token Display Modal -->
+    <div id="tokenModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">API Token Generated</div>
+            <div class="api-key-display" id="newToken"></div>
+            <p style="margin-top:0.5rem; font-size:0.7rem; color:#888;">Copy this token. It will not be shown again.</p>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="copyTokenBtn">Copy</button>
+                <button class="btn" id="closeTokenBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/ui/session.js"></script>
+    <script>
+        const sessionMgr = window.sessionManager;
+        let currentSession = null;
+        let currentUser = null;
+
+        async function init() {
+            await checkAuth();
+            await loadUserInfo();
+            await loadSettings();
+            attachEvents();
+        }
+
+        async function checkAuth() {
+            const session = localStorage.getItem('nullname_session');
+            if (!session) { window.location.href = '/login'; return; }
+            currentSession = session;
+            try {
+                const res = await fetch(`/q?q=status&ses=${session}`);
+                const data = await res.json();
+                if (data.status !== 'online') { window.location.href = '/login'; }
+                else {
+                    currentUser = { username: 'admin', role: 'admin' };
+                    document.getElementById('username').innerText = 'admin';
+                    document.getElementById('userAvatar').innerText = 'A';
+                    if (currentUser.role === 'admin') {
+                        document.getElementById('adminSection').style.display = 'block';
+                        document.getElementById('userManagementSection').style.display = 'block';
+                        await loadUsers();
+                    }
+                }
+            } catch(e) { window.location.href = '/login'; }
+        }
+
+        async function loadUserInfo() {
+            try {
+                const res = await fetch(`/q?q=user.list&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.users) {
+                    const current = data.users.find(u => u.username === 'admin');
+                    if (current) {
+                        document.getElementById('profileUsername').innerText = current.username;
+                        document.getElementById('profileRole').innerText = current.role;
+                        document.getElementById('profileCreated').innerText = new Date(current.created).toLocaleDateString();
+                    }
+                }
+            } catch(e) {}
+        }
+
+        async function loadSettings() {
+            const format = localStorage.getItem('nullname_format') || 'json';
+            const theme = localStorage.getItem('nullname_theme') || 'dark';
+            const pretty = localStorage.getItem('nullname_pretty') === 'true';
+            
+            document.getElementById('defaultFormat').value = format;
+            document.getElementById('themeSelect').value = theme;
+            document.getElementById('prettyPrint').checked = pretty;
+            
+            await loadStats();
+            await loadTokens();
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch(`/q?q=stats&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.database) {
+                    document.getElementById('storageUsage').innerText = data.database.totalSizeMB + ' MB';
+                }
+                if (data.queries) {
+                    document.getElementById('queryStats').innerText = `${data.queries.total?.queries || 0} queries, ${data.queries.total?.successRate || '0%'} success`;
+                }
+            } catch(e) {}
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch(`/q?q=user.list&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.users) {
+                    let html = '<table class="user-table"><thead><tr><th>Username</th><th>Role</th><th>Created</th><th>Last Login</th><th>Actions</th></tr></thead><tbody>';
+                    for (const user of data.users) {
+                        const roleClass = user.role === 'admin' ? 'role-admin' : (user.role === 'user' ? 'role-user' : 'role-viewer');
+                        html += `<tr>
+                            <td>${escapeHtml(user.username)}</td>
+                            <td><span class="role-badge ${roleClass}">${user.role}</span></td>
+                            <td>${user.created ? new Date(user.created).toLocaleDateString() : '-'}</td>
+                            <td>${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : '-'}</td>
+                            <td>
+                                ${user.username !== 'admin' ? `<button class="btn btn-sm" onclick="changeUserRole('${user.username}')">Change Role</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.username}')">Delete</button>` : '-'}
+                            </td>
+                        </tr>`;
+                    }
+                    html += '</tbody></table>';
+                    document.getElementById('usersList').innerHTML = html;
+                }
+            } catch(e) {}
+        }
+
+        async function loadTokens() {
+            try {
+                const res = await fetch(`/q?q=user.token.list&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.tokens && data.tokens.length) {
+                    let html = '<div style="margin-top:1rem;"><div class="setting-label">Active Tokens</div>';
+                    for (const token of data.tokens) {
+                        html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:0.5rem 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                            <span style="font-family:monospace; font-size:0.8rem;">${token.id}</span>
+                            <span style="font-size:0.7rem; color:#888;">Created: ${new Date(token.created).toLocaleDateString()}</span>
+                            <button class="btn btn-sm btn-danger" onclick="revokeToken('${token.id}')">Revoke</button>
+                        </div>`;
+                    }
+                    html += '</div>';
+                    document.getElementById('tokensList').innerHTML = html;
+                } else {
+                    document.getElementById('tokensList').innerHTML = '<p style="margin-top:1rem; color:#888;">No API tokens</p>';
+                }
+            } catch(e) {}
+        }
+
+        async function changePassword() {
+            const current = document.getElementById('currentPassword').value;
+            const newPass = document.getElementById('newPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            
+            if (!current || !newPass) {
+                document.getElementById('passwordError').innerText = 'All fields required';
+                document.getElementById('passwordError').style.display = 'block';
+                return;
+            }
+            if (newPass !== confirm) {
+                document.getElementById('passwordError').innerText = 'Passwords do not match';
+                document.getElementById('passwordError').style.display = 'block';
+                return;
+            }
+            if (newPass.length < 4) {
+                document.getElementById('passwordError').innerText = 'Password must be at least 4 characters';
+                document.getElementById('passwordError').style.display = 'block';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/q?q=user.changepass.${encodeURIComponent(current)}.${encodeURIComponent(newPass)}&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Password changed successfully', 'success');
+                    document.getElementById('passwordModal').style.display = 'none';
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                } else {
+                    document.getElementById('passwordError').innerText = data.error || 'Failed to change password';
+                    document.getElementById('passwordError').style.display = 'block';
+                }
+            } catch(e) {
+                document.getElementById('passwordError').innerText = e.message;
+                document.getElementById('passwordError').style.display = 'block';
+            }
+        }
+
+        async function generateToken() {
+            try {
+                const res = await fetch(`/q?q=user.token.create&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success && data.token) {
+                    document.getElementById('newToken').innerText = data.token;
+                    document.getElementById('tokenModal').style.display = 'flex';
+                    await loadTokens();
+                } else {
+                    showToast('Failed to generate token', 'error');
+                }
+            } catch(e) {
+                showToast('Failed to generate token', 'error');
+            }
+        }
+
+        async function revokeToken(tokenId) {
+            if (!confirm('Revoke this token?')) return;
+            try {
+                const res = await fetch(`/q?q=user.token.revoke.${tokenId}&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Token revoked', 'success');
+                    await loadTokens();
+                } else {
+                    showToast('Failed to revoke token', 'error');
+                }
+            } catch(e) {
+                showToast('Failed to revoke token', 'error');
+            }
+        }
+
+        async function createUser() {
+            const username = document.getElementById('newUsername').value.trim();
+            const password = document.getElementById('newUserPassword').value;
+            const role = document.getElementById('newUserRole').value;
+            
+            if (!username || username.length < 3) {
+                showToast('Username must be at least 3 characters', 'error');
+                return;
+            }
+            if (!password || password.length < 4) {
+                showToast('Password must be at least 4 characters', 'error');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/q?q=signup.${username}.${password}.${role}&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`User ${username} created`, 'success');
+                    document.getElementById('createUserModal').style.display = 'none';
+                    document.getElementById('newUsername').value = '';
+                    document.getElementById('newUserPassword').value = '';
+                    await loadUsers();
+                } else {
+                    showToast(data.error || 'Failed to create user', 'error');
+                }
+            } catch(e) {
+                showToast('Failed to create user', 'error');
+            }
+        }
+
+        async function changeUserRole(username) {
+            const newRole = prompt('Enter new role (admin, user, viewer):');
+            if (!newRole || !['admin', 'user', 'viewer'].includes(newRole)) {
+                showToast('Invalid role', 'error');
+                return;
+            }
+            try {
+                const res = await fetch(`/q?q=user.role.${username}.${newRole}&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Role changed to ${newRole}`, 'success');
+                    await loadUsers();
+                } else {
+                    showToast(data.error || 'Failed to change role', 'error');
+                }
+            } catch(e) {
+                showToast('Failed to change role', 'error');
+            }
+        }
+
+        async function deleteUser(username) {
+            if (!confirm(`Delete user '${username}'? This cannot be undone.`)) return;
+            try {
+                const res = await fetch(`/q?q=user.delete.${username}&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`User ${username} deleted`, 'success');
+                    await loadUsers();
+                } else {
+                    showToast(data.error || 'Failed to delete user', 'error');
+                }
+            } catch(e) {
+                showToast('Failed to delete user', 'error');
+            }
+        }
+
+        async function deleteAccount() {
+            if (!confirm('⚠️ WARNING: This will permanently delete your account. This action cannot be undone. Continue?')) return;
+            if (!confirm('Are you absolutely sure? Type "DELETE" to confirm.')) return;
+            try {
+                const res = await fetch(`/q?q=user.delete.${currentUser.username}&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.removeItem('nullname_session');
+                    window.location.href = '/login';
+                } else {
+                    showToast(data.error || 'Failed to delete account', 'error');
+                }
+            } catch(e) {
+                showToast('Failed to delete account', 'error');
+            }
+        }
+
+        async function runCleanup() {
+            if (!confirm('Run system cleanup? This will remove old temp files and logs.')) return;
+            try {
+                const res = await fetch(`/admin/cleanup?ses=${currentSession}`, { method: 'POST' });
+                const data = await res.json();
+                showToast(`Cleanup completed: ${data.freedSpaceMB} MB freed`, 'success');
+                await loadStats();
+            } catch(e) {
+                showToast('Cleanup failed', 'error');
+            }
+        }
+
+        async function createBackup() {
+            try {
+                const res = await fetch(`/q?q=backup&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Backup created successfully', 'success');
+                } else {
+                    showToast('Backup failed', 'error');
+                }
+            } catch(e) {
+                showToast('Backup failed', 'error');
+            }
+        }
+
+        async function clearCache() {
+            if (!confirm('Clear system cache? This may temporarily slow down queries.')) return;
+            try {
+                const res = await fetch(`/q?q=clear.cache&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Cache cleared', 'success');
+                } else {
+                    showToast('Failed to clear cache', 'error');
+                }
+            } catch(e) {
+                showToast('Failed to clear cache', 'error');
+            }
+        }
+
+        async function clearHistory() {
+            if (!confirm('Clear all query history? This cannot be undone.')) return;
+            try {
+                const res = await fetch(`/q?q=clear.history&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Query history cleared', 'success');
+                } else {
+                    showToast('Failed to clear history', 'error');
+                }
+            } catch(e) {
+                showToast('Failed to clear history', 'error');
+            }
+        }
+
+        function saveSettings() {
+            const format = document.getElementById('defaultFormat').value;
+            const theme = document.getElementById('themeSelect').value;
+            const pretty = document.getElementById('prettyPrint').checked;
+            
+            localStorage.setItem('nullname_format', format);
+            localStorage.setItem('nullname_theme', theme);
+            localStorage.setItem('nullname_pretty', pretty);
+            
+            if (theme === 'light') {
+                document.body.classList.add('light-theme');
+            } else {
+                document.body.classList.remove('light-theme');
+            }
+            
+            showToast('Settings saved', 'success');
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.borderColor = type === 'success' ? '#00ff88' : (type === 'error' ? '#ff007f' : '#00d2ff');
+            toast.innerHTML = `<i class="fa fa-${type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle')}"></i> ${escapeHtml(message)}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        async function logout() {
+            try { await fetch(`/q?q=logout&ses=${currentSession}`); } catch(e) {}
+            localStorage.removeItem('nullname_session');
+            window.location.href = '/login';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function attachEvents() {
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('changePasswordBtn').addEventListener('click', () => document.getElementById('passwordModal').style.display = 'flex');
+            document.getElementById('cancelPasswordBtn').addEventListener('click', () => document.getElementById('passwordModal').style.display = 'none');
+            document.getElementById('confirmPasswordBtn').addEventListener('click', changePassword);
+            document.getElementById('generateTokenBtn').addEventListener('click', generateToken);
+            document.getElementById('closeTokenBtn').addEventListener('click', () => document.getElementById('tokenModal').style.display = 'none');
+            document.getElementById('copyTokenBtn').addEventListener('click', () => {
+                navigator.clipboard.writeText(document.getElementById('newToken').innerText);
+                showToast('Copied to clipboard', 'success');
+            });
+            document.getElementById('createUserBtn').addEventListener('click', () => document.getElementById('createUserModal').style.display = 'flex');
+            document.getElementById('cancelCreateUserBtn').addEventListener('click', () => document.getElementById('createUserModal').style.display = 'none');
+            document.getElementById('confirmCreateUserBtn').addEventListener('click', createUser);
+            document.getElementById('cleanupBtn').addEventListener('click', runCleanup);
+            document.getElementById('createBackupBtn').addEventListener('click', createBackup);
+            document.getElementById('clearCacheBtn').addEventListener('click', clearCache);
+            document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
+            document.getElementById('deleteAccountBtn').addEventListener('click', deleteAccount);
+            document.getElementById('defaultFormat').addEventListener('change', saveSettings);
+            document.getElementById('themeSelect').addEventListener('change', saveSettings);
+            document.getElementById('prettyPrint').addEventListener('change', saveSettings);
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const page = item.dataset.page;
+                    if (page === 'dashboard') window.location.href = '/studio';
+                    if (page === 'databases') window.location.href = '/studio/database.html';
+                    if (page === 'sql') window.location.href = '/studio/sql.html';
+                    if (page === 'nosql') window.location.href = '/studio/nosql.html';
+                    if (page === 'filebase') window.location.href = '/studio/filebase.html';
+                    if (page === 'backup') window.location.href = '/studio/backup.html';
+                    if (page === 'settings') { /* already here */ }
+                });
+            });
+            
+            document.getElementById('menuToggle').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('open');
+            });
+            
+            const savedTheme = localStorage.getItem('nullname_theme');
+            if (savedTheme === 'light') document.body.classList.add('light-theme');
+        }
+
+        window.changeUserRole = changeUserRole;
+        window.deleteUser = deleteUser;
+        window.revokeToken = revokeToken;
+
+        init();
+    </script>
+</body>
+</html>
