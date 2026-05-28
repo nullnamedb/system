@@ -222,6 +222,21 @@
             color: var(--accent-primary);
         }
 
+        .forgot-password {
+            text-align: right;
+            margin-top: -0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.7rem;
+        }
+
+        .forgot-password a {
+            color: var(--text-muted);
+        }
+
+        .forgot-password a:hover {
+            color: var(--accent-primary);
+        }
+
         @media (max-width: 480px) {
             .auth-card {
                 padding: 1.5rem;
@@ -256,6 +271,7 @@
                 <span id="successText"></span>
             </div>
 
+            <!-- Login Form -->
             <form id="loginForm">
                 <div class="input-group">
                     <label><i class="fa fa-user"></i> Username</label>
@@ -274,17 +290,28 @@
                         </button>
                     </div>
                 </div>
+                <div class="forgot-password">
+                    <a href="#" id="forgotPasswordLink">Forgot password?</a>
+                </div>
                 <button type="submit" id="loginBtn" class="auth-btn">
                     <i class="fa fa-sign-in"></i> Login
                 </button>
             </form>
 
+            <!-- Signup Form -->
             <form id="signupForm" style="display: none;">
                 <div class="input-group">
                     <label><i class="fa fa-user"></i> Username</label>
                     <div class="input-wrapper">
                         <i class="fa fa-user input-icon"></i>
                         <input type="text" id="signupUsername" placeholder="Choose a username (min 3 characters)" autocomplete="off" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label><i class="fa fa-envelope"></i> Email (Optional)</label>
+                    <div class="input-wrapper">
+                        <i class="fa fa-envelope input-icon"></i>
+                        <input type="email" id="signupEmail" placeholder="your@email.com" autocomplete="off">
                     </div>
                 </div>
                 <div class="input-group">
@@ -312,6 +339,41 @@
                 </button>
             </form>
 
+            <!-- Reset Password Form -->
+            <form id="resetForm" style="display: none;">
+                <div class="input-group">
+                    <label><i class="fa fa-user"></i> Username</label>
+                    <div class="input-wrapper">
+                        <i class="fa fa-user input-icon"></i>
+                        <input type="text" id="resetUsername" placeholder="Enter your username" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label><i class="fa fa-key"></i> New Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa fa-key input-icon"></i>
+                        <input type="password" id="resetPassword" placeholder="New password (min 4 characters)" required>
+                        <button type="button" class="toggle-password" data-target="resetPassword">
+                            <i class="fa fa-eye-slash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label><i class="fa fa-check-circle"></i> Confirm Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa fa-check-circle input-icon"></i>
+                        <input type="password" id="resetConfirmPassword" placeholder="Confirm new password" required>
+                        <button type="button" class="toggle-password" data-target="resetConfirmPassword">
+                            <i class="fa fa-eye-slash"></i>
+                        </button>
+                    </div>
+                </div>
+                <input type="hidden" id="resetToken" value="">
+                <button type="submit" id="resetBtn" class="auth-btn">
+                    <i class="fa fa-refresh"></i> Reset Password
+                </button>
+            </form>
+
             <div class="auth-switch">
                 <span id="switchText">Don't have an account?</span>
                 <a id="switchLink">Sign up</a>
@@ -328,18 +390,25 @@
     </div>
 
     <script>
+        // ============================================
+        // Authentication UI Controller
+        // ============================================
+        
         const loginForm = document.getElementById('loginForm');
         const signupForm = document.getElementById('signupForm');
+        const resetForm = document.getElementById('resetForm');
         const switchLink = document.getElementById('switchLink');
         const switchText = document.getElementById('switchText');
         const loginBtn = document.getElementById('loginBtn');
         const signupBtn = document.getElementById('signupBtn');
+        const resetBtn = document.getElementById('resetBtn');
         const errorMessage = document.getElementById('errorMessage');
         const errorText = document.getElementById('errorText');
         const successMessage = document.getElementById('successMessage');
         const successText = document.getElementById('successText');
+        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
 
-        let isLoginMode = true;
+        let currentMode = 'login'; // login, signup, reset
         let isLoading = false;
 
         function showError(message) {
@@ -362,15 +431,19 @@
 
         function setLoading(loading) {
             isLoading = loading;
-            if (isLoginMode) {
+            if (currentMode === 'login') {
                 loginBtn.disabled = loading;
                 loginBtn.innerHTML = loading ? '<i class="fa fa-spinner fa-spin"></i> Logging in...' : '<i class="fa fa-sign-in"></i> Login';
-            } else {
+            } else if (currentMode === 'signup') {
                 signupBtn.disabled = loading;
                 signupBtn.innerHTML = loading ? '<i class="fa fa-spinner fa-spin"></i> Creating account...' : '<i class="fa fa-user-plus"></i> Create Account';
+            } else if (currentMode === 'reset') {
+                resetBtn.disabled = loading;
+                resetBtn.innerHTML = loading ? '<i class="fa fa-spinner fa-spin"></i> Resetting...' : '<i class="fa fa-refresh"></i> Reset Password';
             }
         }
 
+        // Toggle password visibility
         document.querySelectorAll('.toggle-password').forEach(button => {
             button.addEventListener('click', function() {
                 const targetId = this.getAttribute('data-target');
@@ -389,29 +462,63 @@
             });
         });
 
-        function switchMode() {
-            isLoginMode = !isLoginMode;
-            
-            if (isLoginMode) {
-                loginForm.style.display = 'block';
-                signupForm.style.display = 'none';
-                switchText.textContent = "Don't have an account?";
-                switchLink.textContent = 'Sign up';
-                document.title = 'NullName DB - Login';
-            } else {
-                loginForm.style.display = 'none';
-                signupForm.style.display = 'block';
-                switchText.textContent = 'Already have an account?';
-                switchLink.textContent = 'Login';
-                document.title = 'NullName DB - Sign Up';
-            }
+        function switchToLogin() {
+            currentMode = 'login';
+            loginForm.style.display = 'block';
+            signupForm.style.display = 'none';
+            resetForm.style.display = 'none';
+            switchText.textContent = "Don't have an account?";
+            switchLink.textContent = 'Sign up';
+            document.title = 'NullName DB - Login';
+            clearMessages();
         }
 
-        switchLink.addEventListener('click', (e) => {
+        function switchToSignup() {
+            currentMode = 'signup';
+            loginForm.style.display = 'none';
+            signupForm.style.display = 'block';
+            resetForm.style.display = 'none';
+            switchText.textContent = 'Already have an account?';
+            switchLink.textContent = 'Login';
+            document.title = 'NullName DB - Sign Up';
+            clearMessages();
+        }
+
+        function switchToReset() {
+            currentMode = 'reset';
+            loginForm.style.display = 'none';
+            signupForm.style.display = 'none';
+            resetForm.style.display = 'block';
+            switchText.textContent = 'Back to';
+            switchLink.textContent = 'Login';
+            document.title = 'NullName DB - Reset Password';
+            clearMessages();
+        }
+
+        function clearMessages() {
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+        }
+
+        // Handle Forgot Password
+        forgotPasswordLink.addEventListener('click', (e) => {
             e.preventDefault();
-            switchMode();
+            switchToReset();
         });
 
+        // Handle Switch Mode
+        switchLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (currentMode === 'login') {
+                switchToSignup();
+            } else if (currentMode === 'signup') {
+                switchToLogin();
+            } else if (currentMode === 'reset') {
+                switchToLogin();
+            }
+        });
+
+        // Handle Login
         async function handleLogin(e) {
             e.preventDefault();
             
@@ -449,10 +556,12 @@
             }
         }
 
+        // Handle Signup
         async function handleSignup(e) {
             e.preventDefault();
             
             const username = document.getElementById('signupUsername').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
             const password = document.getElementById('signupPassword').value;
             const confirmPassword = document.getElementById('signupConfirmPassword').value;
             
@@ -463,6 +572,11 @@
             
             if (!/^[a-zA-Z0-9_]+$/.test(username)) {
                 showError('Username can only contain letters, numbers, and underscores');
+                return;
+            }
+            
+            if (email && !/^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/.test(email)) {
+                showError('Please enter a valid email address');
                 return;
             }
             
@@ -479,7 +593,9 @@
             setLoading(true);
             
             try {
-                const response = await fetch(`/q?q=signup.${encodeURIComponent(username)}.${encodeURIComponent(password)}`);
+                let url = `/q?q=signup.${encodeURIComponent(username)}.${encodeURIComponent(password)}`;
+                if (email) url += `.${encodeURIComponent(email)}`;
+                const response = await fetch(url);
                 const data = await response.json();
                 
                 if (data.success && data.session) {
@@ -502,6 +618,73 @@
             }
         }
 
+        // Handle Reset Password
+        async function handleReset(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('resetUsername').value.trim();
+            const newPassword = document.getElementById('resetPassword').value;
+            const confirmPassword = document.getElementById('resetConfirmPassword').value;
+            
+            if (!username) {
+                showError('Please enter your username');
+                return;
+            }
+            
+            if (!newPassword || newPassword.length < 4) {
+                showError('Password must be at least 4 characters');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+            
+            setLoading(true);
+            
+            try {
+                // First, request reset token
+                const tokenRes = await fetch(`/q?q=user.reset.request.${encodeURIComponent(username)}`);
+                const tokenData = await tokenRes.json();
+                
+                if (!tokenData.success || !tokenData.token) {
+                    showError(tokenData.error || 'Unable to reset password');
+                    setLoading(false);
+                    return;
+                }
+                
+                // Then reset with token
+                const resetRes = await fetch(`/q?q=user.reset.execute.${tokenData.token}.${encodeURIComponent(newPassword)}`);
+                const resetData = await resetRes.json();
+                
+                if (resetData.success) {
+                    showSuccess('Password reset successful! Redirecting to login...');
+                    setTimeout(() => {
+                        switchToLogin();
+                        document.getElementById('loginUsername').value = username;
+                    }, 2000);
+                } else {
+                    showError(resetData.error || 'Password reset failed');
+                }
+            } catch (error) {
+                showError('Network error. Please check your connection.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Check for reset token in URL
+        function checkResetToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            if (token) {
+                document.getElementById('resetToken').value = token;
+                switchToReset();
+            }
+        }
+
+        // Check existing session
         async function checkExistingSession() {
             const session = localStorage.getItem('nullname_session');
             if (session) {
@@ -520,9 +703,24 @@
             }
         }
 
+        // Event Listeners
         loginForm.addEventListener('submit', handleLogin);
         signupForm.addEventListener('submit', handleSignup);
+        resetForm.addEventListener('submit', handleReset);
 
+        // Enter key support
+        document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin(e);
+        });
+        document.getElementById('signupConfirmPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSignup(e);
+        });
+        document.getElementById('resetConfirmPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleReset(e);
+        });
+
+        // Initialize
+        checkResetToken();
         checkExistingSession();
     </script>
 </body>
