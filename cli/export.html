@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NullName DB - Export Results</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0e27;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+            color: #e0e0e0;
+        }
+
+        .export-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0,210,255,0.3);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .header p {
+            color: #888;
+            margin-top: 0.5rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #00d2ff;
+            text-decoration: none;
+            margin-bottom: 1rem;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .query-section {
+            background: rgba(20, 25, 50, 0.8);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .query-section h3 {
+            margin-bottom: 1rem;
+            color: #00d2ff;
+        }
+
+        .query-input {
+            width: 100%;
+            min-height: 120px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #e0e0e0;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 13px;
+            resize: vertical;
+        }
+
+        .query-input:focus {
+            outline: none;
+            border-color: #00d2ff;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: monospace;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            border: none;
+            color: #0a0e27;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,210,255,0.3);
+        }
+
+        .results-section {
+            background: rgba(20, 25, 50, 0.6);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .format-selector {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-family: monospace;
+        }
+
+        .results-content {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 500px;
+            overflow: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .export-bar {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .status-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #00d2ff;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid #00d2ff;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        .data-table th {
+            background: rgba(0,210,255,0.1);
+            color: #00d2ff;
+        }
+
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        @media (max-width: 768px) {
+            .export-container {
+                padding: 1rem;
+            }
+            .results-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="export-container">
+        <a href="/cli" class="back-link"><i class="fa fa-arrow-left"></i> Back to Terminal</a>
+
+        <div class="header">
+            <h1><i class="fa fa-download"></i> Export Query Results</h1>
+            <p>Run a query and export results in multiple formats</p>
+        </div>
+
+        <div class="query-section">
+            <h3><i class="fa fa-terminal"></i> Query</h3>
+            <textarea id="queryInput" class="query-input" placeholder="Enter your query here...
+Examples:
+  get.mydb.users
+  SELECT * FROM users
+  /q=add.mydb.users.name.John"></textarea>
+            <div class="action-bar">
+                <button class="btn btn-primary" id="runBtn"><i class="fa fa-play"></i> Run Query</button>
+                <button class="btn" id="clearBtn"><i class="fa fa-eraser"></i> Clear</button>
+                <select id="formatSelect" class="format-selector">
+                    <option value="json">JSON</option>
+                    <option value="table">Table</option>
+                    <option value="csv">CSV</option>
+                    <option value="markdown">Markdown</option>
+                    <option value="yaml">YAML</option>
+                    <option value="xml">XML</option>
+                    <option value="text">Plain Text</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div class="results-header">
+                <span><i class="fa fa-file-text-o"></i> Results</span>
+                <div>
+                    <span id="rowCount" style="margin-right:1rem; color:#888;"></span>
+                    <span id="queryTime" style="color:#888;"></span>
+                </div>
+            </div>
+            <div id="resultsContent" class="results-content">
+                <div style="text-align:center; padding:2rem; color:#888;">
+                    <i class="fa fa-info-circle"></i> Run a query to see results
+                </div>
+            </div>
+            <div class="export-bar">
+                <button class="btn" id="copyBtn"><i class="fa fa-copy"></i> Copy to Clipboard</button>
+                <button class="btn btn-primary" id="downloadBtn"><i class="fa fa-download"></i> Download File</button>
+            </div>
+            <div class="status-info">
+                <span><i class="fa fa-info-circle"></i> Results are temporary - refresh to clear</span>
+                <span id="formatInfo">Format: JSON</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="/ui/session.js"></script>
+    <script>
+        const sessionMgr = window.sessionManager;
+        let currentSession = null;
+        let currentResults = null;
+        let currentFormat = 'json';
+        let currentRawText = null;
+
+        async function init() {
+            await checkAuth();
+            attachEvents();
+            loadSavedFormat();
+        }
+
+        async function checkAuth() {
+            const session = localStorage.getItem('nullname_session');
+            if (!session) {
+                window.location.href = '/login';
+                return;
+            }
+            currentSession = session;
+            try {
+                const res = await fetch(`/q?q=status&ses=${session}`);
+                const data = await res.json();
+                if (data.status !== 'online') {
+                    window.location.href = '/login';
+                }
+            } catch(e) {
+                window.location.href = '/login';
+            }
+        }
+
+        function loadSavedFormat() {
+            const saved = localStorage.getItem('nullname_export_format');
+            if (saved) {
+                document.getElementById('formatSelect').value = saved;
+                currentFormat = saved;
+            }
+        }
+
+        async function runQuery() {
+            const query = document.getElementById('queryInput').value.trim();
+            if (!query) {
+                showToast('Please enter a query', 'error');
+                return;
+            }
+
+            const format = document.getElementById('formatSelect').value;
+            currentFormat = format;
+            localStorage.setItem('nullname_export_format', format);
+
+            const startTime = Date.now();
+            showLoading(true);
+
+            try {
+                let url = `/q?q=${encodeURIComponent(query)}&ses=${currentSession}`;
+                if (format !== 'json') {
+                    url += `&format=${format}`;
+                }
+
+                const res = await fetch(url);
+                const elapsed = Date.now() - startTime;
+                document.getElementById('queryTime').innerHTML = `⏱️ ${elapsed}ms`;
+
+                if (format === 'table') {
+                    const text = await res.text();
+                    currentRawText = text;
+                    displayTextResults(text);
+                    document.getElementById('rowCount').innerHTML = '';
+                } else if (format === 'csv') {
+                    const text = await res.text();
+                    currentRawText = text;
+                    displayTextResults(text);
+                    document.getElementById('rowCount').innerHTML = '';
+                } else if (format === 'markdown') {
+                    const text = await res.text();
+                    currentRawText = text;
+                    displayTextResults(text);
+                    document.getElementById('rowCount').innerHTML = '';
+                } else if (format === 'yaml') {
+                    const text = await res.text();
+                    currentRawText = text;
+                    displayTextResults(text);
+                    document.getElementById('rowCount').innerHTML = '';
+                } else if (format === 'xml') {
+                    const text = await res.text();
+                    currentRawText = text;
+                    displayTextResults(text);
+                    document.getElementById('rowCount').innerHTML = '';
+                } else if (format === 'text') {
+                    const text = await res.text();
+                    currentRawText = text;
+                    displayTextResults(text);
+                    document.getElementById('rowCount').innerHTML = '';
+                } else {
+                    const data = await res.json();
+                    currentResults = data;
+                    currentRawText = JSON.stringify(data, null, 2);
+                    displayJSONResults(data);
+                    const count = getResultCount(data);
+                    document.getElementById('rowCount').innerHTML = `📊 ${count} rows`;
+                }
+
+                showToast('Query executed successfully', 'success');
+            } catch (error) {
+                displayError(error.message);
+                showToast('Query failed: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayTextResults(text) {
+            const container = document.getElementById('resultsContent');
+            container.innerHTML = `<pre>${escapeHtml(text)}</pre>`;
+        }
+
+        function displayJSONResults(data) {
+            const container = document.getElementById('resultsContent');
+            
+            if (data.error) {
+                container.innerHTML = `<pre style="color:#ff007f;">${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
+                return;
+            }
+            
+            if (data.rows && data.rows.length > 0) {
+                displayTable(data.rows, data.columns);
+            } else if (Array.isArray(data) && data.length > 0) {
+                displayTable(data);
+            } else if (typeof data === 'object') {
+                container.innerHTML = `<pre>${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
+            } else {
+                container.innerHTML = `<pre>${escapeHtml(String(data))}</pre>`;
+            }
+        }
+
+        function displayTable(rows, columns = null) {
+            const cols = columns || Object.keys(rows[0]);
+            let html = '<table class="data-table"><thead><tr>';
+            for (const col of cols) {
+                html += `<th>${escapeHtml(col)}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+            
+            for (const row of rows) {
+                html += '<tr>';
+                for (const col of cols) {
+                    let val = row[col];
+                    if (val === undefined || val === null) val = '-';
+                    if (typeof val === 'object') val = JSON.stringify(val);
+                    html += `<td>${escapeHtml(String(val).substring(0, 200))}${String(val).length > 200 ? '...' : ''}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            
+            const container = document.getElementById('resultsContent');
+            container.innerHTML = html;
+        }
+
+        function displayError(message) {
+            const container = document.getElementById('resultsContent');
+            container.innerHTML = `<pre style="color:#ff007f;">❌ Error: ${escapeHtml(message)}</pre>`;
+        }
+
+        function getResultCount(data) {
+            if (data.rows) return data.rows.length;
+            if (Array.isArray(data)) return data.length;
+            if (data.count) return data.count;
+            if (data.data && Array.isArray(data.data)) return data.data.length;
+            return 0;
+        }
+
+        function copyToClipboard() {
+            if (!currentRawText && !currentResults) {
+                showToast('No results to copy', 'error');
+                return;
+            }
+            
+            const text = currentRawText || JSON.stringify(currentResults, null, 2);
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Copied to clipboard', 'success');
+            }).catch(() => {
+                showToast('Failed to copy', 'error');
+            });
+        }
+
+        function downloadFile() {
+            if (!currentRawText && !currentResults) {
+                showToast('No results to download', 'error');
+                return;
+            }
+            
+            const format = currentFormat;
+            let content = currentRawText;
+            let extension = format;
+            let mimeType = 'text/plain';
+            
+            if (format === 'json') {
+                content = currentRawText || JSON.stringify(currentResults, null, 2);
+                extension = 'json';
+                mimeType = 'application/json';
+            } else if (format === 'csv') {
+                extension = 'csv';
+                mimeType = 'text/csv';
+            } else if (format === 'markdown') {
+                extension = 'md';
+                mimeType = 'text/markdown';
+            } else if (format === 'yaml') {
+                extension = 'yaml';
+                mimeType = 'text/yaml';
+            } else if (format === 'xml') {
+                extension = 'xml';
+                mimeType = 'application/xml';
+            } else if (format === 'table') {
+                extension = 'txt';
+                mimeType = 'text/plain';
+            } else if (format === 'text') {
+                extension = 'txt';
+                mimeType = 'text/plain';
+            }
+            
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const filename = `export_${timestamp}.${extension}`;
+            
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast(`Downloaded as ${filename}`, 'success');
+        }
+
+        function clearEditor() {
+            document.getElementById('queryInput').value = '';
+            currentResults = null;
+            currentRawText = null;
+            document.getElementById('resultsContent').innerHTML = `
+                <div style="text-align:center; padding:2rem; color:#888;">
+                    <i class="fa fa-info-circle"></i> Run a query to see results
+                </div>
+            `;
+            document.getElementById('rowCount').innerHTML = '';
+            document.getElementById('queryTime').innerHTML = '';
+            showToast('Cleared', 'success');
+        }
+
+        function showLoading(show) {
+            const runBtn = document.getElementById('runBtn');
+            if (show) {
+                runBtn.disabled = true;
+                runBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Running...';
+                document.getElementById('resultsContent').innerHTML = `
+                    <div style="text-align:center; padding:2rem;">
+                        <div class="loading"></div>
+                        <p style="margin-top:1rem;">Executing query...</p>
+                    </div>
+                `;
+            } else {
+                runBtn.disabled = false;
+                runBtn.innerHTML = '<i class="fa fa-play"></i> Run Query';
+            }
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.borderColor = type === 'success' ? '#00ff88' : (type === 'error' ? '#ff007f' : '#00d2ff');
+            toast.innerHTML = `<i class="fa fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${escapeHtml(message)}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function attachEvents() {
+            document.getElementById('runBtn').addEventListener('click', runQuery);
+            document.getElementById('clearBtn').addEventListener('click', clearEditor);
+            document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
+            document.getElementById('downloadBtn').addEventListener('click', downloadFile);
+            document.getElementById('formatSelect').addEventListener('change', (e) => {
+                currentFormat = e.target.value;
+                document.getElementById('formatInfo').innerHTML = `Format: ${currentFormat.toUpperCase()}`;
+            });
+            
+            document.getElementById('queryInput').addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    runQuery();
+                }
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
