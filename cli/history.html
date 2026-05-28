@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NullName DB - Command History</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0e27;
+            font-family: 'Courier New', 'Fira Code', monospace;
+            color: #e0e0e0;
+        }
+
+        .history-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0,210,255,0.3);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .header p {
+            color: #888;
+            margin-top: 0.5rem;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 1rem;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(20, 25, 50, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #00d2ff;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #888;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 0.5rem;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-input {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 0.5rem;
+            color: #e0e0e0;
+            font-family: monospace;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: monospace;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            border: none;
+            color: #0a0e27;
+            font-weight: 600;
+        }
+
+        .btn-danger {
+            background: rgba(255,0,127,0.2);
+            border-color: #ff007f;
+            color: #ff007f;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .filter-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: #00d2ff;
+            color: #0a0e27;
+            border-color: #00d2ff;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(20, 25, 50, 0.6);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .history-table th {
+            background: rgba(0,210,255,0.1);
+            color: #00d2ff;
+            font-weight: 600;
+        }
+
+        .history-table tr:hover {
+            background: rgba(0,210,255,0.05);
+        }
+
+        .command-cell {
+            font-family: monospace;
+            max-width: 500px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: rgba(0,255,136,0.2);
+            color: #00ff88;
+        }
+
+        .status-error {
+            background: rgba(255,0,127,0.2);
+            color: #ff007f;
+        }
+
+        .rerun-btn {
+            background: rgba(0,210,255,0.2);
+            border: none;
+            color: #00d2ff;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+
+        .rerun-btn:hover {
+            background: #00d2ff;
+            color: #0a0e27;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .page-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .page-btn.active {
+            background: #00d2ff;
+            color: #0a0e27;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #888;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid #00d2ff;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #00d2ff;
+            text-decoration: none;
+            margin-bottom: 1rem;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .history-container {
+                padding: 1rem;
+            }
+            .history-table th,
+            .history-table td {
+                padding: 0.5rem;
+                font-size: 0.75rem;
+            }
+            .command-cell {
+                max-width: 200px;
+            }
+            .stats-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-bar {
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="history-container">
+        <a href="/cli" class="back-link"><i class="fa fa-arrow-left"></i> Back to Terminal</a>
+
+        <div class="header">
+            <h1><i class="fa fa-history"></i> Command History</h1>
+            <p>View, search, and rerun previous commands</p>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat">
+                <span class="stat-value" id="totalQueries">-</span>
+                <span class="stat-label">Total Commands</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="successCount">-</span>
+                <span class="stat-label">Successful</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="errorCount">-</span>
+                <span class="stat-label">Failed</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="avgTime">-</span>
+                <span class="stat-label">Avg Time (ms)</span>
+            </div>
+            <div class="search-bar">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search commands...">
+                <button class="btn" id="clearSearchBtn"><i class="fa fa-times"></i></button>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="success">Success</button>
+            <button class="filter-btn" data-filter="error">Error</button>
+            <button class="filter-btn" data-filter="get">GET Commands</button>
+            <button class="filter-btn" data-filter="add">ADD Commands</button>
+            <button class="filter-btn" data-filter="update">UPDATE Commands</button>
+            <button class="filter-btn" data-filter="delete">DELETE Commands</button>
+            <button class="filter-btn" data-filter="sql">SQL Commands</button>
+            <button class="filter-btn" data-filter="commit">Commit</button>
+            <button class="btn btn-danger" id="clearHistoryBtn" style="margin-left:auto;">Clear All History</button>
+        </div>
+
+        <div id="historyTableContainer">
+            <div class="empty-state">
+                <i class="fa fa-spinner fa-spin"></i> Loading history...
+            </div>
+        </div>
+
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <script src="/ui/session.js"></script>
+    <script>
+        const sessionMgr = window.sessionManager;
+        let currentSession = null;
+        let allHistory = [];
+        let filteredHistory = [];
+        let currentPage = 1;
+        let itemsPerPage = 50;
+        let currentFilter = 'all';
+        let searchTerm = '';
+
+        async function init() {
+            await checkAuth();
+            await loadHistory();
+            attachEvents();
+        }
+
+        async function checkAuth() {
+            const session = localStorage.getItem('nullname_session');
+            if (!session) {
+                window.location.href = '/login';
+                return;
+            }
+            currentSession = session;
+            try {
+                const res = await fetch(`/q?q=status&ses=${session}`);
+                const data = await res.json();
+                if (data.status !== 'online') {
+                    window.location.href = '/login';
+                }
+            } catch(e) {
+                window.location.href = '/login';
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const res = await fetch(`/q?q=track&ses=${currentSession}&limit=5000`);
+                const data = await res.json();
+                if (data.tracks) {
+                    allHistory = data.tracks;
+                    applyFilters();
+                    updateStats();
+                } else {
+                    allHistory = [];
+                    filteredHistory = [];
+                    renderEmpty();
+                }
+            } catch(e) {
+                showToast('Failed to load history: ' + e.message, 'error');
+                allHistory = [];
+                filteredHistory = [];
+                renderEmpty();
+            }
+        }
+
+        function applyFilters() {
+            let filtered = [...allHistory];
+            
+            if (currentFilter === 'success') {
+                filtered = filtered.filter(h => h.success === true);
+            } else if (currentFilter === 'error') {
+                filtered = filtered.filter(h => h.success === false);
+            } else if (currentFilter === 'get') {
+                filtered = filtered.filter(h => h.queryType === 'get');
+            } else if (currentFilter === 'add') {
+                filtered = filtered.filter(h => h.queryType === 'add');
+            } else if (currentFilter === 'update') {
+                filtered = filtered.filter(h => h.queryType === 'update');
+            } else if (currentFilter === 'delete') {
+                filtered = filtered.filter(h => h.queryType === 'delete');
+            } else if (currentFilter === 'sql') {
+                filtered = filtered.filter(h => h.query?.toUpperCase().startsWith('SQL'));
+            } else if (currentFilter === 'commit') {
+                filtered = filtered.filter(h => h.queryType === 'commit');
+            }
+            
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                filtered = filtered.filter(h => 
+                    h.query?.toLowerCase().includes(term) ||
+                    h.user?.toLowerCase().includes(term) ||
+                    h.ip?.includes(term)
+                );
+            }
+            
+            filteredHistory = filtered;
+            currentPage = 1;
+            renderHistory();
+            renderPagination();
+        }
+
+        function updateStats() {
+            const total = allHistory.length;
+            const success = allHistory.filter(h => h.success === true).length;
+            const error = allHistory.filter(h => h.success === false).length;
+            const avgTime = allHistory.length > 0 
+                ? (allHistory.reduce((sum, h) => sum + (h.duration || 0), 0) / allHistory.length).toFixed(2)
+                : 0;
+            
+            document.getElementById('totalQueries').innerText = total;
+            document.getElementById('successCount').innerText = success;
+            document.getElementById('errorCount').innerText = error;
+            document.getElementById('avgTime').innerText = avgTime;
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyTableContainer');
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageHistory = filteredHistory.slice(start, end);
+            
+            if (pageHistory.length === 0) {
+                renderEmpty();
+                return;
+            }
+            
+            let html = '<table class="history-table"><thead><tr>';
+            html += '<th>#</th><th>Time</th><th>User</th><th>Command</th><th>Duration</th><th>Status</th><th>Action</th>';
+            html += '</thead><tbody>';
+            
+            for (let i = 0; i < pageHistory.length; i++) {
+                const h = pageHistory[i];
+                const globalIndex = start + i + 1;
+                const time = new Date(h.timestamp).toLocaleString();
+                const duration = h.duration ? h.duration.toFixed(2) + 'ms' : '-';
+                const statusClass = h.success ? 'status-success' : 'status-error';
+                const statusText = h.success ? 'Success' : (h.error || 'Failed');
+                const queryPreview = h.query?.substring(0, 100) + (h.query?.length > 100 ? '...' : '');
+                
+                html += `<tr>
+                    <td>${globalIndex}</td>
+                    <td style="white-space: nowrap;">${time}</td>
+                    <td>${escapeHtml(h.user || 'anonymous')}</td>
+                    <td class="command-cell" title="${escapeHtml(h.query || '')}">${escapeHtml(queryPreview || '-')}</td>
+                    <td>${duration}</td>
+                    <td><span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span></td>
+                    <td><button class="rerun-btn" onclick="rerunCommand('${escapeJs(h.query)}')"><i class="fa fa-play"></i> Rerun</button></td>
+                </tr>`;
+            }
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderEmpty() {
+            const container = document.getElementById('historyTableContainer');
+            container.innerHTML = '<div class="empty-state"><i class="fa fa-inbox"></i><p>No command history found</p><p style="font-size:0.7rem;">Run some queries in the terminal to see them here</p></div>';
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
+            if (totalPages <= 1) {
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            if (currentPage > 1) {
+                html += `<button class="page-btn" onclick="goToPage(${currentPage - 1})">← Previous</button>`;
+            }
+            
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+            
+            if (startPage > 1) {
+                html += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
+                if (startPage > 2) html += '<span style="padding:0 0.5rem;">...</span>';
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += '<span style="padding:0 0.5rem;">...</span>';
+                html += `<button class="page-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+            }
+            
+            if (currentPage < totalPages) {
+                html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})">Next →</button>`;
+            }
+            
+            document.getElementById('pagination').innerHTML = html;
+        }
+
+        async function rerunCommand(command) {
+            if (!command) return;
+            
+            try {
+                const res = await fetch(`/q?q=${encodeURIComponent(command)}&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success !== false) {
+                    showToast('Command rerun successfully', 'success');
+                } else {
+                    showToast('Command failed: ' + (data.error || 'Unknown error'), 'error');
+                }
+                await loadHistory();
+            } catch(e) {
+                showToast('Failed to rerun command: ' + e.message, 'error');
+            }
+        }
+
+        async function clearAllHistory() {
+            if (!confirm('⚠️ WARNING: This will delete ALL command history. This action cannot be undone. Continue?')) return;
+            if (!confirm('Are you absolutely sure? Type "CLEAR" to confirm.')) return;
+            
+            try {
+                const res = await fetch(`/q?q=clear.history&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    showToast('History cleared', 'success');
+                    await loadHistory();
+                } else {
+                    showToast('Failed to clear history', 'error');
+                }
+            } catch(e) {
+                showToast('Failed to clear history', 'error');
+            }
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderHistory();
+            renderPagination();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.borderColor = type === 'success' ? '#00ff88' : (type === 'error' ? '#ff007f' : '#00d2ff');
+            toast.innerHTML = `<i class="fa fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${escapeHtml(message)}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function escapeJs(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        function attachEvents() {
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                searchTerm = e.target.value;
+                applyFilters();
+            });
+            
+            document.getElementById('clearSearchBtn').addEventListener('click', () => {
+                document.getElementById('searchInput').value = '';
+                searchTerm = '';
+                applyFilters();
+            });
+            
+            document.getElementById('clearHistoryBtn').addEventListener('click', clearAllHistory);
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter = btn.dataset.filter;
+                    applyFilters();
+                });
+            });
+        }
+
+        window.rerunCommand = rerunCommand;
+        window.goToPage = goToPage;
+
+        init();
+    </script>
+</body>
+</html>
