@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NullName DB - System Status</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0e27;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+            color: #e0e0e0;
+        }
+
+        .status-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0,210,255,0.3);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .header p {
+            color: #888;
+            margin-top: 0.5rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #00d2ff;
+            text-decoration: none;
+            margin-bottom: 1rem;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .refresh-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 1rem;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            border: none;
+            color: #0a0e27;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,210,255,0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: rgba(20, 25, 50, 0.8);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+
+        .stat-title {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #00d2ff;
+        }
+
+        .stat-unit {
+            font-size: 0.8rem;
+            color: #888;
+            margin-left: 0.25rem;
+        }
+
+        .stat-detail {
+            font-size: 0.7rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        .health-card {
+            background: rgba(20, 25, 50, 0.8);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .health-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .health-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .health-dot.healthy {
+            background: #00ff88;
+            box-shadow: 0 0 5px #00ff88;
+        }
+
+        .health-dot.warning {
+            background: #ffaa00;
+            box-shadow: 0 0 5px #ffaa00;
+        }
+
+        .health-dot.critical {
+            background: #ff007f;
+            box-shadow: 0 0 5px #ff007f;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title i {
+            color: #00d2ff;
+        }
+
+        .two-columns {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-table {
+            width: 100%;
+        }
+
+        .info-table tr td {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .info-table tr td:first-child {
+            color: #888;
+            width: 40%;
+        }
+
+        .info-table tr td:last-child {
+            color: #e0e0e0;
+            font-family: monospace;
+        }
+
+        .progress-bar {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+
+        .progress-fill.good { background: #00ff88; }
+        .progress-fill.warning { background: #ffaa00; }
+        .progress-fill.critical { background: #ff007f; }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #00d2ff;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid #00d2ff;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .status-container {
+                padding: 1rem;
+            }
+            .two-columns {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="status-container">
+        <a href="/cli" class="back-link"><i class="fa fa-arrow-left"></i> Back to Terminal</a>
+
+        <div class="header">
+            <h1><i class="fa fa-heartbeat"></i> System Status Dashboard</h1>
+            <p>Real-time system monitoring and statistics</p>
+        </div>
+
+        <div class="refresh-bar">
+            <button class="btn btn-primary" id="refreshBtn"><i class="fa fa-refresh"></i> Refresh</button>
+            <button class="btn" id="autoRefreshBtn" style="margin-left:0.5rem;"><i class="fa fa-clock-o"></i> Auto Refresh: Off</button>
+        </div>
+
+        <!-- Health Status -->
+        <div class="health-card" id="healthCard">
+            <div class="health-status">
+                <div class="health-dot" id="healthDot"></div>
+                <span id="healthText">Loading...</span>
+                <span id="healthTime" style="margin-left:auto; font-size:0.7rem; color:#888;"></span>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-title">DATABASES</div>
+                <div class="stat-value" id="statDatabases">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">TABLES</div>
+                <div class="stat-value" id="statTables">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">RECORDS</div>
+                <div class="stat-value" id="statRecords">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">STORAGE</div>
+                <div class="stat-value" id="statStorage">-</div>
+                <div class="stat-detail" id="storageDetail"></div>
+            </div>
+        </div>
+
+        <div class="two-columns">
+            <!-- System Info -->
+            <div class="stat-card">
+                <div class="section-title"><i class="fa fa-server"></i> System Information</div>
+                <table class="info-table" id="systemInfoTable">
+                    <tr><td>Version</td><td id="sysVersion">-</td></tr>
+                    <tr><td>Uptime</td><td id="sysUptime">-</td></tr>
+                    <tr><td>Node Version</td><td id="sysNodeVersion">-</td></tr>
+                    <tr><td>Platform</td><td id="sysPlatform">-</td></tr>
+                    <tr><td>Architecture</td><td id="sysArch">-</td></tr>
+                    <tr><td>CPU Cores</td><td id="sysCores">-</td></tr>
+                    <tr><td>Total Memory</td><td id="sysTotalMem">-</td></tr>
+                    <tr><td>Free Memory</td><td id="sysFreeMem">-</td></tr>
+                </table>
+            </div>
+
+            <!-- Memory Usage -->
+            <div class="stat-card">
+                <div class="section-title"><i class="fa fa-tachometer"></i> Memory Usage</div>
+                <table class="info-table" id="memoryTable">
+                    <tr><td>RSS</td><td id="memRss">-</td></tr>
+                    <tr><td>Heap Total</td><td id="memHeapTotal">-</td></tr>
+                    <tr><td>Heap Used</td><td id="memHeapUsed">-</td></tr>
+                    <tr><td>External</td><td id="memExternal">-</td></tr>
+                </table>
+                <div class="progress-bar"><div class="progress-fill" id="memProgress" style="width:0%"></div></div>
+            </div>
+        </div>
+
+        <div class="two-columns">
+            <!-- Query Statistics -->
+            <div class="stat-card">
+                <div class="section-title"><i class="fa fa-bar-chart"></i> Query Statistics</div>
+                <table class="info-table" id="queryTable">
+                    <tr><td>Total Queries</td><td id="queryTotal">-</td></tr>
+                    <tr><td>Successful</td><td id="querySuccess">-</td></tr>
+                    <tr><td>Failed</td><td id="queryFailed">-</td></tr>
+                    <tr><td>Success Rate</td><td id="queryRate">-</td></tr>
+                    <tr><td>Avg Response Time</td><td id="queryAvgTime">-</td></tr>
+                    <tr><td>Min Response Time</td><td id="queryMinTime">-</td></tr>
+                    <tr><td>Max Response Time</td><td id="queryMaxTime">-</td></tr>
+                </table>
+            </div>
+
+            <!-- FileBase Statistics -->
+            <div class="stat-card">
+                <div class="section-title"><i class="fa fa-file"></i> FileBase Statistics</div>
+                <table class="info-table" id="filebaseTable">
+                    <tr><td>Total Files</td><td id="fbTotalFiles">-</td></tr>
+                    <tr><td>Total Size</td><td id="fbTotalSize">-</td></tr>
+                    <tr><td>Images</td><td id="fbImages">-</td></tr>
+                    <tr><td>Videos</td><td id="fbVideos">-</td></tr>
+                    <tr><td>Audio</td><td id="fbAudio">-</td></tr>
+                    <tr><td>Documents</td><td id="fbDocuments">-</td></tr>
+                    <tr><td>Archives</td><td id="fbArchives">-</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="two-columns">
+            <!-- Backup Statistics -->
+            <div class="stat-card">
+                <div class="section-title"><i class="fa fa-archive"></i> Backup Statistics</div>
+                <table class="info-table" id="backupTable">
+                    <tr><td>Total Backups</td><td id="backupTotal">-</td></tr>
+                    <tr><td>Total Size</td><td id="backupSize">-</td></tr>
+                    <tr><td>Latest Backup</td><td id="backupLatest">-</td></tr>
+                    <tr><td>Oldest Backup</td><td id="backupOldest">-</td></tr>
+                </table>
+            </div>
+
+            <!-- Version Control Statistics -->
+            <div class="stat-card">
+                <div class="section-title"><i class="fa fa-code-fork"></i> Version Control</div>
+                <table class="info-table" id="vcTable">
+                    <tr><td>Total Commits</td><td id="vcCommits">-</td></tr>
+                    <tr><td>Total Branches</td><td id="vcBranches">-</td></tr>
+                    <tr><td>Current Branch</td><td id="vcCurrentBranch">-</td></tr>
+                    <tr><td>Can Undo</td><td id="vcCanUndo">-</td></tr>
+                    <tr><td>Can Redo</td><td id="vcCanRedo">-</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Top Users -->
+        <div class="stat-card">
+            <div class="section-title"><i class="fa fa-users"></i> Top Users by Queries</div>
+            <div id="topUsersList">Loading...</div>
+        </div>
+    </div>
+
+    <script src="/ui/session.js"></script>
+    <script>
+        const sessionMgr = window.sessionManager;
+        let currentSession = null;
+        let autoRefreshInterval = null;
+        let autoRefreshEnabled = false;
+
+        async function init() {
+            await checkAuth();
+            await loadAllStats();
+            attachEvents();
+        }
+
+        async function checkAuth() {
+            const session = localStorage.getItem('nullname_session');
+            if (!session) {
+                window.location.href = '/login';
+                return;
+            }
+            currentSession = session;
+            try {
+                const res = await fetch(`/q?q=status&ses=${session}`);
+                const data = await res.json();
+                if (data.status !== 'online') {
+                    window.location.href = '/login';
+                }
+            } catch(e) {
+                window.location.href = '/login';
+            }
+        }
+
+        async function loadAllStats() {
+            try {
+                const [statsRes, healthRes, backupsRes, filebaseRes, trackRes] = await Promise.all([
+                    fetch(`/q?q=stats&ses=${currentSession}`),
+                    fetch(`/health`),
+                    fetch(`/q?q=backups&ses=${currentSession}`),
+                    fetch(`/q?q=filebase.stats&ses=${currentSession}`),
+                    fetch(`/q?q=track&ses=${currentSession}&limit=1`)
+                ]);
+
+                const stats = await statsRes.json();
+                const health = await healthRes.json();
+                const backups = await backupsRes.json();
+                const filebase = await filebaseRes.json();
+                const track = await trackRes.json();
+
+                updateHealthDisplay(health);
+                updateStatsDisplay(stats);
+                updateBackupDisplay(backups);
+                updateFilebaseDisplay(filebase);
+                updateQueryDisplay(track);
+                updateSystemInfo(stats);
+                await loadTopUsers();
+                
+                document.getElementById('healthTime').innerHTML = `Updated: ${new Date().toLocaleTimeString()}`;
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+                showToast('Failed to load statistics', 'error');
+            }
+        }
+
+        function updateHealthDisplay(health) {
+            const dot = document.getElementById('healthDot');
+            const text = document.getElementById('healthText');
+            
+            if (health.status === 'ok') {
+                dot.className = 'health-dot healthy';
+                text.innerHTML = '<i class="fa fa-check-circle"></i> System Healthy';
+            } else if (health.status === 'warning') {
+                dot.className = 'health-dot warning';
+                text.innerHTML = '<i class="fa fa-exclamation-triangle"></i> System Warning';
+            } else {
+                dot.className = 'health-dot critical';
+                text.innerHTML = '<i class="fa fa-bug"></i> System Critical';
+            }
+        }
+
+        function updateStatsDisplay(stats) {
+            if (stats.database) {
+                document.getElementById('statDatabases').innerText = stats.database.databases || 0;
+                document.getElementById('statTables').innerText = stats.database.tables || 0;
+                document.getElementById('statRecords').innerText = stats.database.records || 0;
+                document.getElementById('statStorage').innerHTML = `${stats.database.totalSizeMB || 0}<span class="stat-unit">MB</span>`;
+                document.getElementById('storageDetail').innerHTML = `${stats.database.totalSizeKB || 0} KB / ${stats.database.totalSizeBytes || 0} bytes`;
+            }
+        }
+
+        function updateBackupDisplay(backups) {
+            const backupList = backups.backups || [];
+            document.getElementById('backupTotal').innerText = backupList.length;
+            
+            let totalSize = 0;
+            for (const b of backupList) {
+                totalSize += parseFloat(b.sizeMB) || 0;
+            }
+            document.getElementById('backupSize').innerHTML = `${totalSize.toFixed(2)}<span class="stat-unit">MB</span>`;
+            document.getElementById('backupLatest').innerText = backupList[0]?.created ? new Date(backupList[0].created).toLocaleDateString() : '-';
+            document.getElementById('backupOldest').innerText = backupList[backupList.length - 1]?.created ? new Date(backupList[backupList.length - 1].created).toLocaleDateString() : '-';
+        }
+
+        function updateFilebaseDisplay(filebase) {
+            if (filebase.success) {
+                document.getElementById('fbTotalFiles').innerText = filebase.totalFiles || 0;
+                document.getElementById('fbTotalSize').innerHTML = `${filebase.totalSizeMB || 0}<span class="stat-unit">MB</span>`;
+                document.getElementById('fbImages').innerText = filebase.byType?.image || 0;
+                document.getElementById('fbVideos').innerText = filebase.byType?.video || 0;
+                document.getElementById('fbAudio').innerText = filebase.byType?.audio || 0;
+                document.getElementById('fbDocuments').innerText = filebase.byType?.document || 0;
+                document.getElementById('fbArchives').innerText = filebase.byType?.archive || 0;
+            }
+        }
+
+        function updateQueryDisplay(track) {
+            if (track.total) {
+                document.getElementById('queryTotal').innerText = track.total.queries || 0;
+                document.getElementById('querySuccess').innerText = track.total.successful || 0;
+                document.getElementById('queryFailed').innerText = track.total.failed || 0;
+                document.getElementById('queryRate').innerText = track.total.successRate || '0%';
+            }
+            if (track.performance) {
+                document.getElementById('queryAvgTime').innerText = track.performance.averageResponseTime || '-';
+                document.getElementById('queryMinTime').innerText = track.performance.minResponseTime || '-';
+                document.getElementById('queryMaxTime').innerText = track.performance.maxResponseTime || '-';
+            }
+        }
+
+        function updateSystemInfo(stats) {
+            if (stats.system) {
+                document.getElementById('sysVersion').innerText = stats.version || '2.0.0';
+                document.getElementById('sysUptime').innerText = stats.uptime?.human || '-';
+                document.getElementById('sysNodeVersion').innerText = stats.system?.nodeVersion || process?.version || '-';
+                document.getElementById('sysPlatform').innerText = stats.system?.platform || '-';
+                document.getElementById('sysArch').innerText = stats.system?.arch || '-';
+                document.getElementById('sysCores').innerText = stats.system?.cores || '-';
+                document.getElementById('sysTotalMem').innerHTML = `${Math.round(stats.system?.totalMemory / 1024) || 0}<span class="stat-unit">GB</span>`;
+                document.getElementById('sysFreeMem').innerHTML = `${Math.round(stats.system?.freeMemory / 1024) || 0}<span class="stat-unit">GB</span>`;
+            }
+            
+            if (stats.memory) {
+                document.getElementById('memRss').innerText = stats.memory.rss || '-';
+                document.getElementById('memHeapTotal').innerText = stats.memory.heapTotal || '-';
+                document.getElementById('memHeapUsed').innerText = stats.memory.heapUsed || '-';
+                document.getElementById('memExternal').innerText = stats.memory.external || '-';
+                
+                const heapUsed = parseFloat(stats.memory.heapUsed);
+                const heapTotal = parseFloat(stats.memory.heapTotal);
+                if (heapTotal > 0) {
+                    const percent = (heapUsed / heapTotal) * 100;
+                    const progressBar = document.getElementById('memProgress');
+                    progressBar.style.width = `${percent}%`;
+                    if (percent > 90) progressBar.className = 'progress-fill critical';
+                    else if (percent > 70) progressBar.className = 'progress-fill warning';
+                    else progressBar.className = 'progress-fill good';
+                }
+            }
+        }
+
+        async function loadTopUsers() {
+            try {
+                const res = await fetch(`/q?q=track&ses=${currentSession}&limit=1000`);
+                const data = await res.json();
+                if (data.tracks) {
+                    const userCounts = {};
+                    for (const track of data.tracks) {
+                        const user = track.user || 'anonymous';
+                        userCounts[user] = (userCounts[user] || 0) + 1;
+                    }
+                    const sorted = Object.entries(userCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                    
+                    let html = '<table class="info-table">';
+                    for (const [user, count] of sorted) {
+                        html += `<tr><td>${escapeHtml(user)}</td><td style="text-align:right;">${count} queries</td></tr>`;
+                    }
+                    html += '</table>';
+                    if (sorted.length === 0) html = '<p style="color:#888;">No data available</p>';
+                    document.getElementById('topUsersList').innerHTML = html;
+                }
+            } catch(e) {
+                document.getElementById('topUsersList').innerHTML = '<p style="color:#888;">Failed to load user data</p>';
+            }
+        }
+
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const btn = document.getElementById('autoRefreshBtn');
+            
+            if (autoRefreshEnabled) {
+                autoRefreshInterval = setInterval(() => {
+                    loadAllStats();
+                }, 5000);
+                btn.innerHTML = '<i class="fa fa-clock-o"></i> Auto Refresh: On (5s)';
+                btn.style.background = 'rgba(0,255,136,0.2)';
+                showToast('Auto refresh enabled', 'success');
+            } else {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+                btn.innerHTML = '<i class="fa fa-clock-o"></i> Auto Refresh: Off';
+                btn.style.background = '';
+                showToast('Auto refresh disabled', 'info');
+            }
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.borderColor = type === 'success' ? '#00ff88' : (type === 'error' ? '#ff007f' : '#00d2ff');
+            toast.innerHTML = `<i class="fa fa-${type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle')}"></i> ${escapeHtml(message)}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function attachEvents() {
+            document.getElementById('refreshBtn').addEventListener('click', () => {
+                loadAllStats();
+                showToast('Statistics refreshed', 'success');
+            });
+            document.getElementById('autoRefreshBtn').addEventListener('click', toggleAutoRefresh);
+        }
+
+        init();
+    </script>
+</body>
+</html>
