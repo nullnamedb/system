@@ -1,20 +1,13 @@
 {
   "name": "nullname-db",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "NullName DB - No brand. No name. No payment. The simplest database in the universe.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
     "production": "NODE_ENV=production node server.js",
-    "install": "bash installment/install.sh",
-    "uninstall": "bash installment/uninstall.sh",
-    "config": "bash installment/config.sh",
     "status": "node server.js --status",
-    "test": "node tests/run.js",
-    "backup": "node scripts/backup.js",
-    "restore": "node scripts/restore.js",
-    "clean": "node scripts/cleanup.js",
     "help": "node server.js --help"
   },
   "keywords": [
@@ -30,6 +23,9 @@
     "version-control",
     "backup",
     "authentication",
+    "realtime",
+    "time-travel",
+    "filebase",
     "no-brand",
     "no-payment"
   ],
@@ -66,12 +62,16 @@
     "multer": "^1.4.5-lts.1",
     "compression": "^1.7.4",
     "helmet": "^7.0.0",
-    "express-rate-limit": "^6.10.0"
+    "express-rate-limit": "^6.10.0",
+    "ws": "^8.14.2",
+    "archiver": "^6.0.1",
+    "decompress": "^4.2.1",
+    "mime-types": "^2.1.35",
+    "sharp": "^0.33.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
-  "optionalDependencies": {},
   "files": [
     "server.js",
     "queries.js",
@@ -80,14 +80,21 @@
     "internet.js",
     "core/",
     "ui/",
+    "studio/",
+    "cli/",
     "docs/",
-    "installment/",
+    "install.sh",
+    "uninstall.sh",
+    "config.sh",
+    "nullname.service",
     "README.md",
     "LICENSE"
   ],
   "directories": {
-    "lib": "core",
-    "doc": "docs",
-    "example": "examples"
+    "core": "core",
+    "ui": "ui",
+    "studio": "studio",
+    "cli": "cli",
+    "doc": "docs"
   }
 }
