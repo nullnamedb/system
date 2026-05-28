@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NullName DB - CLI Terminal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0e27;
+            font-family: 'Courier New', 'Fira Code', monospace;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .terminal-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #0a0e27;
+        }
+
+        .terminal-header {
+            background: #0d1117;
+            border-bottom: 1px solid #00d2ff;
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .terminal-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .terminal-title h1 {
+            font-size: 1rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-connected {
+            background: #00ff88;
+            box-shadow: 0 0 5px #00ff88;
+        }
+
+        .status-disconnected {
+            background: #ff007f;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-badge {
+            background: rgba(0,210,255,0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-family: monospace;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+
+        .btn:hover {
+            background: rgba(0,210,255,0.2);
+            border-color: #00d2ff;
+        }
+
+        .terminal-output {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            font-family: 'Courier New', 'Fira Code', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .terminal-line {
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-bottom: 0.25rem;
+        }
+
+        .terminal-input-line {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: #0d1117;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .prompt {
+            color: #00d2ff;
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        .command-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #e0e0e0;
+            font-family: 'Courier New', 'Fira Code', monospace;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .command-input:focus {
+            outline: none;
+        }
+
+        .output-success {
+            color: #00ff88;
+        }
+
+        .output-error {
+            color: #ff007f;
+        }
+
+        .output-info {
+            color: #00d2ff;
+        }
+
+        .output-warning {
+            color: #ffaa00;
+        }
+
+        .output-table {
+            margin: 0.5rem 0;
+            border-collapse: collapse;
+        }
+
+        .output-table th,
+        .output-table td {
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 0.25rem 0.5rem;
+            text-align: left;
+        }
+
+        .output-table th {
+            color: #00d2ff;
+        }
+
+        .welcome-message {
+            color: #00ff88;
+            margin-bottom: 1rem;
+        }
+
+        .help-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+
+        .help-item {
+            color: #888;
+        }
+
+        .help-cmd {
+            color: #00d2ff;
+        }
+
+        .shortcuts-bar {
+            background: #0a0e27;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding: 0.25rem 1rem;
+            font-size: 0.7rem;
+            color: #666;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 14px;
+            background: #00d2ff;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #00d2ff;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-title">
+                <i class="fa fa-terminal" style="color:#00d2ff;"></i>
+                <h1>NullName DB CLI Terminal</h1>
+                <span class="status-dot status-connected" id="statusDot"></span>
+                <span id="statusText" style="font-size:0.7rem;">Connected</span>
+            </div>
+            <div class="user-info">
+                <span class="user-badge" id="userBadge">Guest</span>
+                <button class="btn" id="logoutBtn"><i class="fa fa-sign-out"></i> Logout</button>
+                <button class="btn" id="clearTerminalBtn"><i class="fa fa-eraser"></i> Clear</button>
+                <button class="btn" id="helpBtn"><i class="fa fa-question"></i> Help</button>
+            </div>
+        </div>
+
+        <div class="terminal-output" id="terminalOutput">
+            <div class="welcome-message">
+                ╔══════════════════════════════════════════════════════════════╗<br>
+                ║                    NullName DB CLI Terminal                   ║<br>
+                ║                  Version 2.0.0 | No brand. No name.          ║<br>
+                ╚══════════════════════════════════════════════════════════════╝<br>
+                <br>
+                Type <span style="color:#00d2ff;">help</span> for available commands.<br>
+                Type <span style="color:#00d2ff;">clear</span> to clear the screen.<br>
+                Type <span style="color:#00d2ff;">exit</span> or <span style="color:#00d2ff;">logout</span> to exit.<br>
+                <br>
+                Examples:<br>
+                → <span style="color:#00d2ff;">/q=get.users</span><br>
+                → <span style="color:#00d2ff;">add.mydb.users.name.John</span><br>
+                → <span style="color:#00d2ff;">SELECT * FROM users</span><br>
+                → <span style="color:#00d2ff;">commit "first commit"</span><br>
+                → <span style="color:#00d2ff;">undo</span><br>
+                <br>
+            </div>
+        </div>
+
+        <div class="terminal-input-line">
+            <span class="prompt">nullname&gt;</span>
+            <input type="text" id="commandInput" class="command-input" autofocus>
+            <span class="cursor"></span>
+        </div>
+
+        <div class="shortcuts-bar">
+            <span><i class="fa fa-arrow-up"></i> Previous command</span>
+            <span><i class="fa fa-arrow-down"></i> Next command</span>
+            <span><i class="fa fa-tab"></i> Autocomplete</span>
+            <span><i class="fa fa-eraser"></i> Ctrl+L Clear</span>
+            <span><i class="fa fa-history"></i> /history View history</span>
+        </div>
+    </div>
+
+    <script src="/ui/session.js"></script>
+    <script>
+        class CLITerminal {
+            constructor() {
+                this.history = [];
+                this.historyIndex = -1;
+                this.currentInput = '';
+                this.session = null;
+                this.user = null;
+                this.commands = {
+                    'help': () => this.showHelp(),
+                    'clear': () => this.clearTerminal(),
+                    'history': () => this.showHistory(),
+                    'exit': () => this.logout(),
+                    'logout': () => this.logout(),
+                    'format': (args) => this.setFormat(args),
+                    'export': (args) => this.exportOutput(args),
+                    'save': (args) => this.saveCommand(args),
+                    'load': (args) => this.loadCommand(args)
+                };
+                this.currentFormat = 'json';
+                this.lastOutput = null;
+                this.init();
+            }
+
+            async init() {
+                await this.checkAuth();
+                this.attachEvents();
+                this.loadHistory();
+                this.focus();
+            }
+
+            async checkAuth() {
+                const session = localStorage.getItem('nullname_session');
+                if (!session) {
+                    this.addOutput('❌ Not authenticated. Redirecting to login...', 'error');
+                    setTimeout(() => { window.location.href = '/login'; }, 1500);
+                    return;
+                }
+                this.session = session;
+                
+                try {
+                    const res = await fetch(`/q?q=status&ses=${session}`);
+                    const data = await res.json();
+                    if (data.status === 'online') {
+                        this.user = { username: 'admin', role: 'admin' };
+                        document.getElementById('userBadge').innerText = 'admin';
+                        document.getElementById('statusDot').className = 'status-dot status-connected';
+                        document.getElementById('statusText').innerText = 'Connected';
+                        this.addOutput('✓ Connected to NullName DB', 'success');
+                    } else {
+                        throw new Error('Invalid session');
+                    }
+                } catch(e) {
+                    this.addOutput('❌ Session expired. Redirecting...', 'error');
+                    setTimeout(() => { window.location.href = '/login'; }, 1500);
+                }
+            }
+
+            attachEvents() {
+                const input = document.getElementById('commandInput');
+                input.addEventListener('keydown', (e) => this.handleKeydown(e));
+                
+                document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
+                document.getElementById('clearTerminalBtn').addEventListener('click', () => this.clearTerminal());
+                document.getElementById('helpBtn').addEventListener('click', () => this.showHelp());
+            }
+
+            handleKeydown(e) {
+                if (e.key === 'Enter') {
+                    const command = document.getElementById('commandInput').value.trim();
+                    if (command) {
+                        this.executeCommand(command);
+                        document.getElementById('commandInput').value = '';
+                    }
+                    this.focus();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (this.historyIndex < this.history.length - 1) {
+                        this.historyIndex++;
+                        document.getElementById('commandInput').value = this.history[this.history.length - 1 - this.historyIndex];
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (this.historyIndex > 0) {
+                        this.historyIndex--;
+                        document.getElementById('commandInput').value = this.history[this.history.length - 1 - this.historyIndex];
+                    } else if (this.historyIndex === 0) {
+                        this.historyIndex = -1;
+                        document.getElementById('commandInput').value = '';
+                    }
+                } else if (e.key === 'Tab') {
+                    e.preventDefault();
+                    this.autocomplete();
+                } else if (e.ctrlKey && e.key === 'l') {
+                    e.preventDefault();
+                    this.clearTerminal();
+                }
+            }
+
+            async executeCommand(command) {
+                this.addOutput(`nullname&gt; ${command}`, 'command');
+                this.addToHistory(command);
+                
+                const trimmed = command.trim();
+                const parts = trimmed.split(' ');
+                const cmd = parts[0].toLowerCase();
+                const args = parts.slice(1);
+                
+                if (this.commands[cmd]) {
+                    await this.commands[cmd](args);
+                } else {
+                    await this.executeQuery(trimmed);
+                }
+                
+                this.focus();
+            }
+
+            async executeQuery(query) {
+                const startTime = Date.now();
+                
+                try {
+                    let url = `/q?q=${encodeURIComponent(query)}&ses=${this.session}`;
+                    if (this.currentFormat !== 'json') {
+                        url += `&format=${this.currentFormat}`;
+                    }
+                    
+                    const res = await fetch(url);
+                    const elapsed = Date.now() - startTime;
+                    
+                    if (this.currentFormat === 'table') {
+                        const text = await res.text();
+                        this.addOutput(text, 'output');
+                        this.addOutput(`⏱️ ${elapsed}ms`, 'info');
+                    } else if (this.currentFormat === 'csv') {
+                        const text = await res.text();
+                        this.addOutput(text, 'output');
+                        this.addOutput(`⏱️ ${elapsed}ms`, 'info');
+                    } else {
+                        const data = await res.json();
+                        this.lastOutput = data;
+                        this.displayData(data);
+                        this.addOutput(`⏱️ ${elapsed}ms | 📊 ${data.count || data.rows?.length || 0} rows`, 'info');
+                    }
+                } catch (error) {
+                    this.addOutput(`❌ Error: ${error.message}`, 'error');
+                }
+            }
+
+            displayData(data) {
+                if (data.error) {
+                    this.addOutput(`❌ ${data.error}`, 'error');
+                    return;
+                }
+                
+                if (data.success === false) {
+                    this.addOutput(`❌ ${data.message || 'Operation failed'}`, 'error');
+                    return;
+                }
+                
+                if (data.rows && data.rows.length > 0) {
+                    this.displayTable(data.rows, data.columns);
+                } else if (Array.isArray(data) && data.length > 0) {
+                    this.displayTable(data);
+                } else if (typeof data === 'object') {
+                    this.displayObject(data);
+                } else {
+                    this.addOutput(String(data), 'output');
+                }
+            }
+
+            displayTable(rows, columns = null) {
+                if (!rows || rows.length === 0) {
+                    this.addOutput('(empty)', 'output');
+                    return;
+                }
+                
+                const cols = columns || Object.keys(rows[0]);
+                const colWidths = cols.map(col => {
+                    let maxLen = col.length;
+                    for (const row of rows) {
+                        let val = row[col];
+                        if (val === undefined || val === null) val = '';
+                        if (typeof val === 'object') val = JSON.stringify(val);
+                        const len = String(val).length;
+                        if (len > maxLen && len < 50) maxLen = len;
+                    }
+                    return Math.min(maxLen + 2, 40);
+                });
+                
+                let output = '';
+                
+                let headerLine = '┌' + colWidths.map(w => '─'.repeat(w)).join('┬') + '┐';
+                let separatorLine = '├' + colWidths.map(w => '─'.repeat(w)).join('┼') + '┤';
+                let footerLine = '└' + colWidths.map(w => '─'.repeat(w)).join('┴') + '┘';
+                
+                output += headerLine + '\n';
+                output += '│' + cols.map((col, i) => ` ${col.padEnd(colWidths[i] - 1)}`).join('│') + '│\n';
+                output += separatorLine + '\n';
+                
+                for (const row of rows) {
+                    output += '│' + cols.map((col, i) => {
+                        let val = row[col];
+                        if (val === undefined || val === null) val = '';
+                        if (typeof val === 'object') val = JSON.stringify(val);
+                        let str = String(val);
+                        if (str.length > colWidths[i] - 1) {
+                            str = str.substring(0, colWidths[i] - 4) + '...';
+                        }
+                        return ` ${str.padEnd(colWidths[i] - 1)}`;
+                    }).join('│') + '│\n';
+                }
+                
+                output += footerLine;
+                this.addOutput(output, 'output');
+                this.addOutput(`📊 ${rows.length} row(s)`, 'info');
+            }
+
+            displayObject(obj, indent = 0) {
+                const spaces = '  '.repeat(indent);
+                for (const [key, value] of Object.entries(obj)) {
+                    if (value && typeof value === 'object') {
+                        this.addOutput(`${spaces}${key}:`, 'output');
+                        this.displayObject(value, indent + 1);
+                    } else {
+                        let val = value;
+                        if (val === undefined || val === null) val = 'null';
+                        if (typeof val === 'object') val = JSON.stringify(val);
+                        this.addOutput(`${spaces}${key}: ${val}`, 'output');
+                    }
+                }
+            }
+
+            addOutput(text, type = 'output') {
+                const outputDiv = document.getElementById('terminalOutput');
+                const line = document.createElement('div');
+                line.className = 'terminal-line';
+                
+                let colorClass = '';
+                switch(type) {
+                    case 'success': colorClass = 'output-success'; break;
+                    case 'error': colorClass = 'output-error'; break;
+                    case 'info': colorClass = 'output-info'; break;
+                    case 'warning': colorClass = 'output-warning'; break;
+                    case 'command': colorClass = 'output-info'; break;
+                    default: colorClass = '';
+                }
+                
+                line.innerHTML = `<span class="${colorClass}">${this.escapeHtml(text)}</span>`;
+                outputDiv.appendChild(line);
+                outputDiv.scrollTop = outputDiv.scrollHeight;
+            }
+
+            addToHistory(command) {
+                this.history.push(command);
+                if (this.history.length > 100) {
+                    this.history.shift();
+                }
+                localStorage.setItem('nullname_cli_history', JSON.stringify(this.history));
+                this.historyIndex = -1;
+            }
+
+            loadHistory() {
+                try {
+                    const saved = localStorage.getItem('nullname_cli_history');
+                    if (saved) {
+                        this.history = JSON.parse(saved);
+                    }
+                } catch(e) {}
+            }
+
+            clearTerminal() {
+                document.getElementById('terminalOutput').innerHTML = '';
+                this.addOutput('╔══════════════════════════════════════════════════════════════╗', 'output');
+                this.addOutput('║                    Terminal Cleared                           ║', 'output');
+                this.addOutput('╚══════════════════════════════════════════════════════════════╝', 'output');
+                this.addOutput('', 'output');
+            }
+
+            showHelp() {
+                this.addOutput('', 'output');
+                this.addOutput('╔══════════════════════════════════════════════════════════════╗', 'output');
+                this.addOutput('║                    Available Commands                         ║', 'output');
+                this.addOutput('╚══════════════════════════════════════════════════════════════╝', 'output');
+                this.addOutput('', 'output');
+                
+                const helpData = [
+                    ['help', 'Show this help message'],
+                    ['clear', 'Clear the terminal screen'],
+                    ['history', 'Show command history'],
+                    ['exit / logout', 'Exit the terminal'],
+                    ['format [json|table|csv|markdown]', 'Set output format'],
+                    ['export', 'Export last result as JSON/CSV'],
+                    ['save [name]', 'Save current command'],
+                    ['load [name]', 'Load saved command'],
+                    ['', ''],
+                    ['📁 DATA COMMANDS', ''],
+                    ['key=value', 'Store a value'],
+                    ['get.key', 'Retrieve a value'],
+                    ['add.db.table.col.value', 'Add a record'],
+                    ['get.db.table', 'Get all records'],
+                    ['update.db.table.id.col=value', 'Update a record'],
+                    ['delete.db.table.id', 'Delete a record'],
+                    ['', ''],
+                    ['🗄️ SQL COMMANDS', ''],
+                    ['SELECT * FROM table', 'Query data'],
+                    ['INSERT INTO table VALUES', 'Insert data'],
+                    ['UPDATE table SET col=value', 'Update data'],
+                    ['DELETE FROM table', 'Delete data'],
+                    ['', ''],
+                    ['📝 VERSION CONTROL', ''],
+                    ['commit "message"', 'Create a commit'],
+                    ['commits', 'Show commit history'],
+                    ['undo', 'Undo last change'],
+                    ['redo', 'Redo undone change'],
+                    ['branch [name]', 'Create or list branches'],
+                    ['merge source into target', 'Merge branches'],
+                    ['', ''],
+                    ['💾 BACKUP & FILEBASE', ''],
+                    ['backup', 'Create a backup'],
+                    ['backups', 'List backups'],
+                    ['filebase.list', 'List files'],
+                    ['filebase.delete [id]', 'Delete a file'],
+                    ['', ''],
+                    ['🔧 SYSTEM', ''],
+                    ['status', 'Show system status'],
+                    ['stats', 'Show statistics'],
+                    ['/q=...', 'Run any NullName query']
+                ];
+                
+                for (const [cmd, desc] of helpData) {
+                    if (cmd === '') {
+                        this.addOutput('', 'output');
+                        this.addOutput(desc, 'info');
+                    } else {
+                        this.addOutput(`  ${cmd.padEnd(30)} ${desc}`, 'output');
+                    }
+                }
+                this.addOutput('', 'output');
+            }
+
+            showHistory() {
+                if (this.history.length === 0) {
+                    this.addOutput('No command history', 'info');
+                    return;
+                }
+                this.addOutput('Command History:', 'info');
+                for (let i = 0; i < this.history.length; i++) {
+                    this.addOutput(`  ${(i + 1).toString().padStart(3)}  ${this.history[i]}`, 'output');
+                }
+            }
+
+            async setFormat(args) {
+                const format = args[0];
+                const validFormats = ['json', 'table', 'csv', 'markdown'];
+                if (!format) {
+                    this.addOutput(`Current format: ${this.currentFormat}`, 'info');
+                    this.addOutput(`Available: ${validFormats.join(', ')}`, 'info');
+                    return;
+                }
+                if (validFormats.includes(format)) {
+                    this.currentFormat = format;
+                    this.addOutput(`Output format set to: ${format}`, 'success');
+                } else {
+                    this.addOutput(`Invalid format. Available: ${validFormats.join(', ')}`, 'error');
+                }
+            }
+
+            async exportOutput(args) {
+                if (!this.lastOutput) {
+                    this.addOutput('No output to export', 'error');
+                    return;
+                }
+                const format = args[0] || this.currentFormat;
+                const jsonStr = JSON.stringify(this.lastOutput, null, 2);
+                this.addOutput(jsonStr, 'output');
+                this.addOutput('✓ Output displayed above. Copy manually.', 'success');
+            }
+
+            saveCommand(args) {
+                const name = args[0];
+                if (!name) {
+                    this.addOutput('Usage: save [name]', 'error');
+                    return;
+                }
+                const currentCmd = document.getElementById('commandInput').value;
+                if (!currentCmd) {
+                    this.addOutput('No command to save', 'error');
+                    return;
+                }
+                const saved = JSON.parse(localStorage.getItem('nullname_saved_commands') || '{}');
+                saved[name] = currentCmd;
+                localStorage.setItem('nullname_saved_commands', JSON.stringify(saved));
+                this.addOutput(`Command saved as: ${name}`, 'success');
+            }
+
+            loadCommand(args) {
+                const name = args[0];
+                if (!name) {
+                    this.addOutput('Usage: load [name]', 'error');
+                    return;
+                }
+                const saved = JSON.parse(localStorage.getItem('nullname_saved_commands') || '{}');
+                const cmd = saved[name];
+                if (cmd) {
+                    document.getElementById('commandInput').value = cmd;
+                    this.addOutput(`Loaded: ${name}`, 'success');
+                    this.focus();
+                } else {
+                    this.addOutput(`Command not found: ${name}`, 'error');
+                }
+            }
+
+            autocomplete() {
+                const input = document.getElementById('commandInput');
+                const value = input.value;
+                const commands = ['help', 'clear', 'history', 'exit', 'logout', 'format', 'export', 'save', 'load', 'status', 'stats', 'backup', 'backups', 'commits', 'undo', 'redo', 'filebase.list', 'filebase.stats'];
+                
+                const matches = commands.filter(cmd => cmd.startsWith(value));
+                if (matches.length === 1) {
+                    input.value = matches[0] + ' ';
+                } else if (matches.length > 1) {
+                    this.addOutput(`Possible completions: ${matches.join(', ')}`, 'info');
+                }
+            }
+
+            async logout() {
+                try {
+                    await fetch(`/q?q=logout&ses=${this.session}`);
+                } catch(e) {}
+                localStorage.removeItem('nullname_session');
+                window.location.href = '/login';
+            }
+
+            focus() {
+                document.getElementById('commandInput').focus();
+            }
+
+            escapeHtml(str) {
+                if (!str) return '';
+                return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+        }
+
+        const terminal = new CLITerminal();
+    </script>
+</body>
+</html>
