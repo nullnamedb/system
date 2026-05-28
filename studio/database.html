@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NullName DB - Database Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/ui/base.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e27;
+            color: #e0e0e0;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: rgba(10, 14, 39, 0.95);
+            border-right: 1px solid rgba(255,255,255,0.08);
+            padding: 1.5rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        .logo h1 {
+            font-size: 1.25rem;
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #aaa;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(0, 210, 255, 0.1);
+            color: #00d2ff;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 1.5rem;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: rgba(255,0,127,0.2);
+            border: 1px solid #ff007f;
+            color: #ff007f;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .card {
+            background: rgba(20, 25, 50, 0.8);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th, .data-table td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .data-table th {
+            color: #00d2ff;
+            font-weight: 600;
+        }
+
+        .data-table tr:hover {
+            background: rgba(0, 210, 255, 0.05);
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            border: none;
+            color: #0a0e27;
+            font-weight: 600;
+        }
+
+        .btn-danger {
+            background: rgba(255,0,127,0.2);
+            border-color: #ff007f;
+            color: #ff007f;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #0a0e27;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            padding: 1.5rem;
+        }
+
+        .modal-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #e0e0e0;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #00d2ff;
+        }
+
+        .breadcrumb {
+            margin-bottom: 1rem;
+            color: #888;
+        }
+
+        .breadcrumb a {
+            color: #00d2ff;
+            cursor: pointer;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 100;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .menu-toggle {
+                display: block;
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 101;
+                background: #00d2ff;
+                border: none;
+                padding: 0.5rem;
+                border-radius: 8px;
+                cursor: pointer;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .menu-toggle {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
+
+    <div class="app-container">
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <h1><i class="fa fa-database"></i> NullName DB</h1>
+            </div>
+            <nav>
+                <div class="nav-item" data-page="dashboard"><i class="fa fa-tachometer"></i> Dashboard</div>
+                <div class="nav-item active" data-page="databases"><i class="fa fa-database"></i> Databases</div>
+                <div class="nav-item" data-page="sql"><i class="fa fa-code"></i> SQL Runner</div>
+                <div class="nav-item" data-page="nosql"><i class="fa fa-file-code-o"></i> NoSQL</div>
+                <div class="nav-item" data-page="filebase"><i class="fa fa-file"></i> FileBase</div>
+                <div class="nav-item" data-page="backup"><i class="fa fa-archive"></i> Backups</div>
+                <div class="nav-item" data-page="settings"><i class="fa fa-cog"></i> Settings</div>
+            </nav>
+        </div>
+
+        <div class="main-content">
+            <div class="top-bar">
+                <h2 class="page-title" id="pageTitle">Database Manager</h2>
+                <div class="user-info">
+                    <span id="username">Guest</span>
+                    <div class="user-avatar" id="userAvatar">G</div>
+                    <button class="logout-btn" id="logoutBtn"><i class="fa fa-sign-out"></i> Logout</button>
+                </div>
+            </div>
+
+            <div class="breadcrumb" id="breadcrumb">
+                <a onclick="showDatabases()">Databases</a>
+                <span id="breadcrumbPath"></span>
+            </div>
+
+            <div class="action-bar">
+                <button class="btn btn-primary" id="createDbBtn"><i class="fa fa-plus"></i> New Database</button>
+                <button class="btn" id="createTableBtn" style="display:none;"><i class="fa fa-table"></i> New Table</button>
+                <button class="btn" id="addRecordBtn" style="display:none;"><i class="fa fa-plus"></i> Add Record</button>
+                <button class="btn" id="refreshBtn"><i class="fa fa-refresh"></i> Refresh</button>
+            </div>
+
+            <div class="card" id="contentCard">
+                <div class="card-title" id="contentTitle">All Databases</div>
+                <div id="contentArea">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Database Modal -->
+    <div id="createDbModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Create Database</div>
+            <div class="form-group">
+                <label>Database Name</label>
+                <input type="text" id="newDbName" placeholder="Enter database name (letters, numbers, underscore)">
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelDbBtn">Cancel</button>
+                <button class="btn btn-primary" id="confirmDbBtn">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Table Modal -->
+    <div id="createTableModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Create Table</div>
+            <div class="form-group">
+                <label>Table Name</label>
+                <input type="text" id="newTableName" placeholder="Enter table name">
+            </div>
+            <div class="form-group">
+                <label>Columns (comma separated)</label>
+                <input type="text" id="newTableColumns" placeholder="id,name,email,age">
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelTableBtn">Cancel</button>
+                <button class="btn btn-primary" id="confirmTableBtn">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Record Modal -->
+    <div id="recordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" id="recordModalTitle">Add Record</div>
+            <div id="recordModalBody"></div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelRecordBtn">Cancel</button>
+                <button class="btn btn-primary" id="saveRecordBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/ui/session.js"></script>
+    <script>
+        const sessionMgr = window.sessionManager;
+        let currentSession = null;
+        let currentDatabase = null;
+        let currentTable = null;
+
+        async function init() {
+            await checkAuth();
+            await showDatabases();
+            attachEvents();
+        }
+
+        async function checkAuth() {
+            const session = localStorage.getItem('nullname_session');
+            if (!session) { window.location.href = '/login'; return; }
+            currentSession = session;
+            try {
+                const res = await fetch(`/q?q=status&ses=${session}`);
+                const data = await res.json();
+                if (data.status !== 'online') { window.location.href = '/login'; }
+                else {
+                    document.getElementById('username').innerText = 'admin';
+                    document.getElementById('userAvatar').innerText = 'A';
+                }
+            } catch(e) { window.location.href = '/login'; }
+        }
+
+        async function showDatabases() {
+            currentDatabase = null;
+            currentTable = null;
+            document.getElementById('createTableBtn').style.display = 'none';
+            document.getElementById('addRecordBtn').style.display = 'none';
+            document.getElementById('breadcrumbPath').innerHTML = '';
+            document.getElementById('contentTitle').innerHTML = 'All Databases';
+            
+            try {
+                const res = await fetch(`/q?q=get.&ses=${currentSession}`);
+                const data = await res.json();
+                const databases = data.databases || [];
+                
+                if (databases.length === 0) {
+                    document.getElementById('contentArea').innerHTML = '<p style="text-align:center;padding:3rem;">No databases. Click "New Database" to create one.</p>';
+                    return;
+                }
+                
+                let html = '<table class="data-table"><thead><tr><th>Database Name</th><th>Tables</th><th>Actions</th></tr></thead><tbody>';
+                for (const db of databases) {
+                    const dbData = await fetch(`/q?q=get.${db}&ses=${currentSession}`).then(r=>r.json());
+                    const tableCount = dbData[db] ? Object.keys(dbData[db]).length : 0;
+                    html += `<tr>
+                        <td><i class="fa fa-database"></i> <strong>${db}</strong></td>
+                        <td>${tableCount} table(s)</td>
+                        <td><button class="btn btn-sm" onclick="viewDatabase('${db}')">Browse</button> <button class="btn btn-sm btn-danger" onclick="deleteDatabase('${db}')">Delete</button></td>
+                    </tr>`;
+                }
+                html += '</tbody></table>';
+                document.getElementById('contentArea').innerHTML = html;
+            } catch(e) {
+                document.getElementById('contentArea').innerHTML = '<p>Error loading databases</p>';
+            }
+        }
+
+        async function viewDatabase(dbName) {
+            currentDatabase = dbName;
+            currentTable = null;
+            document.getElementById('createTableBtn').style.display = 'inline-block';
+            document.getElementById('addRecordBtn').style.display = 'none';
+            document.getElementById('breadcrumbPath').innerHTML = ` / <a onclick="viewDatabase('${dbName}')">${dbName}</a>`;
+            document.getElementById('contentTitle').innerHTML = `Database: ${dbName}`;
+            
+            try {
+                const res = await fetch(`/q?q=get.${dbName}&ses=${currentSession}`);
+                const data = await res.json();
+                const tables = data[dbName] || {};
+                const tableNames = Object.keys(tables);
+                
+                if (tableNames.length === 0) {
+                    document.getElementById('contentArea').innerHTML = '<p style="text-align:center;padding:3rem;">No tables. Click "New Table" to create one.</p>';
+                    return;
+                }
+                
+                let html = '<table class="data-table"><thead><tr><th>Table Name</th><th>Records</th><th>Actions</th></tr></thead><tbody>';
+                for (const table of tableNames) {
+                    const tableData = tables[table];
+                    const recordCount = Object.keys(tableData).filter(k => !isNaN(k) && k !== '_nextId' && k !== '_schema').length;
+                    html += `<tr>
+                        <td><i class="fa fa-table"></i> ${table}</td>
+                        <td>${recordCount} record(s)</td>
+                        <td><button class="btn btn-sm" onclick="viewTable('${dbName}','${table}')">Browse</button> <button class="btn btn-sm btn-danger" onclick="deleteTable('${dbName}','${table}')">Drop</button></td>
+                    </tr>`;
+                }
+                html += '</tbody></table>';
+                document.getElementById('contentArea').innerHTML = html;
+            } catch(e) {
+                document.getElementById('contentArea').innerHTML = '<p>Error loading tables</p>';
+            }
+        }
+
+        async function viewTable(dbName, tableName) {
+            currentDatabase = dbName;
+            currentTable = tableName;
+            document.getElementById('createTableBtn').style.display = 'inline-block';
+            document.getElementById('addRecordBtn').style.display = 'inline-block';
+            document.getElementById('breadcrumbPath').innerHTML = ` / <a onclick="viewDatabase('${dbName}')">${dbName}</a> / <strong>${tableName}</strong>`;
+            document.getElementById('contentTitle').innerHTML = `Table: ${dbName}.${tableName}`;
+            
+            try {
+                const res = await fetch(`/q?q=get.${dbName}.${tableName}&ses=${currentSession}`);
+                const data = await res.json();
+                const records = data.records || [];
+                
+                if (records.length === 0) {
+                    document.getElementById('contentArea').innerHTML = '<p style="text-align:center;padding:3rem;">No records. Click "Add Record" to add one.</p>';
+                    return;
+                }
+                
+                const columns = Object.keys(records[0]).filter(k => k !== 'id');
+                
+                let html = '<div style="overflow-x:auto;"><table class="data-table"><thead><tr><th>ID</th>';
+                for (const col of columns) html += `<th>${col}</th>`;
+                html += '<th>Actions</th></tr></thead><tbody>';
+                
+                for (const record of records) {
+                    html += `<tr><td>${record.id}</td>`;
+                    for (const col of columns) {
+                        let val = record[col];
+                        if (val === undefined || val === null) val = '-';
+                        if (typeof val === 'object') val = JSON.stringify(val);
+                        html += `<td>${String(val).substring(0, 50)}</td>`;
+                    }
+                    html += `<td><button class="btn btn-sm" onclick="editRecord(${record.id})">Edit</button> <button class="btn btn-sm btn-danger" onclick="deleteRecord(${record.id})">Delete</button></td>`;
+                    html += `</tr>`;
+                }
+                html += '</tbody></table></div>';
+                document.getElementById('contentArea').innerHTML = html;
+            } catch(e) {
+                document.getElementById('contentArea').innerHTML = '<p>Error loading records</p>';
+            }
+        }
+
+        async function editRecord(recordId) {
+            if (!currentDatabase || !currentTable) return;
+            
+            try {
+                const res = await fetch(`/q?q=get.${currentDatabase}.${currentTable}.${recordId}&ses=${currentSession}`);
+                const data = await res.json();
+                const record = data;
+                
+                let html = '';
+                for (const [key, value] of Object.entries(record)) {
+                    if (key !== 'id') {
+                        let val = value;
+                        if (val === null) val = '';
+                        if (typeof val === 'object') val = JSON.stringify(val);
+                        html += `<div class="form-group">
+                            <label>${key}</label>
+                            <input type="text" id="field_${key}" value="${escapeHtml(String(val))}">
+                        </div>`;
+                    }
+                }
+                html += `<input type="hidden" id="editId" value="${recordId}">`;
+                
+                document.getElementById('recordModalTitle').innerHTML = 'Edit Record';
+                document.getElementById('recordModalBody').innerHTML = html;
+                document.getElementById('recordModal').style.display = 'flex';
+                
+                document.getElementById('saveRecordBtn').onclick = async () => {
+                    for (const [key, value] of Object.entries(record)) {
+                        if (key !== 'id') {
+                            const newVal = document.getElementById(`field_${key}`).value;
+                            if (newVal !== String(value)) {
+                                await fetch(`/q?q=update.${currentDatabase}.${currentTable}.${recordId}.${key}=${encodeURIComponent(newVal)}&ses=${currentSession}`);
+                            }
+                        }
+                    }
+                    document.getElementById('recordModal').style.display = 'none';
+                    await viewTable(currentDatabase, currentTable);
+                };
+            } catch(e) {
+                alert('Error loading record: ' + e.message);
+            }
+        }
+
+        async function deleteRecord(recordId) {
+            if (!confirm('Delete this record?')) return;
+            await fetch(`/q?q=delete.${currentDatabase}.${currentTable}.${recordId}&ses=${currentSession}`);
+            await viewTable(currentDatabase, currentTable);
+        }
+
+        async function createDatabase() {
+            const dbName = document.getElementById('newDbName').value.trim();
+            if (!dbName) { alert('Enter database name'); return; }
+            if (!/^[a-zA-Z0-9_]+$/.test(dbName)) { alert('Database name can only contain letters, numbers, underscores'); return; }
+            
+            const res = await fetch(`/q?q=create.${dbName}&ses=${currentSession}`);
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('createDbModal').style.display = 'none';
+                document.getElementById('newDbName').value = '';
+                await showDatabases();
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        }
+
+        async function createTable() {
+            const tableName = document.getElementById('newTableName').value.trim();
+            const columns = document.getElementById('newTableColumns').value.trim();
+            if (!tableName) { alert('Enter table name'); return; }
+            
+            const res = await fetch(`/q?q=create.${currentDatabase}.${tableName}${columns ? '.' + columns : ''}&ses=${currentSession}`);
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('createTableModal').style.display = 'none';
+                document.getElementById('newTableName').value = '';
+                document.getElementById('newTableColumns').value = '';
+                await viewDatabase(currentDatabase);
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        }
+
+        async function deleteDatabase(dbName) {
+            if (!confirm(`Delete database '${dbName}'? ALL DATA WILL BE LOST.`)) return;
+            const res = await fetch(`/q?q=delete.${dbName}&ses=${currentSession}`);
+            const data = await res.json();
+            if (data.success) {
+                await showDatabases();
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        }
+
+        async function deleteTable(dbName, tableName) {
+            if (!confirm(`Drop table '${tableName}'? ALL RECORDS WILL BE LOST.`)) return;
+            const res = await fetch(`/q?q=delete.${dbName}.${tableName}&ses=${currentSession}`);
+            const data = await res.json();
+            if (data.success) {
+                await viewDatabase(dbName);
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        }
+
+        async function addRecord() {
+            if (!currentDatabase || !currentTable) return;
+            
+            // Get table structure
+            const res = await fetch(`/q?q=get.${currentDatabase}.${currentTable}&ses=${currentSession}`);
+            const data = await res.json();
+            const records = data.records || [];
+            const columns = records.length > 0 ? Object.keys(records[0]).filter(k => k !== 'id') : ['name', 'value'];
+            
+            let html = '';
+            for (const col of columns) {
+                html += `<div class="form-group">
+                    <label>${col}</label>
+                    <input type="text" id="new_${col}" placeholder="Enter ${col}">
+                </div>`;
+            }
+            
+            document.getElementById('recordModalTitle').innerHTML = 'Add New Record';
+            document.getElementById('recordModalBody').innerHTML = html;
+            document.getElementById('recordModal').style.display = 'flex';
+            
+            document.getElementById('saveRecordBtn').onclick = async () => {
+                for (const col of columns) {
+                    const val = document.getElementById(`new_${col}`).value;
+                    if (val) {
+                        await fetch(`/q?q=add.${currentDatabase}.${currentTable}.${col}=${encodeURIComponent(val)}&ses=${currentSession}`);
+                    }
+                }
+                document.getElementById('recordModal').style.display = 'none';
+                await viewTable(currentDatabase, currentTable);
+            };
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        async function logout() {
+            try { await fetch(`/q?q=logout&ses=${currentSession}`); } catch(e) {}
+            localStorage.removeItem('nullname_session');
+            window.location.href = '/login';
+        }
+
+        function attachEvents() {
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('createDbBtn').addEventListener('click', () => document.getElementById('createDbModal').style.display = 'flex');
+            document.getElementById('cancelDbBtn').addEventListener('click', () => document.getElementById('createDbModal').style.display = 'none');
+            document.getElementById('confirmDbBtn').addEventListener('click', createDatabase);
+            document.getElementById('createTableBtn').addEventListener('click', () => document.getElementById('createTableModal').style.display = 'flex');
+            document.getElementById('cancelTableBtn').addEventListener('click', () => document.getElementById('createTableModal').style.display = 'none');
+            document.getElementById('confirmTableBtn').addEventListener('click', createTable);
+            document.getElementById('addRecordBtn').addEventListener('click', addRecord);
+            document.getElementById('cancelRecordBtn').addEventListener('click', () => document.getElementById('recordModal').style.display = 'none');
+            document.getElementById('refreshBtn').addEventListener('click', () => {
+                if (currentTable) viewTable(currentDatabase, currentTable);
+                else if (currentDatabase) viewDatabase(currentDatabase);
+                else showDatabases();
+            });
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const page = item.dataset.page;
+                    if (page === 'dashboard') window.location.href = '/studio';
+                    if (page === 'sql') window.location.href = '/studio/sql.html';
+                    if (page === 'nosql') window.location.href = '/studio/nosql.html';
+                    if (page === 'filebase') window.location.href = '/studio/filebase.html';
+                    if (page === 'backup') window.location.href = '/studio/backup.html';
+                    if (page === 'settings') window.location.href = '/studio/settings.html';
+                    if (page === 'databases') { /* already here */ }
+                });
+            });
+            
+            document.getElementById('menuToggle').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('open');
+            });
+        }
+
+        window.showDatabases = showDatabases;
+        window.viewDatabase = viewDatabase;
+        window.viewTable = viewTable;
+        window.deleteDatabase = deleteDatabase;
+        window.deleteTable = deleteTable;
+        window.editRecord = editRecord;
+        window.deleteRecord = deleteRecord;
+
+        init();
+    </script>
+</body>
+</html>
