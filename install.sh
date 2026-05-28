@@ -71,7 +71,6 @@ version_ge() {
 check_requirements() {
     print_step "Checking system requirements..."
     
-    # OS Check
     OS="$(uname -s)"
     case "$OS" in
         Linux) print_success "OS: Linux" ;;
@@ -82,14 +81,12 @@ check_requirements() {
             ;;
     esac
     
-    # Architecture
     ARCH="$(uname -m)"
     case "$ARCH" in
         x86_64|aarch64|arm64) print_success "Architecture: $ARCH" ;;
         *) print_warning "Architecture: $ARCH (may not be fully tested)" ;;
     esac
     
-    # Disk Space
     if command -v df &> /dev/null; then
         AVAILABLE_SPACE=$(df "$INSTALL_DIR" 2>/dev/null | awk 'NR==2 {print $4}' || echo "0")
         if [ "$AVAILABLE_SPACE" -lt 512000 ] 2>/dev/null; then
@@ -99,17 +96,15 @@ check_requirements() {
         fi
     fi
     
-    # Memory
     if command -v free &> /dev/null; then
         TOTAL_MEM=$(free -m | awk '/^Mem:/{print $2}')
         if [ "$TOTAL_MEM" -lt 512 ]; then
-            print_warning "Low memory: ${TOTAL_MB}MB (512MB+ recommended)"
+            print_warning "Low memory: ${TOTAL_MEM}MB (512MB+ recommended)"
         else
             print_success "Memory: ${TOTAL_MEM}MB"
         fi
     fi
     
-    # Root/Sudo check
     if [ "$EUID" -eq 0 ]; then
         print_warning "Running as root. It's recommended to run as a regular user with sudo."
     fi
@@ -214,25 +209,20 @@ collect_configuration() {
     print_step "Configuration"
     echo ""
     
-    # Domain
     read -p "Enter domain (default: $DEFAULT_DOMAIN): " DOMAIN
     DOMAIN=${DOMAIN:-$DEFAULT_DOMAIN}
     
-    # Port
     read -p "Enter port (default: $DEFAULT_PORT): " PORT
     PORT=${PORT:-$DEFAULT_PORT}
     
-    # Admin User
     read -p "Enter admin username (default: $DEFAULT_ADMIN_USER): " ADMIN_USER
     ADMIN_USER=${ADMIN_USER:-$DEFAULT_ADMIN_USER}
     
-    # Admin Password
     echo -n "Enter admin password (default: $DEFAULT_ADMIN_PASS): "
     read -s ADMIN_PASS
     echo ""
     ADMIN_PASS=${ADMIN_PASS:-$DEFAULT_ADMIN_PASS}
     
-    # SSL
     read -p "Enable HTTPS/SSL? (y/n): " ENABLE_SSL_INPUT
     ENABLE_SSL="false"
     SSL_CERT_PATH=""
@@ -244,7 +234,6 @@ collect_configuration() {
         read -p "SSL private key path: " SSL_KEY_PATH
     fi
     
-    # Auto Backup
     read -p "Enable automatic backups? (y/n, default y): " AUTO_BACKUP_INPUT
     if [[ $AUTO_BACKUP_INPUT =~ ^[Nn]$ ]]; then
         BACKUP_ENABLED="false"
@@ -252,7 +241,6 @@ collect_configuration() {
         BACKUP_ENABLED="true"
     fi
     
-    # Backup Interval
     if [ "$BACKUP_ENABLED" = "true" ]; then
         read -p "Backup interval in hours (default: 24): " BACKUP_INTERVAL
         BACKUP_INTERVAL=${BACKUP_INTERVAL:-24}
@@ -285,13 +273,11 @@ collect_configuration() {
 create_directories() {
     print_step "Creating directories..."
     
-    # Main directories
     sudo mkdir -p "$INSTALL_DIR"
     sudo mkdir -p "$DATA_DIR"
     sudo mkdir -p "$LOG_DIR"
     sudo mkdir -p "$CONFIG_DIR"
     
-    # Subdirectories
     sudo mkdir -p "$INSTALL_DIR/database"/{sql,nosql,filebase,files,commits,branches,backups,timeline,temp,cache,logs,track}
     sudo mkdir -p "$INSTALL_DIR/studio"
     sudo mkdir -p "$INSTALL_DIR/cli"
@@ -299,7 +285,6 @@ create_directories() {
     sudo mkdir -p "$INSTALL_DIR/docs"
     sudo mkdir -p "$INSTALL_DIR/core"
     
-    # Set permissions
     sudo chown -R $(whoami):$(whoami) "$INSTALL_DIR" 2>/dev/null || true
     sudo chmod -R 755 "$INSTALL_DIR"
     
@@ -320,38 +305,31 @@ generate_env() {
 # NullName DB Environment Configuration
 # Generated: $(date)
 
-# Server
 PORT=$PORT
 DOMAIN=$DOMAIN
 NODE_ENV=production
 
-# Authentication
 ADMIN_USER=$ADMIN_USER
 ADMIN_PASS=$ADMIN_PASS
 ROOT_KEY=$ROOT_KEY
 SESSION_SECRET=$SESSION_SECRET
 SESSION_TIMEOUT=86400000
 
-# SSL/TLS
 ENABLE_SSL=$ENABLE_SSL
 SSL_CERT_PATH=$SSL_CERT_PATH
 SSL_KEY_PATH=$SSL_KEY_PATH
 
-# Storage
 MAX_FILE_SIZE_MB=50
 MAX_STORAGE_MB=10240
 TEMP_FILE_CLEANUP_MS=3600000
 
-# Backup
 ENABLE_BACKUP=$BACKUP_ENABLED
 BACKUP_INTERVAL_HOURS=$BACKUP_INTERVAL
 MAX_BACKUPS_KEEP=10
 
-# Logging
 LOG_LEVEL=info
 SLOW_QUERY_MS=1000
 
-# Features
 ENABLE_SIGNUP=true
 ENABLE_PUBLIC_READ=false
 ENABLE_FILE_UPLOADS=true
@@ -361,12 +339,9 @@ ENABLE_SQL=true
 ENABLE_NOSQL=true
 ENABLE_FILEBASE=true
 
-# Rate Limiting
 RATE_LIMIT_MAX=1000
 RATE_LIMIT_WINDOW_MS=900000
 
-# Session
-SESSION_TIMEOUT=86400000
 MAX_SESSIONS_PER_USER=10
 EOF
     
@@ -378,24 +353,13 @@ generate_package_json() {
 {
   "name": "nullname-db",
   "version": "2.0.0",
-  "description": "NullName DB - No brand. No name. No payment. The simplest database in the universe.",
+  "description": "NullName DB - No brand. No name. No payment.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "production": "NODE_ENV=production node server.js",
-    "install": "bash installment/install.sh",
-    "uninstall": "bash installment/uninstall.sh",
-    "config": "bash installment/config.sh",
-    "status": "node server.js --status",
-    "backup": "node scripts/backup.js",
-    "restore": "node scripts/restore.js",
-    "clean": "node scripts/cleanup.js"
+    "production": "NODE_ENV=production node server.js"
   },
-  "keywords": ["database", "json", "nosql", "simple", "free", "nullname", "zero-config", "rest-api", "version-control"],
-  "author": "NullName Community",
-  "license": "MIT",
-  "engines": { "node": ">=18.0.0" },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
@@ -413,73 +377,90 @@ generate_package_json() {
     "mime-types": "^2.1.35",
     "sharp": "^0.33.1"
   },
-  "devDependencies": { "nodemon": "^3.0.1" }
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": { "node": ">=18.0.0" },
+  "license": "MIT"
 }
 EOF
     print_success "package.json created"
 }
 
+# ============================================
+# COPY SOURCE FILES (FIXED)
+# ============================================
+
 copy_source_files() {
     print_step "Copying source files..."
     
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+    # FIXED: Use the directory where this script is located
+    SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    
+    print_info "Source directory: $SOURCE_DIR"
+    print_info "Target directory: $INSTALL_DIR"
     
     # Core server files
     for file in server.js queries.js auth.js user.js internet.js; do
-        if [ -f "$PROJECT_DIR/$file" ]; then
-            cp "$PROJECT_DIR/$file" "$INSTALL_DIR/"
+        if [ -f "$SOURCE_DIR/$file" ]; then
+            cp "$SOURCE_DIR/$file" "$INSTALL_DIR/"
             print_success "Copied: $file"
         else
-            print_warning "File not found: $file"
+            print_error "File not found: $SOURCE_DIR/$file"
         fi
     done
     
     # Core modules
-    if [ -d "$PROJECT_DIR/core" ]; then
-        cp -r "$PROJECT_DIR/core" "$INSTALL_DIR/"
+    if [ -d "$SOURCE_DIR/core" ]; then
+        cp -r "$SOURCE_DIR/core" "$INSTALL_DIR/"
         print_success "Copied: core/"
     else
+        print_error "Directory not found: $SOURCE_DIR/core"
         mkdir -p "$INSTALL_DIR/core"
-        print_warning "core/ not found, created empty"
     fi
     
     # UI files
-    if [ -d "$PROJECT_DIR/ui" ]; then
-        cp -r "$PROJECT_DIR/ui" "$INSTALL_DIR/"
+    if [ -d "$SOURCE_DIR/ui" ]; then
+        cp -r "$SOURCE_DIR/ui" "$INSTALL_DIR/"
         print_success "Copied: ui/"
     else
+        print_error "Directory not found: $SOURCE_DIR/ui"
         mkdir -p "$INSTALL_DIR/ui"
-        print_warning "ui/ not found, created empty"
     fi
     
     # Studio files
-    if [ -d "$PROJECT_DIR/studio" ]; then
-        cp -r "$PROJECT_DIR/studio" "$INSTALL_DIR/"
+    if [ -d "$SOURCE_DIR/studio" ]; then
+        cp -r "$SOURCE_DIR/studio" "$INSTALL_DIR/"
         print_success "Copied: studio/"
     else
+        print_error "Directory not found: $SOURCE_DIR/studio"
         mkdir -p "$INSTALL_DIR/studio"
-        print_warning "studio/ not found, created empty"
     fi
     
     # CLI files
-    if [ -d "$PROJECT_DIR/cli" ]; then
-        cp -r "$PROJECT_DIR/cli" "$INSTALL_DIR/"
+    if [ -d "$SOURCE_DIR/cli" ]; then
+        cp -r "$SOURCE_DIR/cli" "$INSTALL_DIR/"
         print_success "Copied: cli/"
     else
+        print_error "Directory not found: $SOURCE_DIR/cli"
         mkdir -p "$INSTALL_DIR/cli"
-        print_warning "cli/ not found, created empty"
     fi
     
     # Documentation
-    if [ -d "$PROJECT_DIR/docs" ]; then
-        cp -r "$PROJECT_DIR/docs" "$INSTALL_DIR/"
+    if [ -d "$SOURCE_DIR/docs" ]; then
+        cp -r "$SOURCE_DIR/docs" "$INSTALL_DIR/"
         print_success "Copied: docs/"
     else
-        mkdir -p "$INSTALL_DIR/docs"
         print_warning "docs/ not found, created empty"
+        mkdir -p "$INSTALL_DIR/docs"
     fi
+    
+    print_success "All source files copied successfully"
 }
+
+# ============================================
+# INSTALL DEPENDENCIES
+# ============================================
 
 install_dependencies() {
     print_step "Installing npm dependencies..."
@@ -673,7 +654,6 @@ print_summary() {
 main() {
     print_header
     
-    # Check if already installed
     if [ -d "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/.env" ]; then
         print_warning "NullName DB already installed at $INSTALL_DIR"
         if ! confirm "Reinstall/overwrite?"; then
@@ -682,7 +662,6 @@ main() {
         fi
     fi
     
-    # Run installation steps
     check_requirements
     if ! check_nodejs; then
         install_nodejs
@@ -696,7 +675,6 @@ main() {
     copy_source_files
     install_dependencies
     
-    # Create service
     if command -v systemctl &> /dev/null; then
         create_systemd_service
     elif [[ "$OSTYPE" == "darwin"* ]]; then
