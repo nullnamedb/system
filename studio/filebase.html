@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NullName DB - FileBase Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/ui/base.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e27;
+            color: #e0e0e0;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: rgba(10, 14, 39, 0.95);
+            border-right: 1px solid rgba(255,255,255,0.08);
+            padding: 1.5rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        .logo h1 {
+            font-size: 1.25rem;
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #aaa;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(0, 210, 255, 0.1);
+            color: #00d2ff;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 1.5rem;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: rgba(255,0,127,0.2);
+            border: 1px solid #ff007f;
+            color: #ff007f;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .card {
+            background: rgba(20, 25, 50, 0.8);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(0,210,255,0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 1rem;
+        }
+
+        .upload-area:hover, .upload-area.drag-over {
+            border-color: #00d2ff;
+            background: rgba(0,210,255,0.05);
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            color: #00d2ff;
+            margin-bottom: 1rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .url-upload {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .url-input {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 0.75rem;
+            color: #e0e0e0;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            border: none;
+            color: #0a0e27;
+            font-weight: 600;
+        }
+
+        .btn-danger {
+            background: rgba(255,0,127,0.2);
+            border-color: #ff007f;
+            color: #ff007f;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .file-card {
+            background: rgba(10, 14, 39, 0.6);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .file-card:hover {
+            border-color: #00d2ff;
+            transform: translateY(-2px);
+        }
+
+        .file-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-name {
+            font-size: 0.85rem;
+            word-break: break-all;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-size {
+            font-size: 0.7rem;
+            color: #888;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th, .data-table td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .data-table th {
+            color: #00d2ff;
+            font-weight: 600;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #0a0e27;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            padding: 1.5rem;
+        }
+
+        .modal-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: #e0e0e0;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            flex: 1;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #00d2ff;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #888;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 0.5rem;
+            color: #e0e0e0;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .view-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .view-btn.active {
+            background: #00d2ff;
+            color: #0a0e27;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 100;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .menu-toggle {
+                display: block;
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 101;
+                background: #00d2ff;
+                border: none;
+                padding: 0.5rem;
+                border-radius: 8px;
+                cursor: pointer;
+            }
+            .file-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+        }
+
+        @media (min-width: 769px) {
+            .menu-toggle {
+                display: none;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #00d2ff;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid #00d2ff;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
+
+    <div class="app-container">
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <h1><i class="fa fa-database"></i> NullName DB</h1>
+            </div>
+            <nav>
+                <div class="nav-item" data-page="dashboard"><i class="fa fa-tachometer"></i> Dashboard</div>
+                <div class="nav-item" data-page="databases"><i class="fa fa-database"></i> Databases</div>
+                <div class="nav-item" data-page="sql"><i class="fa fa-code"></i> SQL Runner</div>
+                <div class="nav-item" data-page="nosql"><i class="fa fa-file-code-o"></i> NoSQL</div>
+                <div class="nav-item active" data-page="filebase"><i class="fa fa-file"></i> FileBase</div>
+                <div class="nav-item" data-page="backup"><i class="fa fa-archive"></i> Backups</div>
+                <div class="nav-item" data-page="settings"><i class="fa fa-cog"></i> Settings</div>
+            </nav>
+        </div>
+
+        <div class="main-content">
+            <div class="top-bar">
+                <h2 class="page-title">FileBase Manager</h2>
+                <div class="user-info">
+                    <span id="username">Guest</span>
+                    <div class="user-avatar" id="userAvatar">G</div>
+                    <button class="logout-btn" id="logoutBtn"><i class="fa fa-sign-out"></i> Logout</button>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row" id="statsRow">
+                <div class="stat-box"><div class="stat-value" id="statFiles">-</div><div class="stat-label">Total Files</div></div>
+                <div class="stat-box"><div class="stat-value" id="statSize">-</div><div class="stat-label">Total Size</div></div>
+                <div class="stat-box"><div class="stat-value" id="statImages">-</div><div class="stat-label">Images</div></div>
+                <div class="stat-box"><div class="stat-value" id="statDocuments">-</div><div class="stat-label">Documents</div></div>
+            </div>
+
+            <!-- Upload Card -->
+            <div class="card">
+                <div class="card-title">Upload Files</div>
+                <div class="upload-area" id="uploadArea">
+                    <i class="fa fa-cloud-upload"></i>
+                    <p>Drag & Drop files here or click to browse</p>
+                    <p style="font-size:0.7rem; color:#888; margin-top:0.5rem;">Max file size: 50MB per file</p>
+                </div>
+                <input type="file" id="fileInput" class="file-input" multiple>
+                <div class="url-upload">
+                    <input type="text" id="urlInput" class="url-input" placeholder="https://example.com/file.jpg">
+                    <button class="btn btn-primary" id="uploadUrlBtn"><i class="fa fa-link"></i> Upload from URL</button>
+                </div>
+                <div style="margin-top:1rem;">
+                    <input type="text" id="fileDescription" placeholder="Description (optional)" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:0.5rem; color:#e0e0e0; margin-bottom:0.5rem;">
+                    <input type="text" id="fileTags" placeholder="Tags (comma separated)" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:0.5rem; color:#e0e0e0;">
+                </div>
+                <div id="uploadProgress" style="margin-top:1rem; display:none;">
+                    <div style="background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden;">
+                        <div id="progressBar" style="width:0%; height:4px; background:linear-gradient(90deg, #00d2ff, #00ff88); transition:width 0.3s;"></div>
+                    </div>
+                    <p id="progressText" style="font-size:0.7rem; margin-top:0.5rem;">Uploading...</p>
+                </div>
+            </div>
+
+            <!-- Search & Filter -->
+            <div class="card">
+                <div class="card-title">
+                    <span>Files</span>
+                    <div class="view-toggle">
+                        <button class="view-btn active" data-view="grid"><i class="fa fa-th"></i></button>
+                        <button class="view-btn" data-view="list"><i class="fa fa-list"></i></button>
+                        <button class="btn btn-sm" id="refreshBtn"><i class="fa fa-refresh"></i></button>
+                    </div>
+                </div>
+                <div class="search-bar">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search by filename, description, or tags...">
+                    <select id="typeFilter" class="btn">
+                        <option value="all">All Types</option>
+                        <option value="image">Images</option>
+                        <option value="video">Videos</option>
+                        <option value="audio">Audio</option>
+                        <option value="document">Documents</option>
+                        <option value="archive">Archives</option>
+                    </select>
+                </div>
+                <div id="filesContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header" id="previewTitle">File Preview</div>
+            <div id="previewBody"></div>
+            <div class="modal-footer">
+                <button class="btn" id="downloadFileBtn"><i class="fa fa-download"></i> Download</button>
+                <button class="btn btn-danger" id="deleteFileBtn"><i class="fa fa-trash"></i> Delete</button>
+                <button class="btn" id="closePreviewBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Metadata Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Edit File Metadata</div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="editDescription" rows="3" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:0.5rem; color:#e0e0e0;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Tags (comma separated)</label>
+                <input type="text" id="editTags" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:0.5rem; color:#e0e0e0;">
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelEditBtn">Cancel</button>
+                <button class="btn btn-primary" id="saveEditBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/ui/session.js"></script>
+    <script>
+        const sessionMgr = window.sessionManager;
+        let currentSession = null;
+        let currentFiles = [];
+        let currentView = 'grid';
+        let currentPreviewFile = null;
+        let currentEditFile = null;
+
+        async function init() {
+            await checkAuth();
+            await loadStats();
+            await loadFiles();
+            attachEvents();
+            setupDragDrop();
+        }
+
+        async function checkAuth() {
+            const session = localStorage.getItem('nullname_session');
+            if (!session) { window.location.href = '/login'; return; }
+            currentSession = session;
+            try {
+                const res = await fetch(`/q?q=status&ses=${session}`);
+                const data = await res.json();
+                if (data.status !== 'online') { window.location.href = '/login'; }
+                else {
+                    document.getElementById('username').innerText = 'admin';
+                    document.getElementById('userAvatar').innerText = 'A';
+                }
+            } catch(e) { window.location.href = '/login'; }
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch(`/q?q=filebase.stats&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('statFiles').innerText = data.totalFiles || 0;
+                    document.getElementById('statSize').innerText = data.totalSizeMB || '0 MB';
+                    document.getElementById('statImages').innerText = data.byType?.image || 0;
+                    document.getElementById('statDocuments').innerText = data.byType?.document || 0;
+                }
+            } catch(e) { console.error('Failed to load stats', e); }
+        }
+
+        async function loadFiles() {
+            const search = document.getElementById('searchInput').value;
+            const type = document.getElementById('typeFilter').value;
+            
+            let url = `/q?q=filebase.list&ses=${currentSession}`;
+            if (type !== 'all') url += `&type=${type}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+            
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.success) {
+                    currentFiles = data.files || [];
+                    renderFiles();
+                } else {
+                    currentFiles = [];
+                    renderFiles();
+                }
+            } catch(e) {
+                currentFiles = [];
+                renderFiles();
+            }
+        }
+
+        function renderFiles() {
+            const container = document.getElementById('filesContainer');
+            if (currentFiles.length === 0) {
+                container.innerHTML = '<p style="text-align:center;padding:3rem;color:#888;">No files uploaded</p>';
+                return;
+            }
+            
+            if (currentView === 'grid') {
+                let html = '<div class="file-grid">';
+                for (const file of currentFiles) {
+                    const icon = getFileIcon(file.type);
+                    html += `
+                        <div class="file-card" onclick="previewFile(${file.id})">
+                            <div class="file-icon">${icon}</div>
+                            <div class="file-name" title="${escapeHtml(file.originalName)}">${escapeHtml(truncate(file.originalName, 25))}</div>
+                            <div class="file-size">${file.sizeMB} MB</div>
+                            <div class="file-actions">
+                                <button class="btn btn-sm" onclick="event.stopPropagation(); editFile(${file.id})"><i class="fa fa-edit"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteFile(${file.id})"><i class="fa fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                container.innerHTML = html;
+            } else {
+                let html = '<table class="data-table"><thead><tr><th>File</th><th>Size</th><th>Type</th><th>Uploaded</th><th>Downloads</th><th>Actions</th></tr></thead><tbody>';
+                for (const file of currentFiles) {
+                    html += `
+                        <tr>
+                        <td><i class="fa ${getFileIcon(file.type)}"></i> ${escapeHtml(truncate(file.originalName, 40))}</td>
+                        <td>${file.sizeMB} MB</td>
+                        <td>${file.type}</td>
+                        <td>${new Date(file.uploadedAt).toLocaleDateString()}</td>
+                        <td>${file.downloads || 0}</td>
+                        <td>
+                            <button class="btn btn-sm" onclick="previewFile(${file.id})">View</button>
+                            <button class="btn btn-sm" onclick="editFile(${file.id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteFile(${file.id})">Del</button>
+                        </td>
+                    </tr>`;
+                }
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            }
+        }
+
+        function getFileIcon(type) {
+            const icons = {
+                image: 'fa-file-image-o',
+                video: 'fa-file-video-o',
+                audio: 'fa-file-audio-o',
+                document: 'fa-file-text-o',
+                archive: 'fa-file-archive-o',
+                other: 'fa-file-o'
+            };
+            return icons[type] || 'fa-file-o';
+        }
+
+        function truncate(str, len) {
+            if (!str) return '';
+            if (str.length <= len) return str;
+            return str.substring(0, len) + '...';
+        }
+
+        async function uploadFile(file, description, tags) {
+            const formData = new FormData();
+            formData.append('file', file);
+            if (description) formData.append('description', description);
+            if (tags) formData.append('tags', tags);
+            
+            try {
+                const res = await fetch(`/upload?ses=${currentSession}`, { method: 'POST', body: formData });
+                const data = await res.json();
+                return data;
+            } catch(e) {
+                return { success: false, error: e.message };
+            }
+        }
+
+        async function uploadFromUrl(url, description, tags) {
+            try {
+                const res = await fetch(`/upload/url?ses=${currentSession}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, description, tags })
+                });
+                return await res.json();
+            } catch(e) {
+                return { success: false, error: e.message };
+            }
+        }
+
+        async function handleFiles(files, description, tags) {
+            const progressDiv = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            progressDiv.style.display = 'block';
+            let completed = 0;
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                progressText.innerText = `Uploading ${file.name} (${i+1}/${files.length})...`;
+                progressBar.style.width = `${((i) / files.length) * 100}%`;
+                
+                const result = await uploadFile(file, description, tags);
+                if (result.success) {
+                    showToast(`Uploaded: ${file.name}`, 'success');
+                } else {
+                    showToast(`Failed: ${file.name} - ${result.error}`, 'error');
+                }
+                completed++;
+                progressBar.style.width = `${(completed / files.length) * 100}%`;
+            }
+            
+            progressDiv.style.display = 'none';
+            await loadStats();
+            await loadFiles();
+        }
+
+        function setupDragDrop() {
+            const area = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            
+            area.addEventListener('click', () => fileInput.click());
+            area.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                area.classList.add('drag-over');
+            });
+            area.addEventListener('dragleave', () => area.classList.remove('drag-over'));
+            area.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                area.classList.remove('drag-over');
+                const files = Array.from(e.dataTransfer.files);
+                if (files.length) {
+                    const description = document.getElementById('fileDescription').value;
+                    const tags = document.getElementById('fileTags').value;
+                    await handleFiles(files, description, tags);
+                }
+            });
+            
+            fileInput.addEventListener('change', async (e) => {
+                const files = Array.from(e.target.files);
+                if (files.length) {
+                    const description = document.getElementById('fileDescription').value;
+                    const tags = document.getElementById('fileTags').value;
+                    await handleFiles(files, description, tags);
+                    fileInput.value = '';
+                }
+            });
+        }
+
+        async function previewFile(fileId) {
+            try {
+                const res = await fetch(`/q?q=filebase.info.${fileId}&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    currentPreviewFile = data.file;
+                    const modal = document.getElementById('previewModal');
+                    const body = document.getElementById('previewBody');
+                    const title = document.getElementById('previewTitle');
+                    
+                    title.innerHTML = data.file.originalName;
+                    
+                    let previewHtml = `<p><strong>Size:</strong> ${data.file.sizeMB} MB</p>`;
+                    previewHtml += `<p><strong>Type:</strong> ${data.file.type}</p>`;
+                    previewHtml += `<p><strong>MIME:</strong> ${data.file.mimeType}</p>`;
+                    previewHtml += `<p><strong>Uploaded:</strong> ${new Date(data.file.uploadedAt).toLocaleString()}</p>`;
+                    previewHtml += `<p><strong>Downloads:</strong> ${data.file.downloads || 0}</p>`;
+                    previewHtml += `<p><strong>Description:</strong> ${escapeHtml(data.file.description || '-')}</p>`;
+                    previewHtml += `<p><strong>Tags:</strong> ${data.file.tags?.join(', ') || '-'}</p>`;
+                    
+                    if (data.file.type === 'image' && data.file.url) {
+                        previewHtml += `<div style="text-align:center; margin-top:1rem;"><img src="${data.file.url}?ses=${currentSession}" class="preview-image" onerror="this.style.display='none'"></div>`;
+                    }
+                    
+                    body.innerHTML = previewHtml;
+                    modal.style.display = 'flex';
+                }
+            } catch(e) {
+                showToast('Failed to load file preview', 'error');
+            }
+        }
+
+        async function editFile(fileId) {
+            try {
+                const res = await fetch(`/q?q=filebase.info.${fileId}&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    currentEditFile = data.file;
+                    document.getElementById('editDescription').value = data.file.description || '';
+                    document.getElementById('editTags').value = (data.file.tags || []).join(', ');
+                    document.getElementById('editModal').style.display = 'flex';
+                }
+            } catch(e) {
+                showToast('Failed to load file info', 'error');
+            }
+        }
+
+        async function saveEdit() {
+            if (!currentEditFile) return;
+            const description = document.getElementById('editDescription').value;
+            const tags = document.getElementById('editTags').value;
+            
+            try {
+                const res = await fetch(`/q?q=filebase.update.${currentEditFile.id}.description=${encodeURIComponent(description)}&ses=${currentSession}`);
+                if (res.ok) {
+                    showToast('Metadata updated', 'success');
+                    document.getElementById('editModal').style.display = 'none';
+                    await loadFiles();
+                }
+            } catch(e) {
+                showToast('Failed to update', 'error');
+            }
+        }
+
+        async function deleteFile(fileId) {
+            if (!confirm('Delete this file? This action cannot be undone.')) return;
+            try {
+                const res = await fetch(`/q?q=filebase.delete.${fileId}&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    showToast('File deleted', 'success');
+                    await loadStats();
+                    await loadFiles();
+                    document.getElementById('previewModal').style.display = 'none';
+                } else {
+                    showToast('Delete failed: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch(e) {
+                showToast('Delete failed', 'error');
+            }
+        }
+
+        async function downloadFile() {
+            if (!currentPreviewFile) return;
+            window.open(`${currentPreviewFile.url}?ses=${currentSession}`, '_blank');
+        }
+
+        async function uploadFromUrlAction() {
+            const url = document.getElementById('urlInput').value.trim();
+            const description = document.getElementById('fileDescription').value;
+            const tags = document.getElementById('fileTags').value;
+            
+            if (!url) {
+                showToast('Enter a URL', 'error');
+                return;
+            }
+            
+            showToast('Downloading from URL...', 'info');
+            const result = await uploadFromUrl(url, description, tags);
+            if (result.success) {
+                showToast('File uploaded from URL', 'success');
+                document.getElementById('urlInput').value = '';
+                await loadStats();
+                await loadFiles();
+            } else {
+                showToast('Upload failed: ' + result.error, 'error');
+            }
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.style.borderColor = type === 'success' ? '#00ff88' : (type === 'error' ? '#ff007f' : '#00d2ff');
+            toast.innerHTML = `<i class="fa fa-${type === 'success' ? 'check-circle' : (type === 'error' ? 'exclamation-circle' : 'info-circle')}"></i> ${escapeHtml(message)}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        async function logout() {
+            try { await fetch(`/q?q=logout&ses=${currentSession}`); } catch(e) {}
+            localStorage.removeItem('nullname_session');
+            window.location.href = '/login';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function attachEvents() {
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('refreshBtn').addEventListener('click', () => { loadStats(); loadFiles(); });
+            document.getElementById('uploadUrlBtn').addEventListener('click', uploadFromUrlAction);
+            document.getElementById('searchInput').addEventListener('input', () => loadFiles());
+            document.getElementById('typeFilter').addEventListener('change', () => loadFiles());
+            document.getElementById('closePreviewBtn').addEventListener('click', () => document.getElementById('previewModal').style.display = 'none');
+            document.getElementById('downloadFileBtn').addEventListener('click', downloadFile);
+            document.getElementById('deleteFileBtn').addEventListener('click', () => { if (currentPreviewFile) deleteFile(currentPreviewFile.id); });
+            document.getElementById('cancelEditBtn').addEventListener('click', () => document.getElementById('editModal').style.display = 'none');
+            document.getElementById('saveEditBtn').addEventListener('click', saveEdit);
+            
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentView = btn.dataset.view;
+                    renderFiles();
+                });
+            });
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const page = item.dataset.page;
+                    if (page === 'dashboard') window.location.href = '/studio';
+                    if (page === 'databases') window.location.href = '/studio/database.html';
+                    if (page === 'sql') window.location.href = '/studio/sql.html';
+                    if (page === 'nosql') window.location.href = '/studio/nosql.html';
+                    if (page === 'backup') window.location.href = '/studio/backup.html';
+                    if (page === 'settings') window.location.href = '/studio/settings.html';
+                });
+            });
+            
+            document.getElementById('menuToggle').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('open');
+            });
+        }
+
+        window.previewFile = previewFile;
+        window.editFile = editFile;
+        window.deleteFile = deleteFile;
+
+        init();
+    </script>
+</body>
+</html>
