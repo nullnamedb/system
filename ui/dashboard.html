@@ -241,6 +241,20 @@
             color: var(--text-muted);
         }
 
+        .quick-query {
+            background: rgba(0,210,255,0.1);
+            border: 1px solid rgba(0,210,255,0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .quick-query:hover {
+            background: rgba(0,210,255,0.2);
+            transform: translateY(-2px);
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -336,25 +350,37 @@
                     <div class="stat-card"><div class="stat-value" id="statStorage">-</div><div class="stat-label">Storage (MB)</div></div>
                 </div>
                 <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-value" id="statFiles">-</div><div class="stat-label">Files</div></div>
                     <div class="stat-card"><div class="stat-value" id="statQueries">-</div><div class="stat-label">Total Queries</div></div>
                     <div class="stat-card"><div class="stat-value" id="statSuccess">-</div><div class="stat-label">Success Rate</div></div>
                     <div class="stat-card"><div class="stat-value" id="statUptime">-</div><div class="stat-label">Uptime</div></div>
-                    <div class="stat-card"><div class="stat-value" id="statVersion">-</div><div class="stat-label">Version</div></div>
                 </div>
                 <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 1rem;">
-                    <h4>Quick Start</h4>
+                    <h4>Quick Actions</h4>
                     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
-                        <button class="btn quick-query" data-query="get.">Show All Databases</button>
-                        <button class="btn quick-query" data-query="status">System Status</button>
-                        <button class="btn quick-query" data-query="help">Help</button>
+                        <button class="quick-query" data-action="get.">Show All Databases</button>
+                        <button class="quick-query" data-action="status">System Status</button>
+                        <button class="quick-query" data-action="stats">Statistics</button>
+                        <button class="quick-query" data-action="backup">Create Backup</button>
                     </div>
+                </div>
+                <div style="margin-top: 1rem; background: var(--bg-card); border-radius: var(--radius-lg); padding: 1rem;">
+                    <h4>Recent Activity</h4>
+                    <div id="recentActivity">Loading...</div>
                 </div>
             </div>
 
             <div id="queryView" style="display: none; flex-direction: column; flex: 1; overflow: hidden;">
                 <div class="query-area">
                     <div class="query-input-container">
-                        <textarea id="queryInput" class="query-input" placeholder='Enter your query here...&#10;&#10;Examples:&#10;• get.users&#10;• add.mydb.users.name.John&#10;• commit "my changes"&#10;• undo&#10;• f1'></textarea>
+                        <textarea id="queryInput" class="query-input" placeholder='Enter your query here...
+
+Examples:
+  get.users
+  add.mydb.users.name.John
+  commit "my changes"
+  undo
+  SELECT * FROM users'></textarea>
                         <div class="query-actions">
                             <button id="runQueryBtn" class="btn btn-primary"><i class="fa fa-play"></i> Run Query</button>
                             <button id="clearResultsBtn" class="btn"><i class="fa fa-eraser"></i> Clear</button>
@@ -389,18 +415,440 @@
             <div id="settingsView" style="display: none; flex: 1; overflow: auto; padding: 1.5rem;">
                 <h3><i class="fa fa-cog"></i> Settings</h3>
                 <div style="max-width: 600px;">
-                    <div style="margin-bottom: 1rem;"><label>Default Format</label><select id="settingsFormat" class="form-control" style="width:100%;padding:0.5rem;"><option value="json">JSON</option><option value="text">Text</option><option value="table">Table</option><option value="csv">CSV</option></select></div>
-                    <div style="margin-bottom: 1rem;"><label>Theme</label><select id="settingsTheme" class="form-control" style="width:100%;padding:0.5rem;"><option value="dark">Dark</option><option value="light">Light</option></select></div>
+                    <div style="margin-bottom: 1rem;">
+                        <label>Default Format</label>
+                        <select id="settingsFormat" class="form-control" style="width:100%; padding:0.5rem;">
+                            <option value="json">JSON</option>
+                            <option value="table">Table</option>
+                            <option value="csv">CSV</option>
+                            <option value="markdown">Markdown</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label>Theme</label>
+                        <select id="settingsTheme" class="form-control" style="width:100%; padding:0.5rem;">
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                        </select>
+                    </div>
                     <button id="saveSettingsBtn" class="btn btn-primary">Save Settings</button>
                 </div>
             </div>
 
-            <div class="status-bar"><span id="statusMsg"><i class="fa fa-circle" style="color: var(--accent-success); font-size: 0.6rem;"></i> Connected</span><span id="timeMsg"></span></div>
+            <div class="status-bar">
+                <span id="statusMsg"><i class="fa fa-circle" style="color: var(--accent-success); font-size: 0.6rem;"></i> Connected</span>
+                <span id="timeMsg"></span>
+            </div>
         </main>
     </div>
 
     <script src="/ui/session.js"></script>
-    <script src="/ui/base.js"></script>
-    <script src="/ui/app.js"></script>
+    <script>
+        let currentSession = null;
+        let currentUser = null;
+
+        async function init() {
+            await checkAuth();
+            await loadDashboardStats();
+            await loadRecentActivity();
+            attachEvents();
+        }
+
+        async function checkAuth() {
+            const session = localStorage.getItem('nullname_session');
+            if (!session) {
+                window.location.href = '/login';
+                return;
+            }
+            currentSession = session;
+            
+            try {
+                const res = await fetch(`/q?q=status&ses=${session}`);
+                const data = await res.json();
+                if (data.status === 'online') {
+                    currentUser = { username: 'admin', role: 'admin' };
+                    document.getElementById('userName').innerText = 'admin';
+                    document.getElementById('userAvatar').innerText = 'A';
+                    document.getElementById('userRole').innerText = 'admin';
+                } else {
+                    window.location.href = '/login';
+                }
+            } catch(e) {
+                window.location.href = '/login';
+            }
+        }
+
+        async function loadDashboardStats() {
+            try {
+                const res = await fetch(`/q?q=stats&ses=${currentSession}`);
+                const data = await res.json();
+                
+                if (data.database) {
+                    document.getElementById('statDatabases').innerText = data.database.databases || 0;
+                    document.getElementById('statTables').innerText = data.database.tables || 0;
+                    document.getElementById('statRecords').innerText = data.database.records || 0;
+                    document.getElementById('statStorage').innerText = data.database.totalSizeMB || 0;
+                }
+                if (data.filebase) {
+                    document.getElementById('statFiles').innerText = data.filebase.totalFiles || 0;
+                }
+                if (data.queries && data.queries.total) {
+                    document.getElementById('statQueries').innerText = data.queries.total.queries || 0;
+                    document.getElementById('statSuccess').innerText = data.queries.total.successRate || '0%';
+                }
+                if (data.uptime) {
+                    document.getElementById('statUptime').innerText = data.uptime.human || '0s';
+                }
+            } catch(e) {
+                console.error('Failed to load stats:', e);
+            }
+        }
+
+        async function loadRecentActivity() {
+            try {
+                const res = await fetch(`/q?q=track&ses=${currentSession}&limit=10`);
+                const data = await res.json();
+                const tracks = data.tracks || [];
+                
+                if (tracks.length === 0) {
+                    document.getElementById('recentActivity').innerHTML = '<p style="color: #888;">No recent activity</p>';
+                    return;
+                }
+                
+                let html = '<div style="overflow-x:auto;"><table class="data-table"><thead><tr><th>Time</th><th>Query</th><th>Status</th><th>Duration</th></tr></thead><tbody>';
+                for (const track of tracks.slice(0, 10)) {
+                    const statusClass = track.success ? 'status-success' : 'status-error';
+                    const statusText = track.success ? '✓' : '✗';
+                    const time = new Date(track.timestamp).toLocaleTimeString();
+                    const queryPreview = track.query?.substring(0, 60) + (track.query?.length > 60 ? '...' : '');
+                    html += `<tr>
+                        <td style="white-space:nowrap;">${time}</td>
+                        <td><code>${escapeHtml(queryPreview)}</code></td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>${track.duration?.toFixed(0) || 0}ms</td>
+                    </tr>`;
+                }
+                html += '</tbody></table></div>';
+                document.getElementById('recentActivity').innerHTML = html;
+            } catch(e) {
+                document.getElementById('recentActivity').innerHTML = '<p style="color: #888;">Failed to load activity</p>';
+            }
+        }
+
+        async function loadDatabases() {
+            try {
+                const res = await fetch(`/q?q=get.&ses=${currentSession}`);
+                const data = await res.json();
+                const databases = data.databases || [];
+                
+                if (databases.length === 0) {
+                    document.getElementById('databasesTree').innerHTML = '<p style="color: #888;">No databases found</p>';
+                    return;
+                }
+                
+                let html = '<div class="tree-view">';
+                for (const db of databases) {
+                    html += `<div class="db-item" style="margin-bottom: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fa fa-database"></i>
+                            <strong>${escapeHtml(db)}</strong>
+                            <button class="btn btn-sm" onclick="viewDatabase('${escapeHtml(db)}')">Browse</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteDatabase('${escapeHtml(db)}')">Delete</button>
+                        </div>
+                    </div>`;
+                }
+                html += '</div>';
+                document.getElementById('databasesTree').innerHTML = html;
+            } catch(e) {
+                document.getElementById('databasesTree').innerHTML = '<p style="color: #888;">Error loading databases</p>';
+            }
+        }
+
+        async function loadFiles() {
+            try {
+                const res = await fetch(`/q?q=filebase.list&ses=${currentSession}`);
+                const data = await res.json();
+                const files = data.files || [];
+                
+                if (files.length === 0) {
+                    document.getElementById('filesList').innerHTML = '<p style="color: #888;">No files uploaded</p>';
+                    return;
+                }
+                
+                let html = '<table class="data-table"><thead><tr><th>Filename</th><th>Size</th><th>Type</th><th>Uploaded</th><th>Actions</th></tr></thead><tbody>';
+                for (const file of files) {
+                    html += `<tr>
+                        <td><i class="fa fa-file"></i> ${escapeHtml(file.originalName)}</td>
+                        <td>${file.sizeMB} MB</td>
+                        <td>${file.type}</td>
+                        <td>${new Date(file.uploadedAt).toLocaleDateString()}</td>
+                        <td><button class="btn btn-sm" onclick="deleteFile(${file.id})">Delete</button></td>
+                    </tr>`;
+                }
+                html += '</tbody></table>';
+                document.getElementById('filesList').innerHTML = html;
+            } catch(e) {
+                document.getElementById('filesList').innerHTML = '<p style="color: #888;">Error loading files</p>';
+            }
+        }
+
+        async function loadBackups() {
+            try {
+                const res = await fetch(`/q?q=backups&ses=${currentSession}`);
+                const data = await res.json();
+                const backups = data.backups || [];
+                
+                if (backups.length === 0) {
+                    document.getElementById('backupsList').innerHTML = '<p style="color: #888;">No backups found</p>';
+                    return;
+                }
+                
+                let html = '<table class="data-table"><thead><tr><th>Backup Name</th><th>Created</th><th>Size</th><th>Actions</th></tr></thead><tbody>';
+                for (const backup of backups) {
+                    html += `<tr>
+                        <td><i class="fa fa-archive"></i> ${escapeHtml(backup.name)}</td>
+                        <td>${new Date(backup.created).toLocaleString()}</td>
+                        <td>${backup.sizeMB} MB</td>
+                        <td><button class="btn btn-sm btn-danger" onclick="deleteBackup('${backup.id}')">Delete</button></td>
+                    </tr>`;
+                }
+                html += '</tbody></table>';
+                document.getElementById('backupsList').innerHTML = html;
+            } catch(e) {
+                document.getElementById('backupsList').innerHTML = '<p style="color: #888;">Error loading backups</p>';
+            }
+        }
+
+        async function runQuery() {
+            const query = document.getElementById('queryInput').value.trim();
+            if (!query) return;
+            
+            const format = document.getElementById('formatSelect').value;
+            const startTime = Date.now();
+            
+            document.getElementById('resultsPre').innerHTML = '<div style="text-align:center; padding:2rem;"><i class="fa fa-spinner fa-spin"></i> Running query...</div>';
+            
+            try {
+                let url = `/q?q=${encodeURIComponent(query)}&ses=${currentSession}`;
+                if (format !== 'json') url += `&format=${format}`;
+                
+                const res = await fetch(url);
+                const elapsed = Date.now() - startTime;
+                document.getElementById('timeMsg').innerHTML = `${elapsed}ms`;
+                document.getElementById('resultsStats').innerHTML = `Completed in ${elapsed}ms`;
+                
+                if (format === 'table' || format === 'csv' || format === 'markdown') {
+                    const text = await res.text();
+                    document.getElementById('resultsPre').innerHTML = `<pre>${escapeHtml(text)}</pre>`;
+                } else {
+                    const data = await res.json();
+                    document.getElementById('resultsPre').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch(error) {
+                document.getElementById('resultsPre').innerHTML = `<pre style="color: var(--accent-error);">Error: ${escapeHtml(error.message)}</pre>`;
+            }
+        }
+
+        async function createBackup() {
+            try {
+                const res = await fetch(`/q?q=backup&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    alert('Backup created successfully');
+                    if (document.getElementById('backupsView').style.display !== 'none') {
+                        await loadBackups();
+                    }
+                } else {
+                    alert('Backup failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch(e) {
+                alert('Backup failed: ' + e.message);
+            }
+        }
+
+        async function deleteBackup(backupId) {
+            if (!confirm('Delete this backup?')) return;
+            try {
+                const res = await fetch(`/q?q=backup.delete.${backupId}&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    alert('Backup deleted');
+                    await loadBackups();
+                } else {
+                    alert('Delete failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch(e) {
+                alert('Delete failed: ' + e.message);
+            }
+        }
+
+        async function deleteFile(fileId) {
+            if (!confirm('Delete this file?')) return;
+            try {
+                const res = await fetch(`/q?q=filebase.delete.${fileId}&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    alert('File deleted');
+                    await loadFiles();
+                } else {
+                    alert('Delete failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch(e) {
+                alert('Delete failed: ' + e.message);
+            }
+        }
+
+        async function deleteDatabase(dbName) {
+            if (!confirm(`Delete database '${dbName}'? ALL DATA WILL BE LOST.`)) return;
+            try {
+                const res = await fetch(`/q?q=delete.${dbName}&ses=${currentSession}`);
+                const data = await res.json();
+                if (data.success) {
+                    alert(`Database '${dbName}' deleted`);
+                    await loadDatabases();
+                    await loadDashboardStats();
+                } else {
+                    alert('Delete failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch(e) {
+                alert('Delete failed: ' + e.message);
+            }
+        }
+
+        function viewDatabase(dbName) {
+            alert(`Browse database: ${dbName}\nUse the SQL Runner to query this database.`);
+        }
+
+        function copyResults() {
+            const content = document.getElementById('resultsPre').innerText;
+            if (content && content !== 'Run a query to see results...') {
+                navigator.clipboard.writeText(content);
+                alert('Copied to clipboard');
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('queryInput').value = '';
+            document.getElementById('resultsPre').innerHTML = 'Run a query to see results...';
+            document.getElementById('resultsStats').innerHTML = 'Ready';
+            document.getElementById('timeMsg').innerHTML = '';
+        }
+
+        function saveSettings() {
+            const format = document.getElementById('settingsFormat').value;
+            const theme = document.getElementById('settingsTheme').value;
+            localStorage.setItem('nullname_format', format);
+            localStorage.setItem('nullname_theme', theme);
+            document.getElementById('formatSelect').value = format;
+            if (theme === 'light') {
+                document.body.classList.add('light-theme');
+            } else {
+                document.body.classList.remove('light-theme');
+            }
+            alert('Settings saved');
+        }
+
+        async function logout() {
+            try {
+                await fetch(`/q?q=logout&ses=${currentSession}`);
+            } catch(e) {}
+            localStorage.removeItem('nullname_session');
+            window.location.href = '/login';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function attachEvents() {
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('runQueryBtn').addEventListener('click', runQuery);
+            document.getElementById('clearResultsBtn').addEventListener('click', clearResults);
+            document.getElementById('copyResultsBtn').addEventListener('click', copyResults);
+            document.getElementById('refreshBtn').addEventListener('click', () => { loadDashboardStats(); loadRecentActivity(); });
+            document.getElementById('createBackupBtn').addEventListener('click', createBackup);
+            document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+            
+            document.querySelectorAll('.quick-query').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const action = btn.dataset.action;
+                    if (action === 'get.') {
+                        document.getElementById('queryInput').value = 'get.';
+                        document.getElementById('queryView').style.display = 'flex';
+                        document.querySelector('.nav-item.active').classList.remove('active');
+                        document.querySelector('.nav-item[data-view="query"]').classList.add('active');
+                        document.getElementById('dashboardView').style.display = 'none';
+                        document.getElementById('queryView').style.display = 'flex';
+                        document.getElementById('databasesView').style.display = 'none';
+                        document.getElementById('filesView').style.display = 'none';
+                        document.getElementById('backupsView').style.display = 'none';
+                        document.getElementById('settingsView').style.display = 'none';
+                    } else if (action === 'status') {
+                        document.getElementById('queryInput').value = 'status';
+                        document.getElementById('queryView').style.display = 'flex';
+                        document.querySelector('.nav-item.active').classList.remove('active');
+                        document.querySelector('.nav-item[data-view="query"]').classList.add('active');
+                        document.getElementById('dashboardView').style.display = 'none';
+                        document.getElementById('queryView').style.display = 'flex';
+                        document.getElementById('databasesView').style.display = 'none';
+                        document.getElementById('filesView').style.display = 'none';
+                        document.getElementById('backupsView').style.display = 'none';
+                        document.getElementById('settingsView').style.display = 'none';
+                    } else if (action === 'stats') {
+                        document.getElementById('queryInput').value = 'stats';
+                        document.getElementById('queryView').style.display = 'flex';
+                        document.querySelector('.nav-item.active').classList.remove('active');
+                        document.querySelector('.nav-item[data-view="query"]').classList.add('active');
+                        document.getElementById('dashboardView').style.display = 'none';
+                        document.getElementById('queryView').style.display = 'flex';
+                        document.getElementById('databasesView').style.display = 'none';
+                        document.getElementById('filesView').style.display = 'none';
+                        document.getElementById('backupsView').style.display = 'none';
+                        document.getElementById('settingsView').style.display = 'none';
+                    } else if (action === 'backup') {
+                        await createBackup();
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const view = item.dataset.view;
+                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                    item.classList.add('active');
+                    
+                    document.getElementById('dashboardView').style.display = view === 'dashboard' ? 'block' : 'none';
+                    document.getElementById('queryView').style.display = view === 'query' ? 'flex' : 'none';
+                    document.getElementById('databasesView').style.display = view === 'databases' ? 'block' : 'none';
+                    document.getElementById('filesView').style.display = view === 'files' ? 'block' : 'none';
+                    document.getElementById('backupsView').style.display = view === 'backups' ? 'block' : 'none';
+                    document.getElementById('settingsView').style.display = view === 'settings' ? 'block' : 'none';
+                    
+                    if (view === 'databases') loadDatabases();
+                    if (view === 'files') loadFiles();
+                    if (view === 'backups') loadBackups();
+                });
+            });
+            
+            document.getElementById('menuToggle').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('open');
+            });
+            
+            const savedTheme = localStorage.getItem('nullname_theme');
+            if (savedTheme === 'light') document.body.classList.add('light-theme');
+            const savedFormat = localStorage.getItem('nullname_format');
+            if (savedFormat) document.getElementById('formatSelect').value = savedFormat;
+            document.getElementById('settingsFormat').value = savedFormat || 'json';
+            document.getElementById('settingsTheme').value = savedTheme || 'dark';
+        }
+
+        window.viewDatabase = viewDatabase;
+        window.deleteDatabase = deleteDatabase;
+        window.deleteFile = deleteFile;
+        window.deleteBackup = deleteBackup;
+
+        init();
+    </script>
 </body>
 </html>
