@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NullName DB - CLI Help Reference</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0e27;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+            color: #e0e0e0;
+        }
+
+        .help-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0,210,255,0.3);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #00d2ff, #00ff88);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .header p {
+            color: #888;
+            margin-top: 0.5rem;
+        }
+
+        .search-section {
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 0.75rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-family: monospace;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .category-card {
+            background: rgba(20, 25, 50, 0.8);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .category-header {
+            padding: 1rem;
+            background: rgba(0,210,255,0.1);
+            border-bottom: 1px solid rgba(0,210,255,0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .category-header i {
+            font-size: 1.25rem;
+            color: #00d2ff;
+        }
+
+        .category-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .command-list {
+            padding: 0.5rem;
+        }
+
+        .command-item {
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .command-item:hover {
+            background: rgba(0,210,255,0.05);
+        }
+
+        .command-syntax {
+            font-family: monospace;
+            color: #00d2ff;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .command-desc {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-bottom: 0.25rem;
+        }
+
+        .command-example {
+            font-family: monospace;
+            font-size: 0.7rem;
+            color: #00ff88;
+            background: rgba(0,0,0,0.3);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 0.25rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #00d2ff;
+            text-decoration: none;
+            margin-bottom: 1rem;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #0a0e27;
+            border: 1px solid #00d2ff;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            padding: 1.5rem;
+        }
+
+        .modal-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .modal-body {
+            margin-bottom: 1rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .close-modal {
+            background: #00d2ff;
+            border: none;
+            color: #0a0e27;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .syntax-highlight {
+            background: rgba(0,0,0,0.5);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-family: monospace;
+            margin: 0.5rem 0;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid #00d2ff;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .help-container {
+                padding: 1rem;
+            }
+            .category-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="help-container">
+        <a href="/cli" class="back-link"><i class="fa fa-arrow-left"></i> Back to Terminal</a>
+
+        <div class="header">
+            <h1><i class="fa fa-question-circle"></i> CLI Command Reference</h1>
+            <p>Complete guide to all NullName DB CLI commands</p>
+        </div>
+
+        <div class="search-section">
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search commands...">
+        </div>
+
+        <div class="category-grid" id="categoryGrid"></div>
+    </div>
+
+    <!-- Command Detail Modal -->
+    <div id="commandModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" id="modalTitle">Command Details</div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer">
+                <button class="close-modal" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/ui/session.js"></script>
+    <script>
+        const commands = {
+            basics: {
+                name: "Basics",
+                icon: "fa-flag-checkered",
+                commands: [
+                    { syntax: "help", desc: "Show this help message", example: "help" },
+                    { syntax: "clear", desc: "Clear the terminal screen", example: "clear" },
+                    { syntax: "history", desc: "Show command history", example: "history" },
+                    { syntax: "exit / logout", desc: "Exit the terminal and logout", example: "exit" }
+                ]
+            },
+            formatting: {
+                name: "Output Formatting",
+                icon: "fa-file-code-o",
+                commands: [
+                    { syntax: "format [json|table|csv|markdown]", desc: "Set output format for commands", example: "format table" },
+                    { syntax: "format", desc: "Show current format", example: "format" },
+                    { syntax: "export", desc: "Export last result", example: "export" }
+                ]
+            },
+            data: {
+                name: "Data Operations",
+                icon: "fa-database",
+                commands: [
+                    { syntax: "key=value", desc: "Store a simple key-value pair", example: "score=100" },
+                    { syntax: "key", desc: "Retrieve a value by key", example: "score" },
+                    { syntax: "key=", desc: "Delete a key-value pair", example: "score=" },
+                    { syntax: "add.db.table.col.value", desc: "Add a record to a table", example: "add.mydb.users.name.John" },
+                    { syntax: "get.db.table", desc: "Get all records from a table", example: "get.mydb.users" },
+                    { syntax: "get.db.table.id", desc: "Get a specific record by ID", example: "get.mydb.users.1" },
+                    { syntax: "update.db.table.id.col=value", desc: "Update a record", example: "update.mydb.users.1.name=Johnny" },
+                    { syntax: "delete.db.table.id", desc: "Delete a record", example: "delete.mydb.users.1" },
+                    { syntax: "create.databasename", desc: "Create a new database", example: "create.mydb" },
+                    { syntax: "delete.databasename", desc: "Delete a database", example: "delete.mydb" }
+                ]
+            },
+            sql: {
+                name: "SQL Commands",
+                icon: "fa-code",
+                commands: [
+                    { syntax: "SELECT * FROM table", desc: "Query all records", example: "SELECT * FROM users" },
+                    { syntax: "SELECT col1, col2 FROM table WHERE condition", desc: "Query with conditions", example: "SELECT name, age FROM users WHERE age > 18" },
+                    { syntax: "INSERT INTO table (col1, col2) VALUES (val1, val2)", desc: "Insert a record", example: "INSERT INTO users (name, email) VALUES ('John', 'john@email.com')" },
+                    { syntax: "UPDATE table SET col=value WHERE condition", desc: "Update records", example: "UPDATE users SET age = 26 WHERE id = 1" },
+                    { syntax: "DELETE FROM table WHERE condition", desc: "Delete records", example: "DELETE FROM users WHERE id = 3" },
+                    { syntax: "CREATE TABLE name (columns)", desc: "Create a new table", example: "CREATE TABLE users (id INT, name TEXT)" },
+                    { syntax: "DROP TABLE name", desc: "Delete a table", example: "DROP TABLE users" },
+                    { syntax: "ALTER TABLE name ADD column", desc: "Add a column", example: "ALTER TABLE users ADD phone TEXT" }
+                ]
+            },
+            version: {
+                name: "Version Control (Git-like)",
+                icon: "fa-code-fork",
+                commands: [
+                    { syntax: 'commit "message"', desc: "Create a commit snapshot", example: 'commit "first commit"' },
+                    { syntax: "commits", desc: "Show commit history", example: "commits" },
+                    { syntax: "checkout.commit_id", desc: "Restore to a specific commit", example: "checkout.commit_123" },
+                    { syntax: "branch.name", desc: "Create a new branch", example: "branch.feature" },
+                    { syntax: "branches", desc: "List all branches", example: "branches" },
+                    { syntax: "merge.source.into.target", desc: "Merge branches", example: "merge.feature.into.main" },
+                    { syntax: "undo", desc: "Undo last operation", example: "undo" },
+                    { syntax: "redo", desc: "Redo last undone", example: "redo" },
+                    { syntax: "diff.source.target", desc: "Show differences", example: "diff.main.feature" }
+                ]
+            },
+            timeback: {
+                name: "Time Travel",
+                icon: "fa-clock-o",
+                commands: [
+                    { syntax: "travel.db.name.to.date", desc: "View database as it was at a date", example: "travel.db.mydb.to.2026-05-20" },
+                    { syntax: "travel.table.db.table.to.date", desc: "View table as it was at a date", example: "travel.table.mydb.users.to.2026-05-20" },
+                    { syntax: "travel.row.db.table.row.to.date", desc: "View row as it was at a date", example: "travel.row.mydb.users.5.to.2026-05-20" },
+                    { syntax: "travel.cell.to.date", desc: "View cell as it was at a date", example: "travel.cell.mydb.users.5.email.to.2026-05-20" },
+                    { syntax: "restore.db.name.to.date", desc: "Restore database to past state", example: "restore.db.mydb.to.2026-05-20" }
+                ]
+            },
+            filebase: {
+                name: "FileBase",
+                icon: "fa-file",
+                commands: [
+                    { syntax: "filebase.list", desc: "List all uploaded files", example: "filebase.list" },
+                    { syntax: "filebase.info.id", desc: "Get file information", example: "filebase.info.123" },
+                    { syntax: "filebase.delete.id", desc: "Delete a file", example: "filebase.delete.123" },
+                    { syntax: "filebase.search.query", desc: "Search files", example: "filebase.search.invoice" },
+                    { syntax: "filebase.stats", desc: "Show file statistics", example: "filebase.stats" }
+                ]
+            },
+            backup: {
+                name: "Backup & Restore",
+                icon: "fa-archive",
+                commands: [
+                    { syntax: "backup", desc: "Create a backup", example: "backup" },
+                    { syntax: "backups", desc: "List all backups", example: "backups" },
+                    { syntax: "restore.name", desc: "Restore from backup", example: "restore.backup_20260520" }
+                ]
+            },
+            auth: {
+                name: "Authentication",
+                icon: "fa-user-circle",
+                commands: [
+                    { syntax: "login.username.password", desc: "Login to your account", example: "login.john.doe123" },
+                    { syntax: "signup.username.password", desc: "Create a new account", example: "signup.john.doe123" },
+                    { syntax: "logout", desc: "Logout from current session", example: "logout" }
+                ]
+            },
+            system: {
+                name: "System",
+                icon: "fa-server",
+                commands: [
+                    { syntax: "status", desc: "Show system status", example: "status" },
+                    { syntax: "stats", desc: "Show database statistics", example: "stats" },
+                    { syntax: "track", desc: "Show query history", example: "track" },
+                    { syntax: "health", desc: "Health check", example: "/health" }
+                ]
+            },
+            recovery: {
+                name: "Emergency Recovery",
+                icon: "fa-exclamation-triangle",
+                commands: [
+                    { syntax: "f1", desc: "Force back 1 commit (admin only)", example: "/f1?ses=admin_session" },
+                    { syntax: "f2", desc: "Force back 2 commits (admin only)", example: "/f2?ses=admin_session" },
+                    { syntax: "f3", desc: "Force back 3 commits (admin only)", example: "/f3?ses=admin_session" },
+                    { syntax: "force.back.steps", desc: "Force back N commits", example: "force.back.5" }
+                ]
+            },
+            shortcuts: {
+                name: "Shortcuts",
+                icon: "fa-bolt",
+                commands: [
+                    { syntax: "a = add", desc: "Shortcut for add", example: "a.mydb.users.name.John" },
+                    { syntax: "g = get", desc: "Shortcut for get", example: "g.mydb.users" },
+                    { syntax: "u = update", desc: "Shortcut for update", example: "u.mydb.users.1.name=John" },
+                    { syntax: "d = delete", desc: "Shortcut for delete", example: "d.mydb.users.1" },
+                    { syntax: "c = create", desc: "Shortcut for create", example: "c.mydb" },
+                    { syntax: "cm = commit", desc: "Shortcut for commit", example: 'cm "message"' },
+                    { syntax: "un = undo", desc: "Shortcut for undo", example: "un" },
+                    { syntax: "re = redo", desc: "Shortcut for redo", example: "re" }
+                ]
+            }
+        };
+
+        let searchTerm = '';
+
+        function renderHelp() {
+            const grid = document.getElementById('categoryGrid');
+            let html = '';
+            
+            for (const [key, category] of Object.entries(commands)) {
+                let filteredCommands = category.commands;
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    filteredCommands = category.commands.filter(cmd => 
+                        cmd.syntax.toLowerCase().includes(term) || 
+                        cmd.desc.toLowerCase().includes(term) ||
+                        cmd.example.toLowerCase().includes(term)
+                    );
+                }
+                
+                if (filteredCommands.length === 0) continue;
+                
+                html += `
+                    <div class="category-card">
+                        <div class="category-header">
+                            <i class="fa ${category.icon}"></i>
+                            <h2>${category.name}</h2>
+                        </div>
+                        <div class="command-list">
+                `;
+                
+                for (const cmd of filteredCommands) {
+                    html += `
+                        <div class="command-item" onclick="showCommandDetail('${escapeJs(cmd.syntax)}', '${escapeJs(cmd.desc)}', '${escapeJs(cmd.example)}')">
+                            <div class="command-syntax">${escapeHtml(cmd.syntax)}</div>
+                            <div class="command-desc">${escapeHtml(cmd.desc)}</div>
+                            <div class="command-example"><i class="fa fa-terminal"></i> ${escapeHtml(cmd.example)}</div>
+                        </div>
+                    `;
+                }
+                
+                html += `</div></div>`;
+            }
+            
+            if (html === '') {
+                html = '<div style="text-align:center;padding:3rem;color:#888;"><i class="fa fa-search"></i><p>No commands found matching "' + escapeHtml(searchTerm) + '"</p></div>';
+            }
+            
+            grid.innerHTML = html;
+        }
+
+        function showCommandDetail(syntax, desc, example) {
+            const modal = document.getElementById('commandModal');
+            const body = document.getElementById('modalBody');
+            const title = document.getElementById('modalTitle');
+            
+            title.innerHTML = `<i class="fa fa-terminal"></i> ${escapeHtml(syntax)}`;
+            
+            body.innerHTML = `
+                <div class="syntax-highlight">
+                    <strong>Syntax:</strong><br>
+                    <code style="color:#00d2ff;">${escapeHtml(syntax)}</code>
+                </div>
+                <div style="margin: 0.5rem 0;">
+                    <strong>Description:</strong><br>
+                    ${escapeHtml(desc)}
+                </div>
+                <div class="syntax-highlight">
+                    <strong>Example:</strong><br>
+                    <code style="color:#00ff88;">${escapeHtml(example)}</code>
+                </div>
+                <div style="margin-top: 0.5rem; font-size:0.7rem; color:#888;">
+                    <i class="fa fa-info-circle"></i> Type this command in the terminal
+                </div>
+            `;
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('commandModal').style.display = 'none';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function escapeJs(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        function attachEvents() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', (e) => {
+                searchTerm = e.target.value;
+                renderHelp();
+            });
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && document.getElementById('commandModal').style.display === 'flex') {
+                    closeModal();
+                }
+            });
+        }
+
+        window.showCommandDetail = showCommandDetail;
+        window.closeModal = closeModal;
+
+        renderHelp();
+        attachEvents();
+    </script>
+</body>
+</html>
